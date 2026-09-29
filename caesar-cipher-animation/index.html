@@ -1,0 +1,1079 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="An animated, interactive explainer of the Caesar cipher.">
+<title>Caesar Shift</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Cinzel:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#e8e6e1; --bg-2:#dcd8cf; --panel:#f4f2ee; --ink:#1e1a23; --muted:#655e6c; --line:#cbc5ba;
+  --bronze:#8a5a1b; --bronze-soft:rgba(138,90,27,.13);
+  --verd:#136c61; --verd-soft:rgba(19,108,97,.11);
+  --tyrian:#8a2457; --tyrian-soft:rgba(138,36,87,.09);
+  --mote:#8a5a1b;
+  --f-disp:"Cinzel","Trajan Pro",Georgia,serif;
+  --f-body:"Alegreya Sans","Gill Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111016; --bg-2:#1b1822; --panel:#1f1c27; --ink:#ebe5da; --muted:#9a92a2; --line:#353040;
+    --bronze:#d8a660; --bronze-soft:rgba(216,166,96,.14);
+    --verd:#6fc8b7; --verd-soft:rgba(111,200,183,.12);
+    --tyrian:#d86fa3; --tyrian-soft:rgba(216,111,163,.12);
+    --mote:#d8a660;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111016; --bg-2:#1b1822; --panel:#1f1c27; --ink:#ebe5da; --muted:#9a92a2; --line:#353040;
+  --bronze:#d8a660; --bronze-soft:rgba(216,166,96,.14);
+  --verd:#6fc8b7; --verd-soft:rgba(111,200,183,.12);
+  --tyrian:#d86fa3; --tyrian-soft:rgba(216,111,163,.12);
+  --mote:#d8a660;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;overflow:hidden;color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  background:radial-gradient(120% 70% at 50% -10%,var(--bg-2) 0%,var(--bg) 62%),var(--bg)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--bronze);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+#bgfx{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* ---------- shell ---------- */
+.app{position:relative;z-index:1;height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr)}
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px;padding:12px 20px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;margin:0;font:700 1.02rem/1 var(--f-disp);letter-spacing:.16em;text-transform:uppercase}
+.brand svg{width:26px;height:26px;flex:none}
+.brand .seal-o{fill:none;stroke:var(--bronze);stroke-width:1.5}
+.brand .seal-i{fill:var(--bronze-soft);stroke:var(--verd);stroke-width:1.5}
+.brand .seal-t{fill:var(--bronze);font:700 9px var(--f-mono)}
+.chapters ol{display:flex;flex-wrap:wrap;gap:4px;list-style:none;margin:0;padding:0}
+.chap{width:36px;height:30px;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--muted);font:600 .7rem/1 var(--f-disp);letter-spacing:.04em;cursor:pointer;transition:color .2s,border-color .2s,background .2s}
+.chap:hover{color:var(--ink);border-color:var(--line)}
+.chap.seen{color:var(--ink)}
+.chap[aria-current="step"]{color:var(--bronze);border-color:var(--bronze);background:var(--bronze-soft)}
+@media (max-width:560px){.chap{width:29px;height:28px;font-size:.62rem}.chapters ol{gap:2px}}
+
+.stage{display:flex;overflow-y:auto;overflow-x:hidden;padding-inline:max(16px,4vw);padding-block:22px 30px}
+.scene{margin:auto;width:100%;min-width:0;max-width:1100px;display:flex;flex-direction:column;gap:22px;animation:sceneIn .7s cubic-bezier(.2,.7,.2,1) both}
+@keyframes sceneIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+.deck{display:flex;align-items:center;gap:12px 18px;padding:10px 20px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--bg) 90%,transparent)}
+.deck-btns{display:flex;align-items:center;gap:8px}
+.ctl{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;transition:transform .15s,border-color .2s}
+.ctl:hover{border-color:var(--bronze)}
+.ctl:active{transform:scale(.94)}
+.ctl.main{width:48px;height:48px;background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ctl svg{width:18px;height:18px;fill:currentColor}
+.deck-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.deck-meta{display:flex;gap:10px;align-items:baseline;min-width:0}
+.deck-num{font:600 .74rem var(--f-mono);letter-spacing:.12em;color:var(--bronze);white-space:nowrap}
+.deck-name{font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deck-state{margin-left:auto;font:500 .7rem var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.bar-track{height:3px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar{height:100%;background:var(--bronze);transform-origin:left;transform:scaleX(0)}
+.speed{height:34px;padding:0 12px;border-radius:17px;border:1px solid var(--line);background:transparent;font:600 .8rem var(--f-mono);cursor:pointer;font-variant-numeric:tabular-nums}
+.speed:hover{border-color:var(--bronze)}
+@media (max-width:480px){.deck{gap:10px;padding:10px 16px}.ctl{width:36px;height:36px}.ctl.main{width:44px;height:44px}.deck-state{display:none}}
+
+/* ---------- scene type ---------- */
+.scene-head{display:flex;flex-direction:column;gap:8px;max-width:72ch}
+.kicker{margin:0;font:600 .72rem/1.3 var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--bronze)}
+.scene h2{margin:0;font:700 clamp(1.6rem,3.4vw,2.5rem)/1.12 var(--f-disp);letter-spacing:.02em;text-wrap:balance}
+.narr{margin:0;font-size:clamp(1.05rem,1.5vw,1.22rem);line-height:1.55;min-height:3.1em;max-width:64ch;transition:opacity .22s,transform .22s}
+.narr.out{opacity:0;transform:translateY(4px)}
+.tp{color:var(--ink)} .tc{color:var(--verd)} .tk{color:var(--bronze)}
+b.tp,b.tc{font-family:var(--f-mono);font-weight:600;letter-spacing:.04em}
+.row-lab,.field-lab{margin:0;font:600 .68rem var(--f-mono);letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+.note{margin:0;max-width:64ch;font-size:.95rem;color:var(--muted)}
+.quote{margin:0;padding:6px 0 6px 20px;border-left:2px solid var(--bronze);max-width:64ch}
+.quote p{margin:0 0 8px;font-style:italic;font-size:1.1rem;line-height:1.5}
+.quote cite{font:normal 500 .72rem var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+/* ---------- letter tiles ---------- */
+.tiles{display:flex;flex-wrap:wrap;gap:.55rem .95rem}
+.word{display:inline-flex;gap:3px}
+.t{display:inline-grid;place-items:center;width:1.55em;height:1.95em;overflow:hidden;border-radius:4px;background:var(--panel);border:1px solid var(--line);color:var(--ink);font:600 1.1rem/1 var(--f-mono);transition:background .2s,border-color .2s,color .2s,opacity .3s}
+.t .g{display:block}
+.tiles.sm .t{font-size:.84rem}
+.t.c{color:var(--verd)}
+.t.leak{color:var(--tyrian);border-color:var(--tyrian)}
+.t.hot{color:var(--bronze);border-color:var(--bronze);background:var(--bronze-soft)}
+.t.done{opacity:.5}
+.t.empty{border-style:dashed}
+
+/* ---------- prologue ---------- */
+.scene.hero{align-items:center;text-align:center;gap:16px}
+.big{display:flex;justify-content:center;gap:clamp(6px,1.8vw,20px);margin-top:8px}
+.bl{display:flex;flex-direction:column;align-items:center;gap:8px}
+.big .t{width:1.02em;height:1.18em;padding-top:.06em;font:700 clamp(2.6rem,11vw,7.4rem)/1 var(--f-disp);background:transparent;border:0;border-bottom:2px solid var(--bronze);border-radius:0}
+.big .ix{font:500 .8rem var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums;min-width:2ch}
+.hero-lab{margin:0;font:600 .74rem var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.hero-lab .lc{color:var(--verd)} .hero-lab .lp{color:var(--ink)}
+.hero-sub{margin:10px 0 0;max-width:54ch;font-size:clamp(1.05rem,1.8vw,1.3rem);text-wrap:balance}
+.hero-hint{margin:0;font-size:.9rem;color:var(--muted)}
+
+/* ---------- courier route ---------- */
+.route{display:grid;grid-template-columns:minmax(0,1fr) minmax(70px,1.1fr) minmax(0,1fr);grid-template-areas:"a t b" ". s .";gap:22px 12px;align-items:center}
+.n-caesar{grid-area:a}.n-camp{grid-area:b}.track{grid-area:t}.n-scout{grid-area:s}
+.node{position:relative;display:flex;flex-direction:column;gap:8px;min-height:150px;padding:14px;border-radius:10px;background:var(--panel);border:1px solid var(--line);transition:border-color .3s,background .3s}
+.node h3{margin:0;font:600 1.05rem var(--f-disp);letter-spacing:.04em}
+.node-k{margin:0;font:600 .64rem var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.node-note{margin:0;min-height:1.35em;font-size:.9rem;color:var(--muted)}
+.n-scout::before{content:"";position:absolute;left:50%;bottom:100%;height:22px;border-left:2px dashed var(--line)}
+.node.alert{border-color:var(--tyrian);background:var(--tyrian-soft)}
+.node.alert .node-note{color:var(--tyrian)}
+.node.foiled{border-color:var(--verd)}
+.node.foiled .node-note{color:var(--verd)}
+.node.ok .node-note{color:var(--ink)}
+.slot{min-height:2.2em}
+.track{position:relative;height:44px}
+.road{position:absolute;left:0;right:0;top:50%;border-top:2px dashed var(--line)}
+.courier{position:absolute;top:50%;left:0;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:var(--bronze);box-shadow:0 0 0 6px var(--bronze-soft)}
+@media (max-width:640px){.route{grid-template-columns:1fr 1fr;grid-template-areas:"a b" "t t" "s s"}.node{min-height:0}}
+
+/* ---------- strips ---------- */
+.strips{display:flex;flex-direction:column;gap:14px;width:100%}
+.strip-row{display:flex;flex-direction:column;gap:5px;width:calc(var(--tw,30px) * 26);margin-inline:auto}
+.strip{display:flex;width:max-content}
+.strip-clip{width:calc(var(--tw,30px) * 26);overflow:hidden}
+.st{display:grid;place-items:center;width:var(--tw,30px);height:calc(var(--tw,30px) * 1.35);border:1px solid var(--line);border-left-width:0;background:var(--panel);font:600 clamp(9px,calc(var(--tw,30px) * .5),19px)/1 var(--f-mono);transition:background .15s,color .15s,border-color .15s}
+.st:first-child{border-left-width:1px}
+.st.c{color:var(--verd)}
+.st.hot{background:var(--bronze-soft);color:var(--bronze);border-color:var(--bronze)}
+.st.wrap{background:var(--tyrian-soft);color:var(--tyrian)}
+.kbadge{align-self:center;font:600 1.05rem var(--f-mono);color:var(--muted)}
+.kbadge b{color:var(--bronze)}
+
+/* ---------- wheel ---------- */
+.wheel-stage{display:flex;flex-direction:column;align-items:center;gap:12px}
+.wheel{display:block;width:min(100%,420px,54vh);min-width:220px;max-width:100%;aspect-ratio:1;height:auto;overflow:visible;touch-action:none;user-select:none}
+.wheel.draggable{cursor:grab}
+.wheel.draggable:active{cursor:grabbing}
+.w-rim{fill:var(--bg-2);stroke:var(--bronze);stroke-width:1.5}
+.w-outer{fill:var(--panel);stroke:var(--line)}
+.w-inner{fill:var(--bg-2);stroke:var(--bronze);stroke-width:1}
+.w-tick{stroke:var(--line);stroke-width:1.2}
+.w-sector{fill:var(--bronze-soft);stroke:var(--bronze);stroke-width:1.3}
+.w-l{fill:var(--ink);font:600 17px var(--f-mono);text-anchor:middle;dominant-baseline:central}
+.w-l.in{fill:var(--verd)}
+.w-l.hot{fill:var(--bronze);font-size:21px;font-weight:700}
+.w-hub{fill:var(--panel);stroke:var(--bronze);stroke-width:1.2}
+.w-hubk{fill:var(--muted);font:600 12px var(--f-disp);letter-spacing:.2em;text-anchor:middle}
+.w-hubv{fill:var(--bronze);font:600 38px var(--f-mono);text-anchor:middle;dominant-baseline:central}
+.legend{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 18px;font-size:.86rem;color:var(--muted)}
+.sw{display:inline-block;width:10px;height:10px;margin-right:6px;border-radius:50%;vertical-align:middle}
+.sw-p{background:var(--ink)} .sw-c{background:var(--verd)}
+
+.duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px 40px;align-items:center}
+@media (max-width:820px){.duo{grid-template-columns:1fr}}
+.panel{display:flex;flex-direction:column;gap:10px;min-width:0}
+.calc{margin-top:12px;padding:12px 14px;min-height:3.3em;border-radius:8px;background:var(--panel);border:1px solid var(--line);font:500 1rem/1.6 var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* ---------- arithmetic ---------- */
+.formulas{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.formula{display:flex;flex-direction:column;gap:6px;padding:14px 18px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+.formula code{font:500 clamp(1.05rem,2.2vw,1.42rem) var(--f-mono)}
+.vx{font-style:italic;color:var(--ink)} .vk{font-style:italic;color:var(--bronze)}
+.ruler-wrap{width:100%;padding-top:30px}
+.ruler{position:relative;display:grid;grid-template-columns:repeat(26,var(--tw,30px));width:max-content;margin-inline:auto}
+.rc{display:flex;flex-direction:column;align-items:center;gap:3px;padding-block:7px;border:1px solid var(--line);border-left-width:0;background:var(--panel);transition:background .2s}
+.rc:first-child{border-left-width:1px}
+.rn{font:500 clamp(8px,calc(var(--tw,30px) * .36),13px)/1 var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.rl{font:600 clamp(9px,calc(var(--tw,30px) * .48),17px)/1 var(--f-mono)}
+.rc.lit{background:var(--bronze-soft)} .rc.lit .rn{color:var(--bronze)}
+.rc.hit{background:var(--verd-soft)} .rc.hit .rl{color:var(--verd)}
+.marker{position:absolute;top:-3px;bottom:-3px;left:0;width:var(--tw,30px);border:2px solid var(--bronze);border-radius:6px;pointer-events:none;opacity:0}
+.mtag{position:absolute;bottom:100%;left:50%;transform:translate(-50%,-5px);font:600 .8rem var(--f-mono);color:var(--bronze);white-space:nowrap}
+.steps{display:flex;flex-direction:column;gap:6px;font:500 1.02rem/1.5 var(--f-mono);font-variant-numeric:tabular-nums}
+.step{opacity:0}
+
+/* ---------- brute force ---------- */
+.intercept{display:flex;flex-direction:column;gap:6px}
+.bf{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 16px;font:500 .92rem var(--f-mono)}
+.bf-row{display:flex;gap:12px;padding:5px 10px;border-radius:6px;border:1px solid transparent;opacity:0;transition:background .15s,border-color .3s}
+.bf-k{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bf-t{letter-spacing:.06em;white-space:nowrap}
+.bf-row.scan{background:var(--bronze-soft)}
+.bf-row.dim{opacity:.3 !important}
+.bf-row.found{background:var(--bronze-soft);border-color:var(--bronze)}
+.bf-row.found .bf-t,.bf-row.found .bf-k{color:var(--bronze);font-weight:600}
+
+/* ---------- frequency ---------- */
+.freq{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.45fr);gap:24px 36px;align-items:start}
+@media (max-width:900px){.freq{grid-template-columns:1fr}}
+.para{margin:0;font:500 .84rem/1.75 var(--f-mono);letter-spacing:.02em;color:var(--verd);word-break:break-word}
+.para .p{color:var(--ink)}
+.charts{display:flex;flex-direction:column;gap:6px;min-width:0}
+.chart{display:block;width:100%;height:auto}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .ax{fill:var(--muted);font:500 10px var(--f-mono)}
+.chart .ax-y{text-anchor:end;dominant-baseline:middle}
+.chart .ax-x{text-anchor:middle}
+.fbar{fill:var(--verd)} .fbar.peak{fill:var(--bronze)}
+.ebar{fill:var(--bronze-soft);stroke:var(--bronze);stroke-width:1.2}
+.elab{fill:var(--bronze);font:700 12px var(--f-mono);text-anchor:middle}
+.mb{fill:var(--line)} .mb.on{fill:var(--muted)} .mb.best{fill:var(--bronze)}
+.readout{margin:0;min-height:1.6em;font:500 .95rem var(--f-mono);font-variant-numeric:tabular-nums}
+.chart-legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.84rem;color:var(--muted)}
+.sw-f{background:var(--verd);border-radius:2px} .sw-e{background:var(--bronze-soft);border:1px solid var(--bronze);border-radius:2px}
+
+/* ---------- playground ---------- */
+.play{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:26px 44px;align-items:start}
+@media (max-width:860px){.play{grid-template-columns:1fr}}
+.ctrls{display:flex;flex-direction:column;gap:16px;min-width:0}
+.field{display:flex;flex-direction:column;gap:7px}
+.seg{display:inline-flex;align-self:flex-start;padding:3px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
+.seg button{padding:6px 16px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-weight:600;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.keyrow{display:flex;align-items:center;gap:10px}
+.keyrow input{flex:1;min-width:0;accent-color:var(--bronze)}
+.kout{width:2.4ch;text-align:right;font:600 1.45rem var(--f-mono);color:var(--bronze)}
+.icon-btn{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--panel);font:600 1.05rem var(--f-mono);cursor:pointer}
+.icon-btn:hover,.chip:hover,.btn:hover{border-color:var(--bronze)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;font-size:.86rem;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--bronze);background:var(--bronze-soft);color:var(--bronze)}
+textarea{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:500 1rem/1.5 var(--f-mono);resize:vertical}
+.outrow{display:flex;gap:10px;align-items:flex-start}
+.out{flex:1;min-width:0;margin:0;min-height:2.9em;padding:10px 12px;border-radius:8px;border:1px dashed var(--line);font:500 1.05rem/1.5 var(--f-mono);white-space:pre-wrap;word-break:break-word}
+.out.c{color:var(--verd)}
+.btn{flex:none;padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);font-weight:600;font-size:.88rem;cursor:pointer}
+.map-wrap{overflow-x:auto}
+.map{display:grid;grid-template-columns:auto repeat(26,minmax(20px,1fr));min-width:600px;border:1px solid var(--line);border-radius:8px;overflow:hidden;font:600 .8rem var(--f-mono);text-align:center}
+.map span{padding:5px 0;border-left:1px solid var(--line)}
+.map .ml{padding:5px 8px;border-left:0;text-align:left;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.map .mc{background:var(--verd-soft);color:var(--verd);border-top:1px solid var(--line)}
+.map .ml.r2{border-top:1px solid var(--line)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 22px;margin:0;padding:0;list-style:none}
+.facts li{padding-top:10px;border-top:1px solid var(--line);font-size:.93rem;color:var(--muted)}
+.facts b{color:var(--ink)}
+
+@media (prefers-reduced-motion: reduce){.scene{animation:none}.narr{transition:none}}
+</style>
+</head>
+<body>
+
+<canvas id="bgfx" aria-hidden="true"></canvas>
+<div class="app" id="app">
+  <header class="top">
+    <h1 class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle class="seal-o" cx="16" cy="16" r="14.5"/><circle class="seal-i" cx="16" cy="16" r="9"/><text class="seal-t" x="16" y="19.2" text-anchor="middle">+3</text></svg>
+      Caesar Shift
+    </h1>
+    <nav class="chapters" aria-label="Chapters"><ol id="chapters"></ol></nav>
+  </header>
+  <main class="stage" id="stage"></main>
+  <footer class="deck">
+    <div class="deck-btns">
+      <button class="ctl" id="prev" type="button" aria-label="Previous chapter"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+      <button class="ctl main" id="play" type="button" aria-label="Pause"><svg viewBox="0 0 24 24"><path id="playIcon" d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>
+      <button class="ctl" id="next" type="button" aria-label="Next chapter"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+    </div>
+    <div class="deck-mid">
+      <div class="deck-meta"><span class="deck-num" id="chapNum">I / X</span><span class="deck-name" id="chapName"></span><span class="deck-state" id="chapState">Playing</span></div>
+      <div class="bar-track"><div class="bar" id="bar"></div></div>
+    </div>
+    <button class="speed" id="speed" type="button" aria-label="Playback speed">1×</button>
+  </footer>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ================= basics ================= */
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X'];
+const STEP = 360 / 26;
+const mod = (n, m) => ((n % m) + m) % m;
+const idx = c => ALPHA.indexOf(c);
+function shiftChar(c, k) {
+  const u = c.toUpperCase(), i = ALPHA.indexOf(u);
+  if (u.length !== 1 || i < 0) return c;
+  const o = ALPHA[mod(i + k, 26)];
+  return c === u ? o : o.toLowerCase();
+}
+const caesar = (t, k) => [...t].map(c => shiftChar(c, k)).join('');
+
+function h(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') e.className = v;
+    else if (k === 'text') e.textContent = v;
+    else if (k === 'html') e.innerHTML = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  for (const c of kids) if (c != null) e.append(c);
+  return e;
+}
+const SVGNS = 'http://www.w3.org/2000/svg';
+function s(tag, attrs = {}, ...kids) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs)) k === 'text' ? (e.textContent = v) : e.setAttribute(k, v);
+  for (const c of kids) e.append(c);
+  return e;
+}
+
+const E = {
+  io: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+  out: t => 1 - Math.pow(1 - t, 3),
+  back: t => { const c1 = 1.5, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+  lin: t => t,
+};
+
+/* ================= pausable clock ================= */
+const ABORT = Symbol('abort');
+addEventListener('unhandledrejection', e => { if (e.reason === ABORT) e.preventDefault(); });
+const clock = { t: 0, speed: 1, paused: false, last: performance.now(), timers: new Set(), tweens: new Set() };
+function wait(ms) {
+  return new Promise((resolve, reject) => clock.timers.add({ at: clock.t + ms, resolve, reject }));
+}
+function tween(dur, fn, ease = E.io) {
+  if (REDUCED) dur = 0;
+  return new Promise((resolve, reject) => clock.tweens.add({ start: clock.t, dur, fn, ease, resolve, reject }));
+}
+function abortAll() {
+  for (const x of clock.timers) x.reject(ABORT);
+  for (const x of clock.tweens) x.reject(ABORT);
+  clock.timers.clear(); clock.tweens.clear();
+}
+function frame(now) {
+  const dt = Math.min(50, now - clock.last); clock.last = now;
+  if (!clock.paused) clock.t += dt * clock.speed;
+  for (const x of [...clock.timers]) if (clock.t >= x.at) { clock.timers.delete(x); x.resolve(); }
+  for (const x of [...clock.tweens]) {
+    const p = x.dur <= 0 ? 1 : Math.min(1, Math.max(0, (clock.t - x.start) / x.dur));
+    try { x.fn(x.ease(p)); } catch (err) { console.error(err); }
+    if (p >= 1) { clock.tweens.delete(x); x.resolve(); }
+  }
+  updateProgress();
+  bg.draw(now, clock.paused ? 0 : dt * clock.speed);
+  requestAnimationFrame(frame);
+}
+
+/* ================= shared pieces ================= */
+function tile(ch, tone = '') {
+  const t = h('span', { class: 't' + (tone ? ' ' + tone : '') });
+  t.append(h('span', { class: 'g', text: ch }));
+  return t;
+}
+function tiles(text, tone = '', size = '') {
+  const wrap = h('div', { class: 'tiles ' + size, 'aria-label': text });
+  const list = []; let word = null;
+  for (const ch of text) {
+    if (ch === ' ') { word = null; list.push(null); continue; }
+    if (!word) { word = h('span', { class: 'word', 'aria-hidden': 'true' }); wrap.append(word); }
+    const t = tile(ch, tone); word.append(t); list.push(t);
+  }
+  return { wrap, list };
+}
+const glyph = t => t.firstElementChild;
+
+async function roll(t, delta, tone, per = 110, onStep) {
+  const g = glyph(t), dir = Math.sign(delta);
+  for (let n = 0; n < Math.abs(delta); n++) {
+    const ch = ALPHA[mod(idx(g.textContent) + dir, 26)];
+    g.textContent = ch; if (onStep) onStep(ch);
+    await tween(per, p => { g.style.transform = `translateY(${(1 - p) * -70 * dir}%)`; g.style.opacity = String(.25 + .75 * p); }, E.out);
+  }
+  g.style.transform = ''; g.style.opacity = '';
+  if (tone !== undefined) { t.classList.remove('c', 'p', 'leak'); if (tone) t.classList.add(tone); }
+}
+const rollAll = (list, delta, tone, stagger = 60, per = 110) =>
+  Promise.all(list.filter(Boolean).map((t, i) => wait(i * stagger).then(() => roll(t, delta, tone, per))));
+
+async function drop(t, ch, dur = 260) {
+  const g = glyph(t); g.textContent = ch; t.classList.remove('empty');
+  await tween(dur, p => { g.style.transform = `translateY(${(1 - p) * -90}%)`; g.style.opacity = String(p); }, E.back);
+  g.style.transform = ''; g.style.opacity = '';
+}
+const fadeIn = (el, dur = 420, dy = 8) =>
+  tween(dur, p => { el.style.opacity = String(p); el.style.transform = `translateY(${(1 - p) * dy}px)`; }, E.out);
+
+function head(root, sc, html) {
+  const narr = h('p', { class: 'narr', 'aria-live': 'polite', html });
+  root.append(h('header', { class: 'scene-head' },
+    h('p', { class: 'kicker', text: `Chapter ${ROMAN[sc.n]} · ${sc.kicker}` }),
+    h('h2', { id: 'h-' + sc.id, text: sc.title }),
+    narr));
+  return narr;
+}
+async function say(p, html) {
+  p.classList.add('out');
+  await wait(230);
+  p.innerHTML = html;
+  p.classList.remove('out');
+}
+function fitTw(el, n = 26, max = 40, min = 11) {
+  const f = () => el.style.setProperty('--tw', Math.max(min, Math.min(max, Math.floor(el.clientWidth / n))) + 'px');
+  f(); new ResizeObserver(f).observe(el);
+}
+const legend = () => h('div', { class: 'legend' },
+  h('span', {}, h('i', { class: 'sw sw-p' }), 'Outer ring: plaintext'),
+  h('span', {}, h('i', { class: 'sw sw-c' }), 'Inner ring: ciphertext'));
+
+/* ================= cipher wheel ================= */
+function arcPt(r, deg) { const a = deg * Math.PI / 180; return [+(r * Math.cos(a)).toFixed(3), +(r * Math.sin(a)).toFixed(3)]; }
+function sectorPath(r1, r2) {
+  const hh = STEP / 2;
+  const [x1, y1] = arcPt(r2, -90 - hh), [x2, y2] = arcPt(r2, -90 + hh), [x3, y3] = arcPt(r1, -90 + hh), [x4, y4] = arcPt(r1, -90 - hh);
+  return `M${x1} ${y1}A${r2} ${r2} 0 0 1 ${x2} ${y2}L${x3} ${y3}A${r1} ${r1} 0 0 0 ${x4} ${y4}Z`;
+}
+function Wheel({ drag = false, onDrag } = {}) {
+  const svg = s('svg', { viewBox: '-205 -205 410 410', class: 'wheel', role: 'img', 'aria-label': 'Cipher wheel. Outer ring plaintext, inner ring ciphertext.' });
+  svg.append(s('circle', { r: 198, class: 'w-rim' }), s('circle', { r: 190, class: 'w-outer' }));
+  const ot = s('g');
+  for (let i = 0; i < 26; i++) ot.append(s('line', { x1: 0, y1: -190, x2: 0, y2: -182, class: 'w-tick', transform: `rotate(${(i + .5) * STEP})` }));
+  svg.append(ot);
+  const disk = s('g');
+  disk.append(s('circle', { r: 148, class: 'w-inner' }));
+  for (let i = 0; i < 26; i++) disk.append(s('line', { x1: 0, y1: -148, x2: 0, y2: -140, class: 'w-tick', transform: `rotate(${(i + .5) * STEP})` }));
+  svg.append(disk);
+  const secG = s('g', { opacity: 0 });
+  secG.append(s('path', { d: sectorPath(101, 190), class: 'w-sector' }));
+  svg.append(secG);
+  const outerL = [], innerL = [];
+  const og = s('g'), ig = s('g');
+  for (let i = 0; i < 26; i++) {
+    const a = s('text', { x: 0, y: -168, class: 'w-l', transform: `rotate(${i * STEP})`, text: ALPHA[i] });
+    const b = s('text', { x: 0, y: -124, class: 'w-l in', transform: `rotate(${i * STEP})`, text: ALPHA[i] });
+    og.append(a); ig.append(b); outerL.push(a); innerL.push(b);
+  }
+  svg.append(og, ig);
+  svg.append(s('circle', { r: 98, class: 'w-hub' }));
+  svg.append(s('text', { x: 0, y: -30, class: 'w-hubk', text: 'KEY' }));
+  const hubV = s('text', { x: 0, y: 12, class: 'w-hubv', text: '0' });
+  svg.append(hubV);
+
+  let rot = 0, sec = 0, turnSeq = 0, hot = [];
+  const apply = () => { const r = `rotate(${(-rot * STEP).toFixed(3)})`; disk.setAttribute('transform', r); ig.setAttribute('transform', r); };
+  const setHub = v => { hubV.textContent = String(v); };
+
+  const api = {
+    svg,
+    get rot() { return rot; },
+    get k() { return mod(Math.round(rot), 26); },
+    set(k) { turnSeq++; rot = k; apply(); setHub(mod(Math.round(k), 26)); },
+    async turnSteps(to, per = 420) {
+      const id = ++turnSeq;
+      while (Math.round(rot) !== to) {
+        const from = rot, target = Math.round(rot) + Math.sign(to - rot);
+        await tween(per, p => { if (id === turnSeq) { rot = from + (target - from) * p; apply(); } }, E.back);
+        if (id !== turnSeq) return;
+        rot = target; apply(); setHub(mod(target, 26));
+        await wait(130);
+      }
+    },
+    async turnToK(k, dur = 340) {
+      const id = ++turnSeq, from = rot, to = from + (mod(k - from + 13, 26) - 13);
+      setHub(mod(k, 26));
+      await tween(dur, p => { if (id === turnSeq) { rot = from + (to - from) * p; apply(); } }, E.out);
+      if (id === turnSeq) { rot = mod(Math.round(to), 26); apply(); }
+    },
+    async point(i, dur = 300) {
+      secG.setAttribute('opacity', 1);
+      const from = sec, d = mod(i - sec + 13, 26) - 13;
+      await tween(dur, p => { sec = from + d * p; secG.setAttribute('transform', `rotate(${(sec * STEP).toFixed(3)})`); });
+      sec = mod(i, 26); secG.setAttribute('transform', `rotate(${sec * STEP})`);
+    },
+    mark(i) {
+      api.clear();
+      hot = [outerL[mod(i, 26)], innerL[mod(i + api.k, 26)]];
+      hot.forEach(e => e.classList.add('hot'));
+    },
+    clear() { hot.forEach(e => e.classList.remove('hot')); hot = []; },
+    hideSector() { secG.setAttribute('opacity', 0); api.clear(); },
+  };
+
+  if (drag) {
+    svg.classList.add('draggable');
+    let active = false, last = 0, acc = 0, rot0 = 0, cx = 0, cy = 0;
+    svg.addEventListener('pointerdown', e => {
+      const b = svg.getBoundingClientRect();
+      cx = b.left + b.width / 2; cy = b.top + b.height / 2;
+      active = true; turnSeq++; acc = 0; rot0 = rot;
+      last = Math.atan2(e.clientY - cy, e.clientX - cx);
+      svg.setPointerCapture(e.pointerId); e.preventDefault();
+    });
+    svg.addEventListener('pointermove', e => {
+      if (!active) return;
+      const a = Math.atan2(e.clientY - cy, e.clientX - cx);
+      let d = a - last; if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI;
+      acc += d; last = a;
+      rot = rot0 - (acc * 180 / Math.PI) / STEP; apply();
+      const kk = mod(Math.round(rot), 26); setHub(kk);
+      if (onDrag) onDrag(kk);
+    });
+    const end = () => {
+      if (!active) return; active = false;
+      const kk = mod(Math.round(rot), 26);
+      api.turnToK(kk, 220).catch(() => {});
+      if (onDrag) onDrag(kk);
+    };
+    svg.addEventListener('pointerup', end);
+    svg.addEventListener('pointercancel', end);
+  }
+  return api;
+}
+
+/* ================= scenes ================= */
+const SCENES = [
+/* ---------- I ---------- */
+{ id: 'prologue', title: 'Caesar Shift', kicker: 'Prologue', dur: 9, async run(root) {
+  root.classList.add('hero');
+  root.append(h('h2', { id: 'h-prologue', class: 'sr-only', text: 'Prologue: Caesar Shift' }));
+  const K = 3, word = 'CAESAR';
+  const big = h('div', { class: 'big', role: 'img', 'aria-label': 'FDHVDU, which decrypts to CAESAR' });
+  const cols = [...word].map(ch => {
+    const c = caesar(ch, K);
+    const t = tile(c, 'c'), ix = h('span', { class: 'ix', text: String(idx(c)) });
+    big.append(h('div', { class: 'bl' }, t, ix));
+    return { t, ix };
+  });
+  const lab = h('p', { class: 'hero-lab', html: '<span class="lc">Ciphertext</span> · key 3' });
+  root.append(
+    h('p', { class: 'kicker', text: 'An animated field guide to the oldest cipher in the book' }),
+    big, lab,
+    h('p', { class: 'hero-sub', text: 'Julius Caesar hid his orders by moving every letter of the alphabet three places. Here is how it works, how to use it, and how to break it.' }),
+    h('p', { class: 'hero-hint', text: 'It plays by itself. Pause any time, or jump between chapters with the arrow keys.' }));
+  await wait(1300);
+  lab.innerHTML = 'Shifting each letter back by <span class="tk">3</span>';
+  await Promise.all(cols.map((c, i) => wait(i * 150).then(() => roll(c.t, -K, 'p', 150, ch => { c.ix.textContent = String(idx(ch)); }))));
+  lab.innerHTML = '<span class="lp">Plaintext</span> · CAESAR';
+  await wait(3600);
+}},
+
+/* ---------- II ---------- */
+{ id: 'couriers', title: 'Orders on the road', kicker: 'Why hide a message', dur: 30, async run(root, sc) {
+  const narr = head(root, sc, 'Caesar ran his campaigns by letter. A courier carried each order across hostile ground.');
+  const mk = (cls, k, name) => {
+    const slot = h('div', { class: 'slot' }), note = h('p', { class: 'node-note' });
+    return { n: h('div', { class: 'node ' + cls }, h('p', { class: 'node-k', text: k }), h('h3', { text: name }), slot, note), slot, note };
+  };
+  const A = mk('n-caesar', 'Sender', 'Caesar'), B = mk('n-camp', 'Receiver', 'Legion camp'), S = mk('n-scout', 'Lying in wait', 'Enemy scout');
+  const courier = h('div', { class: 'courier', 'aria-hidden': 'true' });
+  root.append(h('div', { class: 'route' }, A.n, h('div', { class: 'track' }, h('div', { class: 'road' }), courier), B.n, S.n));
+  const quote = h('blockquote', { class: 'quote' },
+    h('p', { text: '“If he had anything confidential to say, he wrote it in cipher, that is, by so changing the order of the letters of the alphabet, that not a word could be made out.”' }),
+    h('cite', { text: 'Suetonius, Life of the Deified Julius, 56 · trans. J. C. Rolfe' }));
+  quote.style.opacity = '0'; root.append(quote);
+
+  const MSG = 'ATTACK AT DAWN', K = 3;
+  const m = tiles(MSG, '', 'sm'); A.slot.append(m.wrap);
+  const move = (a, b, dur) => tween(dur, p => { courier.style.left = (a + (b - a) * p) + '%'; });
+  const put = (slot, text, tone) => { const t = tiles(text, tone, 'sm'); slot.replaceChildren(t.wrap); return t; };
+
+  await wait(2200);
+  await move(0, 50, 1400);
+  S.n.classList.add('alert'); put(S.slot, MSG, 'leak'); S.note.textContent = 'Reads the whole plan';
+  await say(narr, 'Couriers get caught. A scout who stops this one reads every word.');
+  await wait(2200);
+  await move(50, 100, 1100);
+  put(B.slot, MSG, ''); B.note.textContent = 'Delivered, but no longer secret';
+  await wait(2600);
+
+  courier.style.left = '0%';
+  S.slot.replaceChildren(); B.slot.replaceChildren(); S.note.textContent = ''; B.note.textContent = '';
+  S.n.classList.remove('alert');
+  await say(narr, 'So Caesar wrote his orders in cipher, moving each letter three places down the alphabet.');
+  await wait(600);
+  await rollAll(m.list, K, 'c', 70, 120);
+  A.note.textContent = 'Encrypted with key 3';
+  await wait(1000);
+  await move(0, 50, 1400);
+  S.n.classList.add('foiled'); put(S.slot, caesar(MSG, K), 'c'); S.note.textContent = 'Copies nonsense';
+  await say(narr, 'The scout copies the letters and learns nothing.');
+  await wait(1800);
+  await move(50, 100, 1100);
+  const r = put(B.slot, caesar(MSG, K), 'c');
+  await say(narr, 'The legate knows the key. He moves each letter three places back.');
+  await wait(500);
+  await rollAll(r.list, -K, '', 70, 120);
+  B.n.classList.add('ok'); B.note.textContent = 'Decrypted with key 3';
+  await wait(1600);
+  await fadeIn(quote, 600);
+  await wait(6500);
+}},
+
+/* ---------- III ---------- */
+{ id: 'slide', title: 'Slide the alphabet', kicker: 'The rule', dur: 22, async run(root, sc) {
+  const narr = head(root, sc, 'Write the alphabet twice, one line above the other.');
+  const wrap = h('div', { class: 'strips' });
+  const topRow = h('div', { class: 'strip' }), bot = h('div', { class: 'strip' });
+  const T = [...ALPHA].map(c => { const e = h('span', { class: 'st', text: c }); topRow.append(e); return e; });
+  const Bt = [...(ALPHA + 'ABC')].map(c => { const e = h('span', { class: 'st c', text: c }); bot.append(e); return e; });
+  const kb = h('b', { text: '0' });
+  wrap.append(
+    h('div', { class: 'strip-row' }, h('span', { class: 'row-lab', text: 'Plain' }), topRow),
+    h('div', { class: 'strip-row' }, h('span', { class: 'row-lab', text: 'Cipher' }), h('div', { class: 'strip-clip' }, bot)),
+    h('p', { class: 'kbadge' }, 'key = ', kb));
+  const quote = h('blockquote', { class: 'quote' },
+    h('p', { text: '“If anyone wishes to decipher these, and get at their meaning, he must substitute the fourth letter of the alphabet, namely D, for A, and so with the others.”' }),
+    h('cite', { text: 'Suetonius, Life of the Deified Julius, 56' }));
+  const latin = h('p', { class: 'note', text: 'Caesar wrote in Latin. His alphabet had 23 letters, with no J, U or W, so his shift wrapped after Z at 23. This guide uses the modern 26.' });
+  latin.style.opacity = '0';
+  root.append(wrap, quote, latin);
+  fitTw(wrap);
+  const setOff = v => { bot.style.transform = `translateX(calc(var(--tw) * ${-v}))`; };
+
+  await wait(2200);
+  await say(narr, 'Slide the lower line three places to the left. The distance you slide is the <span class="tk">key</span>.');
+  await wait(500);
+  for (let k = 1; k <= 3; k++) {
+    await tween(480, p => setOff(k - 1 + p), E.back);
+    kb.textContent = String(k);
+    await wait(260);
+  }
+  await wait(600);
+  await say(narr, 'Now read straight down. A becomes D, B becomes E, C becomes F.');
+  for (let i = 0; i < 23; i++) {
+    T[i].classList.add('hot'); Bt[i + 3].classList.add('hot');
+    await wait(i < 3 ? 900 : 120);
+    T[i].classList.remove('hot'); Bt[i + 3].classList.remove('hot');
+  }
+  await say(narr, 'At the end the letters wrap around to the start. X, Y and Z become A, B and C.');
+  for (let i = 23; i < 26; i++) { T[i].classList.add('wrap'); Bt[i + 3].classList.add('wrap'); await wait(450); }
+  await wait(1200);
+  await fadeIn(latin, 500);
+  await wait(5200);
+}},
+
+/* ---------- IV ---------- */
+{ id: 'wheel', title: 'The cipher wheel', kicker: 'A better picture', dur: 24, async run(root, sc) {
+  const narr = head(root, sc, 'Bend both lines into rings and the wrap-around disappears. After Z comes A again.');
+  const w = Wheel(); w.set(0);
+  root.append(h('div', { class: 'wheel-stage' }, w.svg, legend()));
+  await wait(2800);
+  await say(narr, 'Turn the inner ring three notches. The number of notches is the key.');
+  await wait(700);
+  await w.turnSteps(3, 560);
+  await wait(800);
+  await say(narr, 'Read from the outside in. Plain A sits over cipher D, B over E, and so on all the way round.');
+  for (let i = 0; i < 26; i++) {
+    await w.point(i, i === 0 ? 520 : 140); w.mark(i);
+    await wait(i < 3 ? 900 : 90);
+  }
+  await wait(600);
+  w.hideSector();
+  await say(narr, 'Caesar himself had no wheel. Leon Battista Alberti built the first cipher disk around 1467, fifteen centuries later. It is still the clearest picture of what Caesar did.');
+  await wait(6200);
+}},
+
+/* ---------- V ---------- */
+{ id: 'encrypt', title: 'Encrypt a message', kicker: 'Plaintext to ciphertext', dur: 26, async run(root, sc) {
+  const narr = head(root, sc, 'Caesar reported his victory at Zela in 47 BC in three words: <em>Veni, vidi, vici.</em> I came, I saw, I conquered.');
+  const K = 3, P = 'VENI VIDI VICI', C = caesar(P, K);
+  const w = Wheel(); w.set(K);
+  const pt = tiles(P, ''), ct = tiles(P.replace(/[A-Z]/g, ' '), 'c empty');
+  const calc = h('div', { class: 'calc', html: '&nbsp;' });
+  root.append(h('div', { class: 'duo' },
+    h('div', { class: 'wheel-stage' }, w.svg, legend()),
+    h('div', { class: 'panel' }, h('p', { class: 'row-lab', text: 'Plaintext' }), pt.wrap, h('p', { class: 'row-lab', text: 'Ciphertext' }), ct.wrap, calc)));
+  await wait(3000);
+  await say(narr, 'Take one letter at a time. Find it on the outer ring and read the letter just inside it.');
+  let n = 0;
+  for (let i = 0; i < P.length; i++) {
+    if (P[i] === ' ') continue;
+    const slow = n++ < 3, x = idx(P[i]), y = mod(x + K, 26);
+    pt.list[i].classList.add('hot');
+    await w.point(x, slow ? 560 : 260); w.mark(x);
+    calc.innerHTML = `<span class="tp">${P[i]}</span> = ${x} &nbsp;→&nbsp; (${x} + <span class="tk">${K}</span>) mod 26 = ${y} &nbsp;→&nbsp; <span class="tc">${ALPHA[y]}</span>`;
+    await drop(ct.list[i], ALPHA[y], slow ? 380 : 220);
+    await wait(slow ? 1400 : 300);
+    pt.list[i].classList.remove('hot'); pt.list[i].classList.add('done');
+  }
+  w.hideSector();
+  pt.list.forEach(t => t && t.classList.remove('done'));
+  await say(narr, `<b class="tp">${P}</b> becomes <b class="tc">${C}</b>. Every letter moved by the same amount.`);
+  await wait(4800);
+}},
+
+/* ---------- VI ---------- */
+{ id: 'math', title: 'The arithmetic', kicker: 'Clock maths', dur: 24, async run(root, sc) {
+  const narr = head(root, sc, 'Give every letter a number. A is 0, B is 1, and Z is 25.');
+  const f1 = h('div', { class: 'formula' }, h('span', { class: 'row-lab', text: 'Encrypt' }),
+    h('code', { html: 'E(<i class="vx">x</i>) = (<i class="vx">x</i> + <i class="vk">k</i>) mod 26' }));
+  const f2 = h('div', { class: 'formula' }, h('span', { class: 'row-lab', text: 'Decrypt' }),
+    h('code', { html: 'D(<i class="vx">y</i>) = (<i class="vx">y</i> − <i class="vk">k</i>) mod 26' }));
+  f1.style.opacity = f2.style.opacity = '0';
+  const rw = h('div', { class: 'ruler-wrap' }), ruler = h('div', { class: 'ruler' });
+  const cells = [...ALPHA].map((c, i) => { const e = h('div', { class: 'rc' }, h('span', { class: 'rn', text: String(i) }), h('span', { class: 'rl', text: c })); ruler.append(e); return e; });
+  const mtag = h('span', { class: 'mtag' }), marker = h('div', { class: 'marker' }, mtag);
+  ruler.append(marker); rw.append(ruler);
+  const steps = h('div', { class: 'steps' });
+  root.append(h('div', { class: 'formulas' }, f1, f2), rw, steps);
+  fitTw(rw);
+  const setM = (pos, lift = 0) => { marker.style.left = `calc(var(--tw) * ${pos})`; marker.style.transform = `translateY(${-lift}px)`; };
+  const addStep = async html => { const e = h('div', { class: 'step', html }); steps.append(e); await fadeIn(e, 380); };
+
+  await wait(900);
+  for (let i = 0; i < 26; i++) { cells[i].classList.add('lit'); await wait(45); }
+  await wait(700);
+  cells.forEach(c => c.classList.remove('lit'));
+  await say(narr, 'Encrypting adds the key <i class="vk">k</i>. Decrypting subtracts it. <code>mod 26</code> keeps every result between 0 and 25 by wrapping past Z back to A.');
+  await fadeIn(f1, 500); await wait(300); await fadeIn(f2, 500);
+  await wait(3600);
+  await say(narr, 'Watch what happens to Z with key 3.');
+  setM(25); mtag.textContent = '25';
+  await tween(300, p => { marker.style.opacity = String(p); });
+  cells[25].classList.add('lit');
+  await addStep('<span class="tp">Z</span> = 25');
+  await wait(900);
+  let pos = 25;
+  for (let n = 1; n <= 3; n++) {
+    if (pos === 25) {
+      await tween(260, p => { setM(25 + p * .9, Math.sin(Math.PI * p * .5) * 14); marker.style.opacity = String(1 - p); });
+      mtag.textContent = String(25 + n);
+      await tween(300, p => { setM(-.9 + .9 * p, Math.cos(Math.PI * p * .5) * 14); marker.style.opacity = String(p); });
+      pos = 0;
+    } else {
+      mtag.textContent = String(25 + n);
+      const from = pos;
+      await tween(420, p => setM(from + p, Math.sin(Math.PI * p) * 14));
+      pos = from + 1;
+    }
+    setM(pos);
+    await wait(380);
+  }
+  cells[25].classList.remove('lit'); cells[2].classList.add('hit');
+  await addStep('25 + <span class="tk">3</span> = 28');
+  await wait(700);
+  await addStep('28 mod 26 = 2');
+  await wait(700);
+  await addStep('2 = <span class="tc">C</span>, so Z encrypts to C');
+  await say(narr, 'It is the same arithmetic as a clock face. Three hours after 11 o’clock is 2, not 14.');
+  await wait(5200);
+}},
+
+/* ---------- VII ---------- */
+{ id: 'decrypt', title: 'Decrypt it again', kicker: 'Ciphertext to plaintext', dur: 18, async run(root, sc) {
+  const narr = head(root, sc, 'To decrypt, run the wheel the other way. Find each letter on the inner ring and read the outer letter above it.');
+  const K = 3, P = 'VENI VIDI VICI', C = caesar(P, K);
+  const w = Wheel(); w.set(K);
+  const ct = tiles(C, 'c'), pt = tiles(P.replace(/[A-Z]/g, ' '), 'empty');
+  const calc = h('div', { class: 'calc', html: '&nbsp;' });
+  root.append(h('div', { class: 'duo' },
+    h('div', { class: 'wheel-stage' }, w.svg, legend()),
+    h('div', { class: 'panel' }, h('p', { class: 'row-lab', text: 'Ciphertext' }), ct.wrap, h('p', { class: 'row-lab', text: 'Plaintext' }), pt.wrap, calc)));
+  await wait(2600);
+  let n = 0;
+  for (let i = 0; i < C.length; i++) {
+    if (C[i] === ' ') continue;
+    const slow = n++ < 2, y = idx(C[i]), x = mod(y - K, 26);
+    ct.list[i].classList.add('hot');
+    await w.point(x, slow ? 520 : 240); w.mark(x);
+    calc.innerHTML = `<span class="tc">${C[i]}</span> = ${y} &nbsp;→&nbsp; (${y} − <span class="tk">${K}</span>) mod 26 = ${x} &nbsp;→&nbsp; <span class="tp">${ALPHA[x]}</span>`;
+    await drop(pt.list[i], ALPHA[x], slow ? 360 : 200);
+    await wait(slow ? 1200 : 260);
+    ct.list[i].classList.remove('hot'); ct.list[i].classList.add('done');
+  }
+  w.hideSector();
+  await say(narr, 'Same key, opposite direction. Anyone who knows the key can read the message.');
+  await wait(3000);
+  await say(narr, 'And anyone who can guess the key can read it too.');
+  await wait(3200);
+}},
+
+/* ---------- VIII ---------- */
+{ id: 'brute', title: 'Try every key', kicker: 'Breaking it, the blunt way', dur: 18, async run(root, sc) {
+  const narr = head(root, sc, 'A key of 26 turns the wheel all the way round and changes nothing. That leaves only 25 real keys, and an attacker can simply try them all.');
+  const P = 'THE DIE IS CAST', K = 10, C = caesar(P, K);
+  const ctop = tiles(C, 'c');
+  root.append(h('div', { class: 'intercept' }, h('p', { class: 'row-lab', text: 'Intercepted message' }), ctop.wrap));
+  const grid = h('div', { class: 'bf' }), rows = [];
+  for (let k = 1; k <= 25; k++) {
+    const r = h('div', { class: 'bf-row' }, h('span', { class: 'bf-k', text: 'key ' + String(k).padStart(2, '0') }), h('span', { class: 'bf-t', text: caesar(C, -k) }));
+    grid.append(r); rows.push(r);
+  }
+  root.append(grid);
+  await wait(2600);
+  await Promise.all(rows.map((r, i) => wait(i * 70).then(() => tween(280, p => { r.style.opacity = String(p); r.style.transform = `translateY(${(1 - p) * 6}px)`; }, E.out))));
+  await say(narr, 'Twenty-five guesses. Scan them for anything that reads like language.');
+  await wait(600);
+  for (let i = 0; i < K; i++) { rows[i].classList.add('scan'); await wait(170); rows[i].classList.remove('scan'); }
+  rows.forEach((r, i) => r.classList.add(i === K - 1 ? 'found' : 'dim'));
+  await say(narr, `Key ${K} gives <b class="tp">${P}</b>. Caesar is said to have spoken those words as he crossed the Rubicon in 49 BC.`);
+  await wait(5600);
+}},
+
+/* ---------- IX ---------- */
+{ id: 'frequency', title: 'Count the letters', kicker: 'Breaking it, the clever way', dur: 30, async run(root, sc) {
+  const narr = head(root, sc, 'A longer message gives itself away. In 9th-century Baghdad the scholar al-Kindi wrote down the method: count the letters.');
+  const PLAIN = 'Every secret message leaves a fingerprint. In English the letter E turns up more often than any other, followed by T, A and O. A shift cipher changes the letters but keeps their pattern, so the tallest bar in the ciphertext almost always marks the place where E has moved. Match the two shapes and the key falls out.';
+  const ENG = [8.17,1.49,2.78,4.25,12.70,2.23,2.02,6.09,6.97,0.15,0.77,4.03,2.41,6.75,7.51,1.93,0.10,5.99,6.33,9.06,2.76,0.98,2.36,0.15,1.97,0.07];
+  const C = caesar(PLAIN, 7);
+  const para = h('p', { class: 'para', 'aria-label': 'Intercepted ciphertext' });
+  const chars = [...C].map(ch => { const sp = h('span', { text: ch }); para.append(sp); return sp; });
+  const counts = Array(26).fill(0); let N = 0;
+  for (const ch of C.toUpperCase()) { const i = idx(ch); if (i >= 0) { counts[i]++; N++; } }
+  const obs = counts.map(c => c / N * 100);
+  const chis = ALPHA.split('').map((_, sv) => {
+    let x2 = 0;
+    for (let c = 0; c < 26; c++) { const e = N * ENG[mod(c - sv, 26)] / 100; x2 += (counts[c] - e) ** 2 / e; }
+    return x2;
+  });
+  const best = chis.indexOf(Math.min(...chis));
+
+  // main chart
+  const W = 560, H = 250, L = 38, R = 6, T = 16, B = 30, PW = W - L - R, PH = H - T - B, col = PW / 26;
+  const yMax = Math.ceil(Math.max(...obs, 12.7) / 5) * 5, y = v => T + PH * (1 - v / yMax);
+  const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', role: 'img', 'aria-label': 'Bar chart: letter frequency of the ciphertext, with the English letter pattern overlaid' });
+  svg.append(s('defs', {}, s('clipPath', { id: 'plotclip' }, s('rect', { x: L, y: 0, width: PW, height: H - B }))));
+  for (let v = 0; v <= yMax; v += 5) {
+    svg.append(s('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), class: 'grid' }));
+    svg.append(s('text', { x: L - 6, y: y(v), class: 'ax ax-y', text: v + '%' }));
+  }
+  const bw = col * .56, ew = col * .86;
+  const bars = obs.map((_, i) => { const r = s('rect', { x: L + i * col + (col - bw) / 2, y: y(0), width: bw, height: 0, rx: 1.5, class: 'fbar' }); svg.append(r); return r; });
+  for (let i = 0; i < 26; i++) svg.append(s('text', { x: L + i * col + col / 2, y: H - B + 16, class: 'ax ax-x', text: ALPHA[i] }));
+  const ov = s('g', { 'clip-path': 'url(#plotclip)', opacity: 0 });
+  const eRects = ENG.map(v => { const r = s('rect', { y: y(v), width: ew, height: y(0) - y(v), rx: 2, class: 'ebar' }); ov.append(r); return r; });
+  const eLab = s('text', { y: y(ENG[4]) - 6, class: 'elab', text: 'E' });
+  ov.append(eLab); svg.append(ov);
+  const place = sv => {
+    const at = j => { let p = mod(j + sv, 26); if (p > 25.5) p -= 26; return p; };
+    eRects.forEach((r, j) => r.setAttribute('x', (L + at(j) * col + (col - ew) / 2).toFixed(2)));
+    eLab.setAttribute('x', (L + at(4) * col + col / 2).toFixed(2));
+  };
+
+  // mismatch chart
+  const MH = 84, base = 56;
+  const mini = s('svg', { viewBox: `0 0 ${W} ${MH}`, class: 'chart', role: 'img', 'aria-label': 'Mismatch score for each key, lower is a better fit' });
+  const lmin = Math.log(Math.min(...chis)), lmax = Math.log(Math.max(...chis));
+  const mbars = chis.map((c, i) => {
+    const hgt = 6 + 44 * (Math.log(c) - lmin) / (lmax - lmin || 1);
+    const r = s('rect', { x: L + i * col + (col - bw) / 2, y: base, width: bw, height: 0, rx: 1.5, class: 'mb' });
+    r.dataset.h = String(hgt); mini.append(r);
+    mini.append(s('text', { x: L + i * col + col / 2, y: base + 16, class: 'ax ax-x', text: String(i) }));
+    return r;
+  });
+  mini.append(s('text', { x: L - 6, y: base - 24, class: 'ax ax-y', text: 'key' }));
+
+  const readout = h('p', { class: 'readout', html: '&nbsp;' });
+  const chartLegend = h('div', { class: 'chart-legend' },
+    h('span', {}, h('i', { class: 'sw sw-f' }), 'Ciphertext letter counts'),
+    h('span', {}, h('i', { class: 'sw sw-e' }), 'Normal English'));
+  root.append(h('div', { class: 'freq' },
+    h('div', { class: 'panel' }, h('p', { class: 'row-lab', text: 'Intercepted' }), para),
+    h('div', { class: 'charts' }, chartLegend, svg, h('p', { class: 'row-lab', text: 'Mismatch for each key · lower fits better' }), mini, readout)));
+
+  await wait(2600);
+  await tween(1000, p => bars.forEach((r, i) => { const hh = (y(0) - y(obs[i])) * p; r.setAttribute('y', y(0) - hh); r.setAttribute('height', hh); }), E.out);
+  await say(narr, 'Normal English always has the same shape: E is most common, then T, A and O. Lay that shape over the counts and slide it along one key at a time.');
+  await wait(2400);
+  place(0);
+  await tween(400, p => ov.setAttribute('opacity', p));
+  for (let sv = 0; sv < 26; sv++) {
+    if (sv > 0) await tween(170, p => place(sv - 1 + p));
+    place(sv);
+    const r = mbars[sv]; r.classList.add('on');
+    r.setAttribute('height', r.dataset.h); r.setAttribute('y', base - r.dataset.h);
+    readout.innerHTML = `Key <span class="tk">${String(sv).padStart(2, ' ')}</span> · mismatch ${Math.round(chis[sv]).toLocaleString('en-US')}`;
+    await wait(130);
+  }
+  await wait(400);
+  await tween(1000, p => place(25 + (best + 1) * p));
+  place(best);
+  mbars[best].classList.add('best'); bars[mod(4 + best, 26)].classList.add('peak');
+  readout.innerHTML = `Best fit: key <span class="tk">${best}</span>. English E lands on <span class="tc">${ALPHA[mod(4 + best, 26)]}</span>.`;
+  await say(narr, `The shapes line up at key ${best}. Shift every letter back ${best} places.`);
+  await wait(1400);
+  let done = 0;
+  await tween(2600, p => {
+    const upto = Math.floor(p * chars.length);
+    for (; done < upto; done++) { chars[done].textContent = PLAIN[done]; chars[done].classList.add('p'); }
+  }, E.lin);
+  for (; done < chars.length; done++) { chars[done].textContent = PLAIN[done]; chars[done].classList.add('p'); }
+  await say(narr, 'Nobody needed the key. Counting was enough. That is why the Caesar cipher teaches cryptography today instead of protecting anything.');
+  await wait(6500);
+}},
+
+/* ---------- X ---------- */
+{ id: 'play', title: 'Your turn', kicker: 'Cipher workbench', dur: 1, async run(root, sc) {
+  head(root, sc, 'Type a message, choose a key, or grab the wheel and turn the inner ring.');
+  let mode = 'enc';
+  const range = h('input', { type: 'range', id: 'shift', min: '0', max: '25', step: '1', value: '3', 'aria-label': 'Key' });
+  const kOut = h('output', { class: 'kout', for: 'shift', text: '3' });
+  const w = Wheel({ drag: true, onDrag: kk => { if (+range.value !== kk) { range.value = String(kk); render(false); } } });
+  w.set(3);
+  const encB = h('button', { type: 'button', id: 'mode-enc', 'aria-pressed': 'true', text: 'Encrypt' });
+  const decB = h('button', { type: 'button', id: 'mode-dec', 'aria-pressed': 'false', text: 'Decrypt' });
+  const minus = h('button', { type: 'button', class: 'icon-btn', id: 'kminus', 'aria-label': 'Decrease key', text: '−' });
+  const plus = h('button', { type: 'button', class: 'icon-btn', id: 'kplus', 'aria-label': 'Increase key', text: '+' });
+  const presets = [[3, 'Caesar · 3'], [1, 'Augustus · 1'], [13, 'ROT13 · 13']].map(([v, l]) =>
+    h('button', { type: 'button', class: 'chip', id: 'preset-' + v, 'data-k': String(v), 'aria-pressed': 'false', text: l }));
+  const ta = h('textarea', { id: 'msg', rows: '3', spellcheck: 'false', 'aria-label': 'Message' });
+  ta.value = 'Veni, vidi, vici.';
+  const out = h('p', { class: 'out c', id: 'out', 'aria-live': 'polite' });
+  const copy = h('button', { type: 'button', class: 'btn', id: 'copy', text: 'Copy' });
+  const map = h('div', { class: 'map', 'aria-label': 'Letter mapping for the current key' });
+  const plainCells = [], cipherCells = [];
+  map.append(h('span', { class: 'ml', text: 'Plain' }));
+  for (let i = 0; i < 26; i++) { const c = h('span', { text: ALPHA[i] }); plainCells.push(c); map.append(c); }
+  map.append(h('span', { class: 'ml r2', text: 'Cipher' }));
+  for (let i = 0; i < 26; i++) { const c = h('span', { class: 'mc' }); cipherCells.push(c); map.append(c); }
+  const outLab = h('p', { class: 'field-lab', text: 'Ciphertext' });
+
+  root.append(h('div', { class: 'play' },
+    h('div', { class: 'wheel-stage' }, w.svg, legend()),
+    h('div', { class: 'ctrls' },
+      h('div', { class: 'seg', role: 'group', 'aria-label': 'Direction' }, encB, decB),
+      h('div', { class: 'field' }, h('label', { class: 'field-lab', for: 'shift', text: 'Key' }), h('div', { class: 'keyrow' }, minus, range, plus, kOut), h('div', { class: 'chips' }, ...presets)),
+      h('div', { class: 'field' }, h('label', { class: 'field-lab', for: 'msg', text: 'Your message' }), ta),
+      h('div', { class: 'field' }, outLab, h('div', { class: 'outrow' }, out, copy)),
+      h('div', { class: 'field' }, h('p', { class: 'field-lab', text: 'Substitution table' }), h('div', { class: 'map-wrap' }, map)))),
+    h('ul', { class: 'facts' },
+      h('li', { html: '<b>ROT13</b> uses key 13, exactly half the alphabet, so the same operation encrypts and decrypts. Usenet readers used it to hide spoilers and punchlines.' }),
+      h('li', { html: '<b>Augustus</b> shifted by one and did not wrap around: he wrote AA for X, according to Suetonius (Augustus, 88).' }),
+      h('li', { html: '<b>Modern ciphers</b> such as AES-128 have 2<sup>128</sup> keys, about 3.4 × 10<sup>38</sup>. Caesar has 25.' })));
+
+  function render(spin = true) {
+    const k = +range.value;
+    kOut.textContent = String(k);
+    out.textContent = caesar(ta.value, mode === 'enc' ? k : -k) || ' ';
+    out.className = 'out ' + (mode === 'enc' ? 'c' : '');
+    outLab.textContent = mode === 'enc' ? 'Ciphertext' : 'Plaintext';
+    cipherCells.forEach((c, i) => { c.textContent = ALPHA[mod(i + k, 26)]; });
+    presets.forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.k === k)));
+    if (spin) w.turnToK(k).catch(() => {});
+  }
+  const setK = k => { range.value = String(mod(k, 26)); render(); };
+  range.addEventListener('input', () => render());
+  minus.addEventListener('click', () => setK(+range.value - 1));
+  plus.addEventListener('click', () => setK(+range.value + 1));
+  presets.forEach(b => b.addEventListener('click', () => setK(+b.dataset.k)));
+  const setMode = m => { mode = m; encB.setAttribute('aria-pressed', String(m === 'enc')); decB.setAttribute('aria-pressed', String(m === 'dec')); render(false); };
+  encB.addEventListener('click', () => { if (mode !== 'enc') { ta.value = out.textContent.trim(); } setMode('enc'); });
+  decB.addEventListener('click', () => { if (mode !== 'dec') { ta.value = out.textContent.trim(); } setMode('dec'); });
+  ta.addEventListener('input', () => {
+    render(false);
+    const ch = (ta.value[ta.selectionStart - 1] || '').toUpperCase(), j = idx(ch);
+    if (ch.length === 1 && j >= 0) { const i = mode === 'enc' ? j : mod(j - +range.value, 26); w.point(i, 180).catch(() => {}); w.mark(i); }
+  });
+  copy.addEventListener('click', () => {
+    const txt = out.textContent;
+    const ok = () => { copy.textContent = 'Copied'; setTimeout(() => { copy.textContent = 'Copy'; }, 1400); };
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents(out); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); copy.textContent = 'Selected'; setTimeout(() => { copy.textContent = 'Copy'; }, 1400); };
+    try { navigator.clipboard.writeText(txt).then(ok, fallback); } catch (e) { fallback(); }
+  });
+  render(false);
+}},
+];
+
+/* ================= director ================= */
+const stage = document.getElementById('stage');
+const app = document.getElementById('app');
+const playBtn = document.getElementById('play'), playIcon = document.getElementById('playIcon');
+const bar = document.getElementById('bar');
+const chapNum = document.getElementById('chapNum'), chapName = document.getElementById('chapName'), chapState = document.getElementById('chapState');
+const speedBtn = document.getElementById('speed');
+const ICON = { pause: 'M6 5h4v14H6zM14 5h4v14h-4z', play: 'M7 4.5v15L20 12z', again: 'M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z' };
+let cur = 0, sceneT0 = 0, sceneDone = false;
+const seen = new Set();
+
+const navList = document.getElementById('chapters');
+const navBtns = SCENES.map((sc, i) => {
+  sc.n = i;
+  const b = h('button', { type: 'button', class: 'chap', title: sc.title, 'aria-label': `Chapter ${i + 1}: ${sc.title}`, text: ROMAN[i] });
+  b.addEventListener('click', () => go(i));
+  navList.append(h('li', {}, b));
+  return b;
+});
+
+function updateChrome() {
+  const last = cur === SCENES.length - 1;
+  navBtns.forEach((b, i) => { b.classList.toggle('seen', seen.has(i)); if (i === cur) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
+  chapNum.textContent = `${ROMAN[cur]} / ${ROMAN[SCENES.length - 1]}`;
+  chapName.textContent = SCENES[cur].title;
+  const d = last ? ICON.again : clock.paused ? ICON.play : ICON.pause;
+  playIcon.setAttribute('d', d);
+  playBtn.setAttribute('aria-label', last ? 'Replay from the start' : clock.paused ? 'Play' : 'Pause');
+  chapState.textContent = last ? 'Interactive' : clock.paused ? 'Paused' : sceneDone ? 'Next chapter…' : 'Playing';
+}
+function updateProgress() {
+  const sc = SCENES[cur];
+  const p = sceneDone ? 1 : Math.min(.98, (clock.t - sceneT0) / (sc.dur * 1000));
+  bar.style.transform = `scaleX(${p.toFixed(4)})`;
+}
+function setPaused(v) { clock.paused = v; updateChrome(); }
+
+async function go(i) {
+  i = Math.max(0, Math.min(SCENES.length - 1, i));
+  abortAll();
+  cur = i; sceneDone = false; sceneT0 = clock.t; seen.add(i);
+  clock.paused = false;
+  const sc = SCENES[i];
+  const root = h('section', { class: 'scene', 'aria-labelledby': 'h-' + sc.id });
+  stage.replaceChildren(root); stage.scrollTop = 0;
+  updateChrome();
+  try {
+    await sc.run(root, sc);
+    sceneDone = true; updateChrome();
+    if (i < SCENES.length - 1) { await wait(1800); go(i + 1); }
+  } catch (e) { if (e !== ABORT) console.error(e); }
+}
+
+playBtn.addEventListener('click', () => { if (cur === SCENES.length - 1) go(0); else setPaused(!clock.paused); });
+document.getElementById('prev').addEventListener('click', () => go(cur - 1));
+document.getElementById('next').addEventListener('click', () => go(cur + 1));
+const SPEEDS = [1, 1.5, 2, .5]; let sp = 0;
+speedBtn.addEventListener('click', () => { sp = (sp + 1) % SPEEDS.length; clock.speed = SPEEDS[sp]; speedBtn.textContent = SPEEDS[sp] + '×'; });
+addEventListener('keydown', e => {
+  if (e.target.closest('input, textarea, select') || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); go(cur + 1); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); go(cur - 1); }
+  else if (e.key === ' ' && !e.target.closest('button') && cur !== SCENES.length - 1) { e.preventDefault(); setPaused(!clock.paused); }
+});
+
+/* ================= background: drifting letters that shift by 3 ================= */
+const bg = (() => {
+  const cv = document.getElementById('bgfx'), ctx = cv.getContext('2d');
+  let W = 0, H = 0, parts = [], col = '#8a5a1b', colAt = -1e9, tickAcc = 0;
+  function resize() {
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const n = Math.round(Math.min(64, W * H / 24000));
+    parts = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, v: 5 + Math.random() * 10, c: Math.floor(Math.random() * 26), sz: 11 + Math.round(Math.random() * 3) * 5, a: .05 + Math.random() * .09, ph: Math.random() * 6.28 }));
+    draw(performance.now(), 0, true);
+  }
+  function draw(now, dt, force) {
+    if (REDUCED && !force) return;
+    if (now - colAt > 1000) { col = getComputedStyle(document.documentElement).getPropertyValue('--mote').trim() || col; colAt = now; }
+    ctx.clearRect(0, 0, W, H);
+    tickAcc += dt; const tick = tickAcc > 2600; if (tick) tickAcc = 0;
+    ctx.fillStyle = col; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    let lastSz = 0;
+    for (const p of parts) {
+      p.y -= p.v * dt / 1000; p.x += Math.sin(now / 5000 + p.ph) * dt * .004;
+      if (p.y < -30) { p.y = H + 30; p.x = Math.random() * W; }
+      if (tick) p.c = (p.c + 3) % 26;
+      if (p.sz !== lastSz) { ctx.font = `500 ${p.sz}px "IBM Plex Mono", ui-monospace, monospace`; lastSz = p.sz; }
+      ctx.globalAlpha = p.a; ctx.fillText(ALPHA[p.c], p.x, p.y);
+    }
+    ctx.globalAlpha = 1;
+  }
+  addEventListener('resize', resize);
+  resize();
+  return { draw };
+})();
+
+/* ================= boot ================= */
+const start = Math.max(0, SCENES.findIndex(sc => '#' + sc.id === location.hash));
+requestAnimationFrame(t => { clock.last = t; requestAnimationFrame(frame); });
+go(start);
+})();
+</script>
+</body>
+</html>
