@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Interactive IB MYP Year 10 explainer on chemical reactions and the law of conservation of mass.">
+<title>Nothing Lost, Nothing Created</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a single lab-notebook column (~68ch) with wider "bench" panels for the two interactives. */
+:root {
+  --bg: #eef3f6;
+  --surface: #ffffff;
+  --ink: #13222d;
+  --muted: #566a78;
+  --line: #cfdbe3;
+  --accent: #1d63a8;      /* copper(II) sulfate blue */
+  --accent-soft: #dce9f6;
+  --flame: #c26a0a;       /* magnesium-flame orange, used sparingly */
+  --good: #1f7a4d;
+  --good-soft: #dcf1e5;
+  --bad: #b3342b;
+  --bad-soft: #f8e1df;
+  --atom-H: #f4f6f8; --atom-O: #d8403a; --atom-C: #3a4650; --atom-Mg: #6f9a3a;
+  --atom-Cl: #2fae6b; --atom-Fe: #b5652c; --atom-Na: #8f5bd6; --atom-Ca: #c9b26a; --atom-ink: #13222d;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1820; --surface: #16222c; --ink: #e4edf3; --muted: #93a7b5; --line: #2a3a47;
+  --accent: #6fb0ee; --accent-soft: #1b3348; --flame: #f0a043;
+  --good: #5fcf94; --good-soft: #163527; --bad: #f08a80; --bad-soft: #3a1d1b;
+  --atom-H: #e9eef2; --atom-O: #e65a52; --atom-C: #75838e; --atom-Mg: #8cbc52;
+  --atom-Cl: #44c47f; --atom-Fe: #cf7f45; --atom-Na: #a77ae6; --atom-Ca: #d8c27a; --atom-ink: #0f1820;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0f1820; --surface: #16222c; --ink: #e4edf3; --muted: #93a7b5; --line: #2a3a47;
+  --accent: #6fb0ee; --accent-soft: #1b3348; --flame: #f0a043;
+  --good: #5fcf94; --good-soft: #163527; --bad: #f08a80; --bad-soft: #3a1d1b;
+  --atom-H: #e9eef2; --atom-O: #e65a52; --atom-C: #75838e; --atom-Mg: #8cbc52;
+  --atom-Cl: #44c47f; --atom-Fe: #cf7f45; --atom-Na: #a77ae6; --atom-Ca: #d8c27a; --atom-ink: #0f1820;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--f-body); font-size: 1.0625rem; line-height: 1.6;
+  padding-inline: 16px; padding-block: 0 64px;
+}
+.wrap { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+.prose { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.12; margin: 0; }
+h1 { font-size: clamp(2.3rem, 6vw, 3.9rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 1.2rem; font-weight: 700; }
+p { margin: 0; }
+section { display: flex; flex-direction: column; gap: 18px; }
+.eyebrow { font-family: var(--f-mono); font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.muted { color: var(--muted); }
+a { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+sub { font-size: 0.7em; line-height: 0; }
+.mono { font-family: var(--f-mono); }
+
+/* Header */
+header.hero { padding-top: 48px; display: grid; gap: 22px; }
+.hero .lede { font-size: 1.25rem; max-width: 60ch; }
+.law {
+  font-family: var(--f-mono); font-size: clamp(1rem, 2.4vw, 1.2rem);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+  padding: 16px 18px; border: 1.5px solid var(--ink); border-radius: 6px; background: var(--surface); width: fit-content; max-width: 100%;
+}
+.law b { color: var(--accent); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 0.85rem; padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--ink); }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.95rem; border-top: 1px solid var(--line); padding-top: 14px; }
+nav.toc a { text-decoration: none; }
+nav.toc a:hover { text-decoration: underline; }
+
+/* Signs grid */
+.signs { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.sign { border-top: 3px solid var(--accent); padding: 12px 2px 0; display: grid; gap: 4px; }
+.sign strong { font-family: var(--f-display); font-size: 1.05rem; }
+.sign span { font-size: 0.95rem; color: var(--muted); }
+
+.compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.compare > div { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.compare ul { margin: 0; padding-left: 1.1em; }
+
+/* Bench panels */
+.bench { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 18px; }
+.bench-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tabs button, .btn {
+  font: inherit; font-size: 0.92rem; cursor: pointer; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: 6px 12px;
+}
+.tabs button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+/* Equation */
+.equation { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; font-family: var(--f-mono); font-size: 1.25rem; padding: 6px 0; }
+.term { display: flex; align-items: center; gap: 6px; }
+.stepper { display: inline-flex; flex-direction: column; align-items: center; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.stepper button { font: inherit; font-size: 0.9rem; width: 34px; height: 24px; border: 0; background: var(--bg); color: var(--ink); cursor: pointer; }
+.stepper button:hover { background: var(--accent-soft); }
+.stepper output { font-weight: 600; width: 34px; text-align: center; padding: 2px 0; color: var(--accent); }
+.op { color: var(--muted); }
+.arrow { color: var(--ink); font-size: 1.4rem; }
+
+.bench-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 720px) { .bench-grid { grid-template-columns: 1fr; } }
+
+.particles { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; border: 1px dashed var(--line); border-radius: 8px; padding: 12px; min-height: 120px; }
+.side { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-content: center; }
+.mol { display: inline-flex; gap: 0; }
+.atom {
+  width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center;
+  font-family: var(--f-mono); font-size: 0.6rem; font-weight: 600; color: var(--atom-ink);
+  border: 1.5px solid var(--ink); margin-left: -5px;
+}
+.atom:first-child { margin-left: 0; }
+.atom.light-text { color: var(--surface); }
+.particles .arrow { font-family: var(--f-mono); }
+
+table.tally { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 0.95rem; }
+.tally th, .tally td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.tally th { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.tally td.num { font-family: var(--f-mono); text-align: right; }
+.pill { font-size: 0.78rem; padding: 2px 8px; border-radius: 999px; font-weight: 700; white-space: nowrap; }
+.pill.ok { background: var(--good-soft); color: var(--good); }
+.pill.no { background: var(--bad-soft); color: var(--bad); }
+
+.verdict { padding: 10px 14px; border-radius: 8px; font-weight: 700; }
+.verdict.ok { background: var(--good-soft); color: var(--good); }
+.verdict.no { background: var(--bad-soft); color: var(--bad); }
+
+.scale-svg { width: 100%; max-width: 360px; height: auto; display: block; margin: 0 auto; }
+.scale-svg text { font-family: var(--f-mono); fill: var(--ink); font-size: 11px; }
+.beam-group { transition: transform 0.5s ease; }
+
+/* Balance simulation */
+.sim { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: center; }
+@media (max-width: 720px) { .sim { grid-template-columns: 1fr; } }
+.sim-svg { width: 100%; max-width: 340px; display: block; margin: 0 auto; height: auto; }
+.readout { font-family: var(--f-mono); font-size: 2rem; font-variant-numeric: tabular-nums; }
+.sim-info { display: grid; gap: 10px; min-width: 0; }
+.sim-info .eq { font-family: var(--f-mono); font-size: 0.95rem; background: var(--bg); padding: 8px 10px; border-radius: 6px; overflow-x: auto; }
+.delta { font-family: var(--f-mono); font-weight: 600; }
+.delta.up { color: var(--flame); } .delta.down { color: var(--bad); } .delta.same { color: var(--good); }
+
+@keyframes rise { from { transform: translateY(0); opacity: 0.9; } to { transform: translateY(-70px); opacity: 0; } }
+@keyframes sink { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 0.9; } }
+@keyframes fizz { from { transform: translateY(0); opacity: 0.9; } to { transform: translateY(-38px); opacity: 0; } }
+@keyframes glow { 0%,100% { opacity: 0.25; } 50% { opacity: 1; } }
+.running .gas-out { animation: rise 1.4s ease-in infinite; }
+.running .gas-in { animation: sink 1.4s ease-out infinite; }
+.running .bubble { animation: fizz 0.9s linear infinite; }
+.running .flame { animation: glow 0.5s ease-in-out infinite; }
+.gas-out, .gas-in, .bubble, .flame { opacity: 0; }
+
+/* Worked example */
+.worked { display: grid; gap: 0; border-left: 3px solid var(--accent); padding-left: 18px; }
+.step { display: grid; grid-template-columns: 2.2rem 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+.step:last-child { border-bottom: 0; }
+.step .n { font-family: var(--f-mono); color: var(--accent); font-weight: 600; }
+.step .calc { font-family: var(--f-mono); font-size: 0.95rem; display: block; margin-top: 4px; overflow-x: auto; }
+
+.mistakes { display: grid; gap: 12px; }
+.mistake { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+@media (max-width: 640px) { .mistake { grid-template-columns: 1fr; gap: 4px; } }
+.mistake .wrong { color: var(--bad); }
+.mistake .wrong::before { content: "Myth  "; font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.08em; }
+.mistake .right::before { content: "Actually  "; font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.08em; color: var(--good); }
+
+/* Quiz */
+.quiz { display: grid; gap: 22px; }
+.q { display: grid; gap: 10px; }
+.q fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+.q legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
+.opt { display: flex; gap: 10px; align-items: flex-start; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); cursor: pointer; }
+.opt input { margin-top: 0.3em; accent-color: var(--accent); }
+.opt.correct { border-color: var(--good); background: var(--good-soft); }
+.opt.incorrect { border-color: var(--bad); background: var(--bad-soft); }
+.feedback { font-size: 0.95rem; min-height: 1.2em; }
+.calc-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.calc-row input { font: inherit; font-family: var(--f-mono); width: 7rem; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+
+.glossary { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 28px; margin: 0; }
+.glossary div { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.glossary dt { font-weight: 700; font-family: var(--f-display); }
+.glossary dd { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+.myp { background: var(--accent-soft); border-radius: 10px; padding: 18px 20px; display: grid; gap: 10px; }
+.myp dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
+@media (max-width: 560px) { .myp dl { grid-template-columns: 1fr; } .myp dd { margin-bottom: 6px; } }
+.myp dt { font-weight: 700; }
+.myp dd { margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .beam-group { transition: none; }
+  .running .gas-out, .running .gas-in, .running .bubble, .running .flame { animation: none; opacity: 0.8; }
+}
+
+html { color-scheme: light; }
+@media (prefers-color-scheme: dark) { html:not([data-theme="light"]) { color-scheme: dark; } }
+body { margin: 0; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="hero">
+  <span class="eyebrow">IB MYP Year 10 · Sciences (Chemistry)</span>
+  <h1>Nothing lost, nothing created</h1>
+  <p class="lede">Exploring chemical reactions and the law of conservation of mass. In every reaction the atoms you start with are the atoms you finish with. They just swap partners.</p>
+  <div class="law" aria-label="The law of conservation of mass">
+    <span>mass of reactants</span><b>=</b><span>mass of products</span>
+    <span class="muted">(in a closed system)</span>
+  </div>
+  <nav class="toc" aria-label="Contents">
+    <a href="#reactions">What is a reaction?</a>
+    <a href="#law">The law</a>
+    <a href="#balancer">Balance it</a>
+    <a href="#systems">Open vs closed</a>
+    <a href="#calc">Calculations</a>
+    <a href="#myths">Misconceptions</a>
+    <a href="#check">Check yourself</a>
+    <a href="#myp">MYP links</a>
+  </nav>
+</header>
+
+<section id="reactions">
+  <span class="eyebrow">Part 1</span>
+  <h2>What counts as a chemical reaction?</h2>
+  <div class="prose" style="display:grid;gap:14px">
+    <p>A <strong>chemical reaction</strong> makes one or more <strong>new substances</strong>. Bonds between atoms in the <strong>reactants</strong> break, and new bonds form to make the <strong>products</strong>. No atoms appear and none disappear.</p>
+    <p>You can't see bonds breaking, so in the lab you look for evidence. One sign alone isn't proof (boiling water also makes bubbles), but several together are strong evidence.</p>
+  </div>
+  <div class="signs">
+    <div class="sign"><strong>Gas produced</strong><span>Fizzing or bubbles, e.g. zinc in acid giving hydrogen</span></div>
+    <div class="sign"><strong>Colour change</strong><span>Copper turning green as it forms copper carbonate</span></div>
+    <div class="sign"><strong>Precipitate</strong><span>Two clear solutions mix and a solid appears</span></div>
+    <div class="sign"><strong>Temperature change</strong><span>Exothermic (gets hot) or endothermic (gets cold)</span></div>
+    <div class="sign"><strong>Light or sound</strong><span>Magnesium burning with a brilliant white flame</span></div>
+  </div>
+  <div class="compare">
+    <div>
+      <h3>Physical change</h3>
+      <p class="muted">Same substance, different form. Usually easy to reverse.</p>
+      <ul><li>Melting ice</li><li>Dissolving salt in water</li><li>Boiling ethanol</li></ul>
+    </div>
+    <div>
+      <h3>Chemical change</h3>
+      <p class="muted">New substance with new properties. Often hard to reverse.</p>
+      <ul><li>Iron rusting (iron oxide forms)</li><li>Methane burning</li><li>Baking a cake</li></ul>
+    </div>
+  </div>
+</section>
+
+<section id="law">
+  <span class="eyebrow">Part 2</span>
+  <h2>The law of conservation of mass</h2>
+  <div class="prose" style="display:grid;gap:14px">
+    <p>In the 1770s and 1780s, the French chemist <strong>Antoine Lavoisier</strong>, working with <strong>Marie-Anne Paulze Lavoisier</strong>, heated metals such as tin inside <em>sealed</em> glass vessels and weighed everything carefully before and after. The total mass did not change. He set the idea out in his 1789 textbook <em>Traité élémentaire de chimie</em>. (Mikhail Lomonosov in Russia had made a similar observation in 1756.)</p>
+    <p><strong>The law:</strong> in a chemical reaction, mass is neither created nor destroyed. The total mass of the reactants equals the total mass of the products.</p>
+    <p><strong>Why it works:</strong> mass comes from atoms. A reaction rearranges atoms into new substances, but the number of each type of atom stays the same. Same atoms, same mass. That's why chemical equations must be <strong>balanced</strong>.</p>
+  </div>
+</section>
+
+<section id="balancer">
+  <span class="eyebrow">Part 3 · Interactive</span>
+  <h2>Balance the equation, balance the mass</h2>
+  <p class="prose">Change the big numbers in front of each formula (the <strong>coefficients</strong>). You may never change the small subscripts, because that would make a different substance. When every atom count matches, the mass on both sides matches too.</p>
+
+  <div class="bench">
+    <div class="bench-head">
+      <div class="tabs" id="rxnTabs" role="group" aria-label="Choose a reaction"></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn" id="resetBtn" type="button">Reset to 1s</button>
+        <button class="btn" id="hintBtn" type="button">Show answer</button>
+      </div>
+    </div>
+    <p class="muted" id="rxnName" style="font-size:0.95rem"></p>
+    <div class="equation" id="equation"></div>
+
+    <div class="bench-grid">
+      <div style="display:grid;gap:14px;min-width:0">
+        <h3>Particle picture</h3>
+        <div class="particles" id="particles"></div>
+        <div style="overflow-x:auto">
+          <table class="tally" id="tally"></table>
+        </div>
+      </div>
+      <div style="display:grid;gap:14px;align-content:start;min-width:0">
+        <h3>Mass check</h3>
+        <svg class="scale-svg" viewBox="0 0 320 170" role="img" aria-labelledby="scaleTitle">
+          <title id="scaleTitle">Balance comparing total mass of reactants and products</title>
+          <polygon points="148,160 172,160 160,62" fill="var(--line)"></polygon>
+          <rect x="120" y="158" width="80" height="8" rx="2" fill="var(--muted)"></rect>
+          <g class="beam-group" id="beam" style="transform-origin:160px 60px">
+            <rect x="40" y="57" width="240" height="6" rx="3" fill="var(--ink)"></rect>
+            <circle cx="160" cy="60" r="6" fill="var(--accent)"></circle>
+            <g id="panL">
+              <line x1="50" y1="60" x2="30" y2="110" stroke="var(--muted)" stroke-width="1.5"></line>
+              <line x1="50" y1="60" x2="70" y2="110" stroke="var(--muted)" stroke-width="1.5"></line>
+              <path d="M22 110 h56 a28 10 0 0 1 -56 0z" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"></path>
+              <text x="50" y="135" text-anchor="middle">reactants</text>
+            </g>
+            <g id="panR">
+              <line x1="270" y1="60" x2="250" y2="110" stroke="var(--muted)" stroke-width="1.5"></line>
+              <line x1="270" y1="60" x2="290" y2="110" stroke="var(--muted)" stroke-width="1.5"></line>
+              <path d="M242 110 h56 a28 10 0 0 1 -56 0z" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"></path>
+              <text x="270" y="135" text-anchor="middle">products</text>
+            </g>
+          </g>
+        </svg>
+        <table class="tally" id="massTable"></table>
+        <div class="verdict" id="verdict" aria-live="polite"></div>
+      </div>
+    </div>
+    <p class="muted" style="font-size:0.88rem">Masses use relative atomic masses (A<sub>r</sub>): H = 1, C = 12, O = 16, Na = 23, Mg = 24, Cl = 35.5, Ca = 40, Fe = 56. Grams here are per mole of “equation”, so 2H<sub>2</sub> means 2 × 2 = 4 g.</p>
+  </div>
+</section>
+
+<section id="systems">
+  <span class="eyebrow">Part 4 · Interactive</span>
+  <h2>“But the mass changed!” Open and closed systems</h2>
+  <div class="prose" style="display:grid;gap:14px">
+    <p>Sometimes a balance in the lab really does show a different reading after a reaction. The law isn't broken. Something got in or out.</p>
+    <p>A <strong>closed system</strong> lets nothing in or out, so the balance reading stays constant. An <strong>open system</strong> lets gases escape to the air or be taken in from it.</p>
+  </div>
+
+  <div class="bench">
+    <div class="tabs" id="simTabs" role="group" aria-label="Choose an experiment"></div>
+    <div class="sim">
+      <svg class="sim-svg" id="simSvg" viewBox="0 0 300 260" role="img" aria-label="Experiment on a digital balance"></svg>
+      <div class="sim-info">
+        <h3 id="simTitle"></h3>
+        <div class="eq" id="simEq"></div>
+        <div>
+          <span class="muted" style="font-size:0.85rem">Balance reading</span>
+          <div class="readout" id="readout" aria-live="polite">0.00 g</div>
+          <div class="delta" id="delta">&nbsp;</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn primary" id="runBtn" type="button">Run the reaction</button>
+          <button class="btn" id="simReset" type="button">Reset</button>
+        </div>
+        <p id="simExplain" class="muted" style="font-size:0.95rem"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="calc">
+  <span class="eyebrow">Part 5</span>
+  <h2>Using the law in calculations</h2>
+  <p class="prose">Because total mass is conserved, if you know all the masses but one, you can work out the missing one.</p>
+  <div class="worked">
+    <div class="step"><span class="n">Q</span><div><strong>0.24 g of magnesium is burned completely in oxygen and forms 0.40 g of magnesium oxide. What mass of oxygen reacted?</strong></div></div>
+    <div class="step"><span class="n">1</span><div>Write the balanced equation.<span class="calc">2Mg + O<sub>2</sub> → 2MgO</span></div></div>
+    <div class="step"><span class="n">2</span><div>Apply conservation of mass.<span class="calc">mass Mg + mass O<sub>2</sub> = mass MgO</span></div></div>
+    <div class="step"><span class="n">3</span><div>Rearrange and substitute.<span class="calc">mass O<sub>2</sub> = 0.40 g − 0.24 g = 0.16 g</span></div></div>
+    <div class="step"><span class="n">✓</span><div>Check with relative masses: 2 × 24 = 48 g Mg reacts with 32 g O<sub>2</sub> to make 80 g MgO. The ratio 48 : 32 : 80 is the same as 0.24 : 0.16 : 0.40. Both multiply by 0.005.</div></div>
+  </div>
+  <p class="prose muted">Notice this is exactly the magnesium experiment in Part 4. The 0.16 g “gained” on the balance is the oxygen taken in from the air.</p>
+</section>
+
+<section id="myths">
+  <span class="eyebrow">Part 6</span>
+  <h2>Common misconceptions</h2>
+  <div class="mistakes">
+    <div class="mistake"><div class="wrong">When wood burns, the mass is destroyed. Only light ash is left.</div><div class="right">Most of the mass leaves as carbon dioxide and water vapour. Collect those gases and the total is the same.</div></div>
+    <div class="mistake"><div class="wrong">Rust is “extra iron”, so iron gets heavier from nothing.</div><div class="right">Rust gains mass because oxygen and water from the air join the iron.</div></div>
+    <div class="mistake"><div class="wrong">Gases have no mass, so they don't count.</div><div class="right">Gases are made of atoms and have mass. A litre of carbon dioxide at room temperature is about 1.8 g.</div></div>
+    <div class="mistake"><div class="wrong">To balance H<sub>2</sub> + O<sub>2</sub> → H<sub>2</sub>O, change it to H<sub>2</sub>O<sub>2</sub>.</div><div class="right">H<sub>2</sub>O<sub>2</sub> is hydrogen peroxide, a different substance. Only change coefficients: 2H<sub>2</sub> + O<sub>2</sub> → 2H<sub>2</sub>O.</div></div>
+    <div class="mistake"><div class="wrong">Dissolving sugar destroys it, so the mass goes down.</div><div class="right">Dissolving is a physical change and mass is conserved here too. Sugar + water = mass of the solution.</div></div>
+  </div>
+</section>
+
+<section id="check">
+  <span class="eyebrow">Part 7</span>
+  <h2>Check your understanding</h2>
+  <div class="quiz" id="quiz"></div>
+  <div class="q">
+    <p><strong>5. Calculation.</strong> 12.0 g of carbon burns completely to form 44.0 g of carbon dioxide (C + O<sub>2</sub> → CO<sub>2</sub>). What mass of oxygen was used?</p>
+    <form class="calc-row" id="calcForm">
+      <label for="calcIn" class="muted">Mass of O<sub>2</sub></label>
+      <input id="calcIn" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 10.0">
+      <span>g</span>
+      <button class="btn primary" type="submit">Check</button>
+    </form>
+    <p class="feedback" id="calcFb" aria-live="polite"></p>
+  </div>
+</section>
+
+<section>
+  <h2>Key vocabulary</h2>
+  <dl class="glossary">
+    <div><dt>Reactant</dt><dd>A substance present at the start of a reaction.</dd></div>
+    <div><dt>Product</dt><dd>A new substance formed by a reaction.</dd></div>
+    <div><dt>Coefficient</dt><dd>The number in front of a formula showing how many units take part.</dd></div>
+    <div><dt>Subscript</dt><dd>The small number in a formula showing how many atoms of an element are in one unit.</dd></div>
+    <div><dt>Closed system</dt><dd>Matter cannot enter or leave; total mass stays constant.</dd></div>
+    <div><dt>Open system</dt><dd>Matter, especially gases, can enter or leave.</dd></div>
+    <div><dt>Precipitate</dt><dd>An insoluble solid formed when two solutions react.</dd></div>
+    <div><dt>Relative formula mass (M<sub>r</sub>)</dt><dd>The sum of the relative atomic masses of all atoms in a formula.</dd></div>
+  </dl>
+</section>
+
+<section id="myp">
+  <div class="myp">
+    <span class="eyebrow">MYP framework links</span>
+    <dl>
+      <dt>Key concept</dt><dd>Change</dd>
+      <dt>Related concepts</dt><dd>Balance, transformation, evidence</dd>
+      <dt>Global context</dt><dd>Scientific and technical innovation</dd>
+      <dt>Statement of inquiry</dt><dd>Matter is transformed but never lost, and careful evidence lets us explain apparent changes in mass.</dd>
+      <dt>Criterion B/C idea</dt><dd>Design an investigation to show mass is conserved when marble chips react with acid. How will you stop gas escaping? What are your control variables?</dd>
+    </dl>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function () {
+  const AR = { H: 1, C: 12, O: 16, Na: 23, Mg: 24, Cl: 35.5, Ca: 40, Fe: 56 };
+  const DARK_ATOMS = new Set(["C", "O", "Fe", "Na"]);
+
+  const REACTIONS = [
+    { id: "water", label: "Water", name: "Hydrogen burns in oxygen to make water",
+      r: [{ f: "H2", a: { H: 2 } }, { f: "O2", a: { O: 2 } }],
+      p: [{ f: "H2O", a: { H: 2, O: 1 } }], ans: [2, 1, 2] },
+    { id: "methane", label: "Methane", name: "Methane (natural gas) burns completely",
+      r: [{ f: "CH4", a: { C: 1, H: 4 } }, { f: "O2", a: { O: 2 } }],
+      p: [{ f: "CO2", a: { C: 1, O: 2 } }, { f: "H2O", a: { H: 2, O: 1 } }], ans: [1, 2, 1, 2] },
+    { id: "mgacid", label: "Mg + acid", name: "Magnesium reacts with hydrochloric acid",
+      r: [{ f: "Mg", a: { Mg: 1 } }, { f: "HCl", a: { H: 1, Cl: 1 } }],
+      p: [{ f: "MgCl2", a: { Mg: 1, Cl: 2 } }, { f: "H2", a: { H: 2 } }], ans: [1, 2, 1, 1] },
+    { id: "salt", label: "Salt", name: "Sodium burns in chlorine to make sodium chloride",
+      r: [{ f: "Na", a: { Na: 1 } }, { f: "Cl2", a: { Cl: 2 } }],
+      p: [{ f: "NaCl", a: { Na: 1, Cl: 1 } }], ans: [2, 1, 2] },
+    { id: "rust", label: "Iron oxide", name: "Iron reacts with oxygen to make iron(III) oxide",
+      r: [{ f: "Fe", a: { Fe: 1 } }, { f: "O2", a: { O: 2 } }],
+      p: [{ f: "Fe2O3", a: { Fe: 2, O: 3 } }], ans: [4, 3, 2] },
+  ];
+
+  const fmtF = f => f.replace(/(\d+)/g, "<sub>$1</sub>");
+  const mr = a => Object.entries(a).reduce((s, [el, n]) => s + AR[el] * n, 0);
+  const num = x => (Math.round(x * 10) / 10).toString();
+
+  let rxn = REACTIONS[0];
+  let coef = [];
+
+  const tabs = document.getElementById("rxnTabs");
+  REACTIONS.forEach(R => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = R.label; b.dataset.id = R.id;
+    b.addEventListener("click", () => select(R));
+    tabs.appendChild(b);
+  });
+
+  function select(R) {
+    rxn = R;
+    coef = new Array(R.r.length + R.p.length).fill(1);
+    tabs.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.id === R.id));
+    document.getElementById("rxnName").textContent = R.name;
+    buildEquation();
+    update();
+  }
+
+  function buildEquation() {
+    const eq = document.getElementById("equation");
+    eq.innerHTML = "";
+    const all = [...rxn.r, ...rxn.p];
+    all.forEach((sp, i) => {
+      if (i === rxn.r.length) { const ar = document.createElement("span"); ar.className = "arrow"; ar.textContent = "→"; eq.appendChild(ar); }
+      else if (i > 0) { const op = document.createElement("span"); op.className = "op"; op.textContent = "+"; eq.appendChild(op); }
+      const term = document.createElement("span"); term.className = "term";
+      const st = document.createElement("span"); st.className = "stepper";
+      const up = document.createElement("button"); up.type = "button"; up.textContent = "+"; up.setAttribute("aria-label", "Increase coefficient of " + sp.f);
+      const out = document.createElement("output"); out.id = "c" + i;
+      const dn = document.createElement("button"); dn.type = "button"; dn.textContent = "−"; dn.setAttribute("aria-label", "Decrease coefficient of " + sp.f);
+      up.addEventListener("click", () => { coef[i] = Math.min(9, coef[i] + 1); update(); });
+      dn.addEventListener("click", () => { coef[i] = Math.max(1, coef[i] - 1); update(); });
+      st.append(up, out, dn);
+      const f = document.createElement("span"); f.innerHTML = fmtF(sp.f);
+      term.append(st, f);
+      eq.appendChild(term);
+    });
+  }
+
+  function atomEl(el) {
+    const s = document.createElement("span");
+    s.className = "atom" + (DARK_ATOMS.has(el) ? " light-text" : "");
+    s.style.background = "var(--atom-" + el + ")";
+    s.textContent = el;
+    if (el.length > 1) s.style.fontSize = "0.52rem";
+    return s;
+  }
+  function molEl(sp) {
+    const m = document.createElement("span"); m.className = "mol"; m.title = sp.f;
+    Object.entries(sp.a).forEach(([el, n]) => { for (let k = 0; k < n; k++) m.appendChild(atomEl(el)); });
+    return m;
+  }
+
+  function update() {
+    const all = [...rxn.r, ...rxn.p];
+    all.forEach((_, i) => { document.getElementById("c" + i).textContent = coef[i]; });
+
+    // particles
+    const P = document.getElementById("particles");
+    P.innerHTML = "";
+    const L = document.createElement("div"); L.className = "side";
+    const Rr = document.createElement("div"); Rr.className = "side";
+    rxn.r.forEach((sp, i) => { for (let k = 0; k < coef[i]; k++) L.appendChild(molEl(sp)); });
+    rxn.p.forEach((sp, j) => { const i = rxn.r.length + j; for (let k = 0; k < coef[i]; k++) Rr.appendChild(molEl(sp)); });
+    const ar = document.createElement("span"); ar.className = "arrow"; ar.textContent = "→";
+    P.append(L, ar, Rr);
+
+    // tally
+    const els = [];
+    all.forEach(sp => Object.keys(sp.a).forEach(e => { if (!els.includes(e)) els.push(e); }));
+    const count = (list, off) => { const c = {}; list.forEach((sp, j) => Object.entries(sp.a).forEach(([e, n]) => { c[e] = (c[e] || 0) + n * coef[off + j]; })); return c; };
+    const cl = count(rxn.r, 0), cr = count(rxn.p, rxn.r.length);
+    let allOk = true;
+    let html = "<thead><tr><th>Element</th><th style='text-align:right'>Left</th><th style='text-align:right'>Right</th><th>Status</th></tr></thead><tbody>";
+    els.forEach(e => {
+      const ok = (cl[e] || 0) === (cr[e] || 0); if (!ok) allOk = false;
+      html += `<tr><td>${e}</td><td class="num">${cl[e] || 0}</td><td class="num">${cr[e] || 0}</td><td><span class="pill ${ok ? "ok" : "no"}">${ok ? "balanced" : "not balanced"}</span></td></tr>`;
+    });
+    document.getElementById("tally").innerHTML = html + "</tbody>";
+
+    // masses
+    const mL = rxn.r.reduce((s, sp, j) => s + coef[j] * mr(sp.a), 0);
+    const mR = rxn.p.reduce((s, sp, j) => s + coef[rxn.r.length + j] * mr(sp.a), 0);
+    const rows = all.map((sp, i) => `<tr><td>${coef[i]} × ${fmtF(sp.f)}</td><td class="num">${coef[i]} × ${num(mr(sp.a))} = ${num(coef[i] * mr(sp.a))} g</td></tr>`);
+    rows.splice(rxn.r.length, 0, `<tr><th colspan="2">Products</th></tr>`);
+    document.getElementById("massTable").innerHTML =
+      `<tbody><tr><th colspan="2">Reactants</th></tr>${rows.join("")}<tr><td><strong>Reactants total</strong></td><td class="num"><strong>${num(mL)} g</strong></td></tr><tr><td><strong>Products total</strong></td><td class="num"><strong>${num(mR)} g</strong></td></tr></tbody>`;
+
+    // beam: heavier side goes down
+    const diff = mL - mR;
+    const ang = Math.max(-14, Math.min(14, (diff / Math.max(mL, mR)) * 40));
+    document.getElementById("beam").style.transform = `rotate(${-ang}deg)`;
+    // keep pans hanging vertically
+    ["panL", "panR"].forEach((id, k) => {
+      const cx = k === 0 ? 50 : 270;
+      document.getElementById(id).setAttribute("transform", `rotate(${ang} ${cx} 60)`);
+    });
+
+    const v = document.getElementById("verdict");
+    if (allOk) { v.className = "verdict ok"; v.textContent = `Balanced. ${num(mL)} g of reactants make ${num(mR)} g of products. Mass is conserved.`; }
+    else { v.className = "verdict no"; v.textContent = `Not balanced yet. ${num(mL)} g ≠ ${num(mR)} g, so atoms would be appearing or vanishing.`; }
+  }
+
+  document.getElementById("resetBtn").addEventListener("click", () => { coef = coef.map(() => 1); update(); });
+  document.getElementById("hintBtn").addEventListener("click", () => { coef = rxn.ans.slice(); update(); });
+  select(REACTIONS[0]);
+
+  /* ---------- Open vs closed simulation ---------- */
+  const SIMS = [
+    { id: "mg", label: "Burning magnesium (open)", title: "Magnesium ribbon heated in an open crucible",
+      eq: "2Mg(s) + O<sub>2</sub>(g) → 2MgO(s)", start: 24.24, end: 24.40, vessel: "crucible", gas: "in",
+      explain: "The reading goes up by 0.16 g. Oxygen from the air combines with the magnesium, so atoms entered the system. Mass is still conserved: 0.24 g Mg + 0.16 g O₂ = 0.40 g MgO." },
+    { id: "marble-open", label: "Marble + acid (open)", title: "Marble chips in hydrochloric acid, open flask",
+      eq: "CaCO<sub>3</sub>(s) + 2HCl(aq) → CaCl<sub>2</sub>(aq) + H<sub>2</sub>O(l) + CO<sub>2</sub>(g)", start: 150.00, end: 149.12, vessel: "flask", gas: "out",
+      explain: "The reading drops by 0.88 g. That is the carbon dioxide gas escaping into the room (2.00 g of CaCO₃ makes 0.88 g of CO₂). The atoms still exist, they just left the balance." },
+    { id: "marble-closed", label: "Marble + acid (sealed)", title: "Same reaction, flask sealed with a balloon",
+      eq: "CaCO<sub>3</sub>(s) + 2HCl(aq) → CaCl<sub>2</sub>(aq) + H<sub>2</sub>O(l) + CO<sub>2</sub>(g)", start: 150.00, end: 150.00, vessel: "sealed", gas: "trap",
+      explain: "The reading stays the same. The CO₂ is trapped in the balloon, so this is a closed system and the total mass is conserved, just as Lavoisier found." },
+    { id: "ppt", label: "Precipitate (open)", title: "Copper(II) sulfate + sodium hydroxide in a beaker",
+      eq: "CuSO<sub>4</sub>(aq) + 2NaOH(aq) → Cu(OH)<sub>2</sub>(s) + Na<sub>2</sub>SO<sub>4</sub>(aq)", start: 112.50, end: 112.50, vessel: "beaker", gas: "none",
+      explain: "A blue solid (copper hydroxide) appears, but the reading stays the same even though the beaker is open. No gas is made, so nothing escapes." },
+  ];
+  let sim = SIMS[0], running = false, raf = 0;
+  const simTabs = document.getElementById("simTabs");
+  SIMS.forEach(S => {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = S.label; b.dataset.id = S.id;
+    b.addEventListener("click", () => pickSim(S));
+    simTabs.appendChild(b);
+  });
+
+  function vesselSVG(S, done) {
+    const base = `
+      <rect x="40" y="200" width="220" height="44" rx="6" fill="var(--muted)"></rect>
+      <rect x="30" y="190" width="240" height="12" rx="3" fill="var(--line)" stroke="var(--muted)"></rect>
+      <rect x="110" y="212" width="80" height="22" rx="3" fill="var(--bg)"></rect>
+      <text x="150" y="228" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12" fill="var(--ink)" id="lcd">--</text>`;
+    let v = "";
+    const solColor = S.id === "ppt" ? (done ? "var(--accent)" : "var(--accent-soft)") : "var(--accent-soft)";
+    if (S.vessel === "crucible") {
+      v = `<path d="M100 130 L200 130 L188 188 L112 188 Z" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></path>
+           <rect x="118" y="168" width="64" height="12" rx="2" fill="${done ? "var(--surface)" : "var(--atom-Mg)"}" stroke="var(--muted)"></rect>
+           <ellipse class="flame" cx="150" cy="160" rx="34" ry="16" fill="var(--flame)"></ellipse>
+           ${[110, 150, 190].map((x, k) => `<g class="gas-in" style="animation-delay:${k * 0.4}s"><circle cx="${x - 5}" cy="80" r="6" fill="var(--atom-O)" stroke="var(--ink)"></circle><circle cx="${x + 5}" cy="80" r="6" fill="var(--atom-O)" stroke="var(--ink)"></circle></g>`).join("")}
+           <text x="150" y="40" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="JetBrains Mono, monospace">O₂ from the air</text>`;
+    } else {
+      const neck = S.vessel === "beaker"
+        ? `<path d="M95 95 L95 188 L205 188 L205 95" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></path>
+           <rect x="97" y="135" width="106" height="52" fill="${solColor}"></rect>`
+        : `<path d="M135 70 L135 115 L92 188 L208 188 L165 115 L165 70" fill="var(--surface)" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"></path>
+           <path d="M110 158 L190 158 L206 186 L94 186 Z" fill="${solColor}"></path>`;
+      const chips = S.vessel === "beaker" ? (done ? `<g fill="var(--accent)">${[115, 135, 160, 182].map(x => `<circle cx="${x}" cy="182" r="4"></circle>`).join("")}</g>` : "")
+        : `<g fill="var(--surface)" stroke="var(--muted)"><rect x="120" y="176" width="12" height="9" rx="2"></rect><rect x="142" y="178" width="14" height="8" rx="2"></rect><rect x="165" y="175" width="11" height="10" rx="2"></rect></g>`;
+      const bubbles = S.gas === "none" ? "" : [125, 140, 155, 170].map((x, k) => `<circle class="bubble" style="animation-delay:${k * 0.2}s" cx="${x}" cy="180" r="3" fill="none" stroke="var(--ink)"></circle>`).join("");
+      let gas = "";
+      if (S.gas === "out") gas = [130, 150, 170].map((x, k) => `<g class="gas-out" style="animation-delay:${k * 0.45}s"><circle cx="${x}" cy="60" r="6" fill="var(--atom-O)" stroke="var(--ink)"></circle><circle cx="${x + 10}" cy="60" r="7" fill="var(--atom-C)" stroke="var(--ink)"></circle><circle cx="${x + 20}" cy="60" r="6" fill="var(--atom-O)" stroke="var(--ink)"></circle></g>`).join("")
+        + `<text x="150" y="20" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="JetBrains Mono, monospace">CO₂ escapes</text>`;
+      if (S.gas === "trap") {
+        const r = done ? 34 : 12;
+        gas = `<ellipse cx="150" cy="${70 - r}" rx="${r * 0.9}" ry="${r}" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"></ellipse>
+               <rect x="132" y="64" width="36" height="10" rx="2" fill="var(--accent)"></rect>
+               <text x="150" y="${done ? 20 : 30}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="JetBrains Mono, monospace">${done ? "CO₂ trapped" : "balloon seal"}</text>`;
+      }
+      v = neck + chips + bubbles + gas;
+    }
+    return v + base;
+  }
+
+  function setReadout(val) {
+    const t = val.toFixed(2) + " g";
+    document.getElementById("readout").textContent = t;
+    const lcd = document.getElementById("lcd"); if (lcd) lcd.textContent = t;
+  }
+
+  function pickSim(S) {
+    cancelAnimationFrame(raf); running = false;
+    sim = S;
+    simTabs.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.id === S.id));
+    document.getElementById("simTitle").textContent = S.title;
+    document.getElementById("simEq").innerHTML = S.eq;
+    const svg = document.getElementById("simSvg");
+    svg.classList.remove("running");
+    svg.innerHTML = vesselSVG(S, false);
+    setReadout(S.start);
+    document.getElementById("delta").innerHTML = "&nbsp;";
+    document.getElementById("delta").className = "delta";
+    document.getElementById("simExplain").textContent = "Predict first: will the reading go up, go down, or stay the same? Then run it.";
+    document.getElementById("runBtn").disabled = false;
+  }
+
+  function finish() {
+    const svg = document.getElementById("simSvg");
+    svg.classList.remove("running");
+    svg.innerHTML = vesselSVG(sim, true);
+    setReadout(sim.end);
+    const d = sim.end - sim.start, el = document.getElementById("delta");
+    if (Math.abs(d) < 0.005) { el.textContent = "Change: 0.00 g"; el.className = "delta same"; }
+    else { el.textContent = "Change: " + (d > 0 ? "+" : "−") + Math.abs(d).toFixed(2) + " g"; el.className = "delta " + (d > 0 ? "up" : "down"); }
+    document.getElementById("simExplain").textContent = sim.explain;
+    running = false;
+  }
+
+  document.getElementById("runBtn").addEventListener("click", () => {
+    if (running) return;
+    running = true;
+    document.getElementById("runBtn").disabled = true;
+    const svg = document.getElementById("simSvg");
+    svg.classList.add("running");
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) { finish(); return; }
+    const t0 = performance.now(), dur = 3200;
+    const tick = now => {
+      const k = Math.min(1, (now - t0) / dur);
+      setReadout(sim.start + (sim.end - sim.start) * (1 - Math.pow(1 - k, 2)));
+      if (k < 1) raf = requestAnimationFrame(tick); else finish();
+    };
+    raf = requestAnimationFrame(tick);
+  });
+  document.getElementById("simReset").addEventListener("click", () => pickSim(sim));
+  pickSim(SIMS[0]);
+
+  /* ---------- Quiz ---------- */
+  const QUIZ = [
+    { q: "1. A student heats 0.48 g of magnesium in an open crucible. The product has a mass of 0.80 g. Why is the product heavier?",
+      opts: ["Heat energy has mass and was added to the crucible", "Oxygen atoms from the air combined with the magnesium", "The magnesium atoms got bigger when heated", "The balance was faulty, because mass can't increase"], a: 1,
+      why: "Oxygen from the air reacted with the magnesium: 0.80 − 0.48 = 0.32 g of oxygen joined the system." },
+    { q: "2. Which of these is a chemical change?",
+      opts: ["Ice melting", "Sugar dissolving in tea", "An iron nail rusting", "Water boiling"], a: 2,
+      why: "Rusting makes a new substance, iron oxide. The others are physical changes." },
+    { q: "3. In a sealed flask, 5.0 g of reactants react completely. What is the mass of the products?",
+      opts: ["Less than 5.0 g", "Exactly 5.0 g", "More than 5.0 g", "It depends on whether gas is produced"], a: 1,
+      why: "In a closed system nothing can enter or leave, so the total mass stays 5.0 g even if gas forms." },
+    { q: "4. Balance: __Na + Cl₂ → __NaCl. What coefficient goes in front of NaCl?",
+      opts: ["1", "2", "3", "4"], a: 1,
+      why: "2Na + Cl₂ → 2NaCl gives 2 Na and 2 Cl on each side." },
+  ];
+  const quiz = document.getElementById("quiz");
+  QUIZ.forEach((item, qi) => {
+    const wrap = document.createElement("div"); wrap.className = "q";
+    const fs = document.createElement("fieldset");
+    const lg = document.createElement("legend"); lg.textContent = item.q; fs.appendChild(lg);
+    const fb = document.createElement("p"); fb.className = "feedback"; fb.setAttribute("aria-live", "polite");
+    item.opts.forEach((o, oi) => {
+      const lab = document.createElement("label"); lab.className = "opt";
+      const inp = document.createElement("input"); inp.type = "radio"; inp.name = "q" + qi; inp.id = `q${qi}o${oi}`; inp.value = oi;
+      inp.addEventListener("change", () => {
+        fs.querySelectorAll(".opt").forEach(l => l.classList.remove("correct", "incorrect"));
+        const ok = oi === item.a;
+        lab.classList.add(ok ? "correct" : "incorrect");
+        fb.innerHTML = (ok ? "<strong style='color:var(--good)'>Correct.</strong> " : "<strong style='color:var(--bad)'>Not quite.</strong> ") + (ok ? item.why : "Try again. Think about where the atoms come from or go.");
+      });
+      const sp = document.createElement("span"); sp.textContent = o;
+      lab.append(inp, sp); fs.appendChild(lab);
+    });
+    wrap.append(fs, fb); quiz.appendChild(wrap);
+  });
+
+  document.getElementById("calcForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const v = parseFloat(document.getElementById("calcIn").value);
+    const fb = document.getElementById("calcFb");
+    if (isNaN(v)) { fb.textContent = "Enter a number in grams, for example 10.0."; return; }
+    if (Math.abs(v - 32) < 0.05) fb.innerHTML = "<strong style='color:var(--good)'>Correct.</strong> 44.0 g − 12.0 g = 32.0 g of oxygen. This matches A<sub>r</sub> values: 12 + (2 × 16) = 44.";
+    else if (Math.abs(v - 56) < 0.05) fb.innerHTML = "<strong style='color:var(--bad)'>Not quite.</strong> You added the masses. The product contains both reactants, so subtract: mass O₂ = mass CO₂ − mass C.";
+    else fb.innerHTML = "<strong style='color:var(--bad)'>Not quite.</strong> Use mass C + mass O₂ = mass CO₂ and rearrange.";
+  });
+})();
+</script>
+</body>
+</html>
