@@ -1,9 +1,9 @@
 # Claude sessions
 
-Work produced in Claude Code sessions. Each session gets its own folder.
+Work produced in Claude Code sessions. Each session gets its own folder. Everything is also published with GitHub Pages at <https://v4virtual.github.io/claude/>.
 
-| Folder | What it is |
-|--------|------------|
-| [`caesar-cipher-animation/`](caesar-cipher-animation/) | Animated, interactive explainer of the Caesar cipher: ten chapters from history to frequency analysis, plus a cipher workbench. Single HTML file. |
-| [`conservation-of-mass/`](conservation-of-mass/) | Interactive IB MYP Year 10 explainer on chemical reactions and the law of conservation of mass: equation balancer, open vs closed system experiments and a self-check quiz. Single HTML file. |
-| [`mitosis/`](mitosis/) | Kurzgesagt-style animated video (7:58, 1080p) on mitosis for a Year 8 / MYP 3 student: PMAT, the cell cycle, interphase, chromatin, spindle fibers, cytokinesis and more, with narration, music, subtitles, a script, glossary and quiz. |
+| Folder | What it is | Live (GitHub Pages) |
+|--------|------------|------|
+| [`caesar-cipher-animation/`](caesar-cipher-animation/) | Animated, interactive explainer of the Caesar cipher: ten chapters from history to frequency analysis, plus a cipher workbench. Single HTML file. | [Open](https://v4virtual.github.io/claude/caesar-cipher-animation/) |
+| [`conservation-of-mass/`](conservation-of-mass/) | Interactive IB MYP Year 10 explainer on chemical reactions and the law of conservation of mass: equation balancer, open vs closed system experiments and a self-check quiz. Single HTML file. | [Open](https://v4virtual.github.io/claude/conservation-of-mass/) |
+| [`mitosis/`](mitosis/) | Kurzgesagt-style animated video (7:58, 1080p) on mitosis for a Year 8 / MYP 3 student: PMAT, the cell cycle, interphase, chromatin, spindle fibers, cytokinesis and more, with narration, music, subtitles, a script, glossary and quiz. | [Watch video](https://v4virtual.github.io/claude/mitosis/mitosis-explainer.mp4) · [Interactive player](https://v4virtual.github.io/claude/mitosis/animation.html) |
