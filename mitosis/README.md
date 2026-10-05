@@ -8,6 +8,8 @@ style: flat, colourful vector shapes, a deep-blue background, cute cells, and ca
 | `mitosis-explainer.mp4` | **The video**: 1080p, 30 fps, with narration, music and toggleable English subtitles |
 | `script.md` | Narration with timestamps, a glossary, a PMAT cheat sheet, a quiz and fact notes |
 | `captions.srt` | Subtitles |
+| `quiz/` | **Random quiz** built from the video's own animation engine and narration: spot the stage, name the structure, put stages in order, finish the narrator's sentence, key words and facts. Each answer can replay the matching clip from the video |
+| `engine.js` | The drawing engine (every frame is a pure function of time), shared by the player, the renderer and the quiz |
 | `animation.html` | The animation itself. Open it in a browser to play it with synced audio, scrub, and show captions |
 | `soundtrack.m4a` | Mixed narration and music, used by the HTML player and the MP4 |
 | `narration.json` | **Source of truth** for the narration text and pacing |

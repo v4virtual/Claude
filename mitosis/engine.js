@@ -1,0 +1,1392 @@
+// Mitosis explainer drawing engine: every frame is a pure function of time.
+// Shared by animation.html (video player / renderer) and quiz/index.html.
+// Expects window.TIMELINE (timeline.js) to be loaded first.
+"use strict";
+const W = 1920, H = 1080;
+const cv = document.getElementById("c") || document.createElement("canvas");
+let ctx = cv.getContext("2d");
+const TL = window.TIMELINE;
+
+// ---------------------------------------------------------------- utilities
+const TAU = Math.PI * 2;
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const ease = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const back = t => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+const es = (t, a, b) => ease(seg(t, a, b));
+// visible window: fades in at a, out at b
+const win = (t, a, b = 1e9, fi = 0.5, fo = 0.5) => Math.min(seg(t, a, a + fi), 1 - seg(t, b, b + fo));
+function rng(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function hex(c) { const n = parseInt(c.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+function mix(a, b, t) { const A = hex(a), B = hex(b); return `rgb(${A.map((v, i) => Math.round(lerp(v, B[i], t))).join(",")})`; }
+function rgba(c, a) { const A = hex(c); return `rgba(${A[0]},${A[1]},${A[2]},${a})`; }
+const fmt = n => Math.floor(n).toLocaleString("en-US");
+
+const C = {
+  bgTop: "#11235a", bgBot: "#070f2a",
+  mem: "#5ce8d2", memDeep: "#1c8f88", cyto: "#2bc4b0",
+  nuc: "#2b1d63", env: "#b9a2ff",
+  chr: ["#ff5d8f", "#ffb347", "#ffe066", "#8be36b"],
+  spindle: "#aef3ff", centro: "#fff1a8",
+  accent: "#ffd23f", pink: "#ff5d8f", blue: "#4cc9f0", red: "#ff4d5e", green: "#5be37d",
+  sub: "#a9bcf0", white: "#ffffff",
+  G1: "#2ec4b6", S: "#ffb347", G2: "#c77dff", M: "#ff5d8f",
+};
+const PMAT = [["P", "Prophase", C.chr[0]], ["M", "Metaphase", C.chr[1]], ["A", "Anaphase", C.chr[2]], ["T", "Telophase", C.chr[3]]];
+
+// ---------------------------------------------------------------- drawing primitives
+function text(s, x, y, o = {}) {
+  const { size = 48, weight = 900, color = C.white, align = "center", alpha = 1, base = "middle", shadow = true, scale = 1, spacing = 0 } = o;
+  if (alpha <= 0 || scale <= 0) return;
+  ctx.save();
+  ctx.globalAlpha *= clamp(alpha);
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+  ctx.font = `${weight} ${size}px Nunito`;
+  ctx.textAlign = align;
+  ctx.textBaseline = base;
+  if (spacing) ctx.letterSpacing = spacing + "px";
+  if (shadow) { ctx.shadowColor = "rgba(0,0,10,.45)"; ctx.shadowBlur = 14; ctx.shadowOffsetY = 4; }
+  ctx.fillStyle = color;
+  ctx.fillText(s, 0, 0);
+  ctx.restore();
+}
+// text that pops in with a springy scale
+function pop(s, x, y, p, o = {}) { text(s, x, y, { ...o, alpha: clamp(p * 3) * (o.alpha ?? 1), scale: back(clamp(p)) }); }
+
+function circle(x, y, r, fill, stroke, lw = 4) {
+  ctx.beginPath(); ctx.arc(x, y, Math.max(0, r), 0, TAU);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+}
+function rrect(x, y, w, h, r) {
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, r);
+}
+function glow(x, y, r, col, a = 0.5) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, rgba(col, a)); g.addColorStop(1, rgba(col, 0));
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+}
+// smooth curve through points
+function smoothPath(pts, closed = false) {
+  ctx.beginPath();
+  const n = pts.length;
+  if (closed) {
+    const m0 = [(pts[n - 1][0] + pts[0][0]) / 2, (pts[n - 1][1] + pts[0][1]) / 2];
+    ctx.moveTo(m0[0], m0[1]);
+    for (let i = 0; i < n; i++) {
+      const p = pts[i], q = pts[(i + 1) % n];
+      ctx.quadraticCurveTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2);
+    }
+    ctx.closePath();
+  } else {
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < n - 1; i++) {
+      const p = pts[i], q = pts[i + 1];
+      ctx.quadraticCurveTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2);
+    }
+    ctx.lineTo(pts[n - 1][0], pts[n - 1][1]);
+  }
+}
+// a thick, shaded "noodle" in the Kurzgesagt style: dark rim, flat body, soft highlight
+function noodle(pts, col, lw, alpha = 1) {
+  if (alpha <= 0) return;
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  smoothPath(pts);
+  ctx.strokeStyle = mix(col, "#1a0a30", 0.45); ctx.lineWidth = lw + Math.max(2, lw * 0.28); ctx.stroke();
+  ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.stroke();
+  if (lw > 8) {
+    ctx.translate(-lw * 0.12, -lw * 0.14);
+    smoothPath(pts);
+    ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = lw * 0.28; ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// labels: a dot on the thing, a line, and a word
+function label(s, ax, ay, tx, ty, p, o = {}) {
+  if (p <= 0) return;
+  const { color = C.accent, size = 38, sub = null } = o;
+  const a = clamp(p * 2.5), lp = easeOut(clamp(p * 1.8));
+  ctx.save();
+  ctx.globalAlpha *= a;
+  ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.lineWidth = 3; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(lerp(ax, tx, lp), lerp(ay, ty, lp)); ctx.stroke();
+  circle(ax, ay, 8 * back(clamp(p * 2)), color, "#fff", 3);
+  ctx.restore();
+  const left = tx >= ax;
+  // keep the words inside the frame
+  ctx.save(); ctx.font = `900 ${size}px Nunito`; let tw = ctx.measureText(s).width;
+  if (sub) { ctx.font = `700 ${size * 0.62}px Nunito`; tw = Math.max(tw, ctx.measureText(sub).width); }
+  ctx.restore();
+  if (left && tx + 16 + tw > W - 30) tx = W - 46 - tw;
+  if (!left && tx - 16 - tw < 30) tx = 46 + tw;
+  const off = left ? 16 : -16;
+  text(s, tx + off, ty, { size, color: C.white, align: left ? "left" : "right", alpha: a * seg(p, 0.25, 0.6) });
+  if (sub) text(sub, tx + off, ty + size * 0.95, { size: size * 0.62, weight: 700, color, align: left ? "left" : "right", alpha: a * seg(p, 0.35, 0.7) });
+}
+
+// big stage title in the top-left corner
+function stageTitle(title, sub, p, color = C.accent) {
+  if (p <= 0) return;
+  const a = clamp(p * 2);
+  ctx.save(); ctx.globalAlpha *= a;
+  ctx.fillStyle = color; rrect(80, 70, 14 * easeOut(clamp(p * 2)), 120, 7); ctx.fill();
+  ctx.restore();
+  text(title, 118, 112, { size: 76, align: "left", alpha: a, spacing: 2 });
+  if (sub) text(sub, 120, 170, { size: 34, weight: 800, align: "left", color, alpha: a * seg(p, 0.2, 0.6) });
+}
+
+// ---------------------------------------------------------------- background
+const PARTS = (() => { const r = rng(7); return Array.from({ length: 80 }, () => ({ x: r() * W, y: r() * H, s: 1 + r() * 3.2, v: 5 + r() * 14, ph: r() * TAU, c: r() < 0.5 ? "#7fb6ff" : "#c3a6ff" })); })();
+const BLOBS = [[300, 250, 520, "#3d5bd9"], [1600, 850, 600, "#7b3fd1"], [1500, 200, 380, "#1fb5c9"]];
+function background(t, tint = 0) {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, mix(C.bgTop, "#5a1030", tint));
+  g.addColorStop(1, mix(C.bgBot, "#1d0614", tint));
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  for (const [x, y, r, c] of BLOBS) glow(x + Math.sin(t * 0.07 + x) * 60, y + Math.cos(t * 0.05 + y) * 40, r, tint > 0.5 ? "#c2185b" : c, 0.16);
+  for (const p of PARTS) {
+    const y = ((p.y - t * p.v) % H + H) % H;
+    const x = p.x + Math.sin(t * 0.3 + p.ph) * 12;
+    ctx.globalAlpha = 0.25 + 0.25 * Math.sin(t * 1.3 + p.ph);
+    circle(x, y, p.s, p.c);
+  }
+  ctx.globalAlpha = 1;
+}
+function vignette() {
+  const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.45, W / 2, H / 2, H * 1.05);
+  g.addColorStop(0, "rgba(0,0,10,0)"); g.addColorStop(1, "rgba(0,0,10,.55)");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+
+// ---------------------------------------------------------------- cell membrane (metaball outline that can pinch in two)
+function field(x, y, cs, rr) {
+  let f = 0;
+  for (const c of cs) { const dx = x - c[0], dy = y - c[1]; const q = (rr * rr) / (dx * dx + dy * dy + 1e-6); f += q * q; }
+  return f;
+}
+function rayHit(o, ang, cs, rr) {
+  const dx = Math.cos(ang), dy = Math.sin(ang);
+  let lo = 0, hi = 0;
+  for (let r = 6; r < rr * 3; r += 6) { if (field(o[0] + dx * r, o[1] + dy * r, cs, rr) < 1) { hi = r; break; } lo = r; }
+  if (!hi) hi = rr * 3;
+  for (let i = 0; i < 10; i++) { const m = (lo + hi) / 2; if (field(o[0] + dx * m, o[1] + dy * m, cs, rr) >= 1) lo = m; else hi = m; }
+  return (lo + hi) / 2;
+}
+// Returns one or two closed outlines for a cell of radius R centred at the origin whose
+// two halves are pulled apart by s (0 = one round cell, ~R = two separate daughter cells).
+function cellOutline(R, s, t, wob = 1) {
+  const rr = R / Math.pow(2, 0.25);
+  const cs = [[-s, 0], [s, 0]];
+  const wobble = (x, y, a) => wob * (5 * Math.sin(3 * a + t * 1.3) + 3.5 * Math.sin(5 * a - t * 1.7) + 2 * Math.sin(7 * a + t * 0.9));
+  const neckF = field(0, 0, cs, rr);
+  const N = 90;
+  if (neckF >= 1) {
+    // connected: find the neck half-width on the mid-line
+    let lo = 0, hi = rr * 2;
+    for (let i = 0; i < 18; i++) { const m = (lo + hi) / 2; if (field(0, m, cs, rr) >= 1) lo = m; else hi = m; }
+    const neck = lo;
+    const out = [];
+    const lobe = (o, from, to) => {
+      for (let i = 1; i < N; i++) {
+        const ang = lerp(from, to, i / N);
+        const r = rayHit(o, ang, cs, rr);
+        const x = o[0] + Math.cos(ang) * r, y = o[1] + Math.sin(ang) * r;
+        const nf = clamp(Math.abs(x) / (R * 0.35));
+        const w = wobble(x, y, Math.atan2(y, x)) * nf;
+        out.push([x + Math.cos(ang) * w, y + Math.sin(ang) * w]);
+      }
+    };
+    const aTop = Math.atan2(-neck, s), aBot = Math.atan2(neck, s); // angles from the left centre to the neck
+    out.push([0, -neck]);
+    lobe(cs[0], aTop, aBot - TAU); // left lobe, round the far side
+    out.push([0, neck]);
+    lobe(cs[1], Math.PI - aBot, -Math.PI - aTop); // right lobe, round the far side
+    return [out];
+  }
+  return cs.map(o => {
+    const pts = [];
+    for (let i = 0; i < N; i++) {
+      const ang = (i / N) * TAU;
+      const r = rayHit(o, ang, cs, rr) + wobble(0, 0, ang + o[0] * 0.01);
+      pts.push([o[0] + Math.cos(ang) * r, o[1] + Math.sin(ang) * r]);
+    }
+    return pts;
+  });
+}
+
+function drawMembrane(loops, R, cy0 = 0, alpha = 1, tint = 0) {
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  for (const pts of loops) {
+    smoothPath(pts, true);
+    const g = ctx.createRadialGradient(0, cy0, R * 0.1, 0, cy0, R * 1.6);
+    g.addColorStop(0, rgba(tint ? "#d94c7a" : C.cyto, 0.16));
+    g.addColorStop(1, rgba(tint ? "#d94c7a" : C.cyto, 0.42));
+    ctx.fillStyle = g; ctx.fill();
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = rgba(tint ? "#ff8fb1" : C.mem, 0.22); ctx.lineWidth = 26; ctx.stroke();
+    ctx.strokeStyle = tint ? "#ff8fb1" : C.mem; ctx.lineWidth = 10; ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = 2.5; ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// organelles float in the cytoplasm; each belongs to the left or right half of the cell
+const ORG = (() => {
+  const r = rng(42), out = [];
+  for (let i = 0; i < 46; i++) {
+    const a = r() * TAU, d = 0.62 + r() * 0.3;
+    out.push({ x: Math.cos(a) * d, y: Math.sin(a) * d, kind: i < 12 ? "mito" : "ribo", rot: r() * TAU, ph: r() * TAU, len: 0.7 + r() * 0.5 });
+  }
+  return out;
+})();
+function drawOrganelles(R, s, t, count = 1, alpha = 1) {
+  const k = clamp(s / R);
+  ctx.save(); ctx.globalAlpha *= alpha;
+  const n = Math.floor(ORG.length * count);
+  for (let i = 0; i < n; i++) {
+    const o = ORG[i];
+    const side = o.x < 0 ? -1 : 1;
+    const ox = o.x + 0.04 * Math.sin(t * 0.4 + o.ph), oy = o.y + 0.04 * Math.cos(t * 0.33 + o.ph);
+    const x = side * s + (ox - side * 0.45 * k) * R * (1 - 0.2 * k);
+    const y = oy * R * (1 - 0.2 * k);
+    if (o.kind === "mito") {
+      ctx.save(); ctx.translate(x, y); ctx.rotate(o.rot + t * 0.1);
+      const L = 26 * o.len;
+      rrect(-L, -11, 2 * L, 22, 11); ctx.fillStyle = "#17a58f"; ctx.fill();
+      ctx.strokeStyle = "#7af0d8"; ctx.lineWidth = 2.5; ctx.beginPath();
+      for (let j = 0; j <= 8; j++) { const xx = lerp(-L + 6, L - 6, j / 8), yy = (j % 2 ? 5 : -5); j ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy); }
+      ctx.stroke(); ctx.restore();
+    } else {
+      circle(x, y, 4, "rgba(170,255,240,.55)");
+    }
+  }
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------- chromosomes
+const CHR = (() => {
+  const r = rng(11);
+  const spec = [[0, 112, -178], [1, 112, 178], [2, 82, -62], [3, 82, 62]];
+  return spec.map(([ci, L, py], i) => {
+    // chromatin "noodle": a smooth wandering path inside the nucleus
+    const N = 26, pts = [];
+    let x = (r() - 0.5) * 160, y = (r() - 0.5) * 160, h = r() * TAU;
+    for (let k = 0; k < N; k++) {
+      h += (r() - 0.5) * 1.6;
+      x += Math.cos(h) * 17; y += Math.sin(h) * 17;
+      const d = Math.hypot(x, y);
+      if (d > 150) { x *= 150 / d; y *= 150 / d; h += Math.PI * 0.8; }
+      pts.push([x, y]);
+    }
+    const a = (i / 4) * TAU + 0.6;
+    return { col: C.chr[ci], L, py, nx: Math.cos(a) * 85, ny: Math.sin(a) * 85, ang: r() * Math.PI, pts, ph: r() * TAU };
+  });
+})();
+const TANGLE = (() => {
+  const r = rng(99), out = [];
+  for (let i = 0; i < 12; i++) {
+    const pts = [];
+    let x = (r() - 0.5) * 220, y = (r() - 0.5) * 220, h = r() * TAU;
+    for (let k = 0; k < 22; k++) {
+      h += (r() - 0.5) * 2.2; x += Math.cos(h) * 15; y += Math.sin(h) * 15;
+      const d = Math.hypot(x, y); if (d > 160) { x *= 160 / d; y *= 160 / d; h += Math.PI * 0.8; }
+      pts.push([x, y]);
+    }
+    out.push(pts);
+  }
+  return out;
+})();
+function chromatidShape(u, L, side, v) {
+  const y = (u * L) / 2 * (1 - 0.32 * v);
+  const x = side * L * (0.045 + 0.12 * Math.abs(u)) * (1 - v) - side * Math.abs(u) * L * 0.42 * v;
+  return [x, y];
+}
+// small standalone X-shaped chromosome (used in diagrams)
+function drawX(x, y, L, col, ang = 0, lw = 16, alpha = 1, gap = 0) {
+  for (const side of [-1, 1]) {
+    const pts = [];
+    for (let k = 0; k < 12; k++) {
+      const [px, py] = chromatidShape(k / 11 * 2 - 1, L, side, 0);
+      const ca = Math.cos(ang), sa = Math.sin(ang);
+      pts.push([x + (px + side * gap) * ca - py * sa, y + (px + side * gap) * sa + py * ca]);
+    }
+    noodle(pts, col, lw, alpha);
+  }
+}
+
+// ---------------------------------------------------------------- the main cell model
+// state (all 0..1): grow, orgs, dup, cond, spin, envBreak, attach, toPlate, sep, newEnv, decond, spinFade, furrow, jam
+function cellState(o = {}) {
+  return Object.assign({ grow: 1, orgs: 1, dup: 1, cond: 0, spin: 0, envBreak: 0, attach: 0, toPlate: 0, sep: 0, newEnv: 0, decond: 0, spinFade: 0, furrow: 0, jam: 0, tint: 0, glowDNA: 0, plate: 0 }, o);
+}
+// Draws a cell at (cx, cy) with radius R; returns anchor points in screen space for labels.
+function drawCell(st, cx, cy, R, t) {
+  const k = (R / 360) * st.grow;
+  const A = {};
+  const toS = (x, y) => [cx + x * k, cy + y * k];
+  ctx.save();
+  ctx.translate(cx, cy); ctx.scale(k, k);
+
+  const sepE = ease(st.sep), furE = ease(st.furrow);
+  const s = 70 * sepE + 330 * furE;
+  drawMembrane(cellOutline(360, s, t), 360, 0, 1, st.tint);
+  drawOrganelles(360, s, t, st.orgs);
+  A.neckTop = toS(0, -cellNeck(360, s));
+  A.cytoplasm = toS(-250, 150);
+  A.membrane = toS(Math.cos(-0.6) * 360, Math.sin(-0.6) * 360);
+
+  // --- old nucleus (interphase / prophase)
+  const rn = 190, eb = ease(st.envBreak);
+  if (eb < 1) {
+    ctx.save(); ctx.globalAlpha *= 1 - eb;
+    const g = ctx.createRadialGradient(0, 0, 20, 0, 0, rn);
+    g.addColorStop(0, "#3a2a80"); g.addColorStop(1, C.nuc);
+    circle(0, 0, rn, g);
+    if (st.glowDNA) glow(0, 0, rn * 1.1, "#ffd6f0", 0.25 * st.glowDNA);
+    ctx.restore();
+  }
+  envelope(0, 0, rn, eb, t, 7);
+  A.nucleus = toS(0, 0); A.envelope = toS(Math.cos(-2.3) * rn, Math.sin(-2.3) * rn);
+  A.fragment = toS(Math.cos(-2.4) * (rn + 70 * eb), Math.sin(-2.4) * (rn + 70 * eb));
+
+  // --- poles / centrosomes
+  const spE = ease(st.spin), sf = 1 - ease(st.spinFade);
+  const poleX = 318 + 60 * sepE + 90 * furE;
+  const poles = [-1, 1].map(sd => {
+    const px = lerp(sd * 14, sd * poleX, spE), py = lerp(-rn - 36, 0, spE) - Math.sin(spE * Math.PI) * 60;
+    return [px, lerp(py, -150, furE)];
+  });
+  A.poleL = toS(...poles[0]); A.poleR = toS(...poles[1]);
+
+  // --- new nuclei (telophase)
+  const nucX = lerp(250, 300 + furE * 100, furE);
+  const ne = ease(st.newEnv);
+  if (ne > 0) for (const sd of [-1, 1]) {
+    ctx.save(); ctx.globalAlpha *= ne;
+    const g = ctx.createRadialGradient(sd * nucX, 0, 10, sd * nucX, 0, 118);
+    g.addColorStop(0, "#3a2a80"); g.addColorStop(1, C.nuc);
+    circle(sd * nucX, 0, 118, g); ctx.restore();
+    envelope(sd * nucX, 0, 118, 1 - ne, t + sd, 5);
+  }
+  A.newNucL = toS(-nucX, 0); A.newNucR = toS(nucX, 0);
+
+  // --- spindle fibres
+  const jamCol = mix(C.spindle, "#6b6f80", st.jam);
+  if (spE * sf > 0.01) {
+    ctx.save(); ctx.globalAlpha *= spE * sf;
+    ctx.lineCap = "round";
+    if (st.jam > 0.5) ctx.setLineDash([18, 16]);
+    for (const [pi, sd] of [[0, -1], [1, 1]]) {
+      const [px, py] = poles[pi];
+      // astral rays
+      for (let j = 0; j < 9; j++) {
+        const a = (sd < 0 ? Math.PI : 0) + (j - 4) * 0.28;
+        const l = (36 + 24 * Math.sin(j * 7.3)) * spE;
+        fibre([px, py], [px + Math.cos(a) * l, py + Math.sin(a) * l], 1, jamCol);
+      }
+      // polar fibres reaching past the middle
+      for (let j = 0; j < 5; j++) {
+        const yy = (j - 2) * 70;
+        fibre([px, py], [-sd * 40, yy], spE, jamCol, [px * 0.35, yy * 0.95]);
+      }
+    }
+    ctx.restore();
+  }
+
+  // --- chromosomes
+  const condE = ease(st.cond) * (1 - ease(st.decond));
+  // faint tangle standing in for the rest of the 46 chromosomes' chromatin
+  const tangleA = (1 - ease(st.cond)) * (1 - eb);
+  if (tangleA > 0.01) TANGLE.forEach((pts, j) => noodle(pts.map(([x, y]) => [x + Math.sin(t * 0.5 + j) * 3, y]), ["#b57bd6", "#e07aa8", "#8f7be0"][j % 3], 3, 0.45 * tangleA));
+  const tangle2 = ease(st.decond) * ease(st.newEnv);
+  if (tangle2 > 0.01) for (const sd of [-1, 1]) TANGLE.slice(0, 7).forEach((pts, j) => noodle(pts.map(([x, y]) => [sd * nucX + x * 0.6, y * 0.6]), ["#b57bd6", "#e07aa8", "#8f7be0"][j % 3], 2.5, 0.45 * tangle2));
+  const plateE = ease(st.toPlate);
+  CHR.forEach((c, i) => {
+    const jig = plateE * (1 - sepE) * Math.sin(t * 2.2 + c.ph) * 6;
+    const P0 = [lerp(c.nx, 0, plateE) + jig, lerp(c.ny, c.py, plateE)];
+    const ang = lerp(c.ang, 0, plateE);
+    const v = clamp(st.sep * 3) * (1 - ease(st.decond));
+    for (const side of [-1, 1]) {
+      const cX = P0[0] + side * (250 * sepE + (nucX - 250) * furE);
+      const cY = lerp(P0[1], P0[1] * 0.55, sepE);
+      // kinetochore fibre from the pole on this side
+      const att = ease(seg(st.attach, i * 0.12, i * 0.12 + 0.55));
+      if (att > 0 && spE * sf > 0) {
+        ctx.save(); ctx.globalAlpha *= sf; ctx.lineCap = "round";
+        if (st.jam > 0.5) ctx.setLineDash([18, 16]);
+        const pole = poles[side < 0 ? 0 : 1];
+        fibre(pole, [cX, cY], att, jamCol, [(pole[0] + cX) / 2, cY * 0.8], 4);
+        ctx.restore();
+      }
+      if (side === -1) A["chr" + i] = toS(cX, cY);
+      if (side === 1) A["chrB" + i] = toS(cX, cY);
+      // chromatid points: morph from chromatin noodle to condensed shape
+      const dupA = side === -1 ? 1 : clamp(st.dup);
+      if (dupA <= 0) continue;
+      const nucC = st.sep > 0.5 ? [side * nucX, 0] : [0, 0];
+      const scl = st.sep > 0.5 ? 0.62 : 1;
+      const pts = [];
+      const N = c.pts.length;
+      for (let q = 0; q < N; q++) {
+        const u = (q / (N - 1)) * 2 - 1;
+        const [lx, ly] = chromatidShape(u, c.L, side, v);
+        const ca = Math.cos(ang), sa = Math.sin(ang);
+        const shp = [cX + lx * ca - ly * sa, cY + lx * sa + ly * ca];
+        const off = side === 1 ? 5 + 4 * (1 - st.dup) : 0;
+        const sq = [nucC[0] + c.pts[q][0] * scl + off, nucC[1] + c.pts[q][1] * scl + off];
+        const coil = Math.sin(q * 1.9 + t * 3 + c.ph) * 26 * condE * (1 - condE) * 4 * 0.5;
+        pts.push([lerp(sq[0], shp[0], condE) + coil, lerp(sq[1], shp[1], condE) - coil * 0.6]);
+      }
+      noodle(pts, c.col, lerp(4.5, 21, condE), dupA);
+    }
+    // centromere bead while sisters are joined
+    if (condE > 0.6 && st.sep < 0.05) circle(P0[0], P0[1], 8, "rgba(255,255,255,.95)", mix(c.col, "#1a0a30", 0.4), 3);
+  });
+  A.centromere = toS(CHR[2].nx * (1 - plateE), lerp(CHR[2].ny, CHR[2].py, plateE));
+
+  // centrosomes on top
+  if (st.spinFade < 1) for (const [px, py] of poles) centrosome(px, py, 1 - 0.5 * st.spinFade);
+  // contractile ring
+  if (st.furrow > 0.05 && st.furrow < 0.98) {
+    const nk = cellNeck(360, s);
+    ctx.save(); ctx.globalAlpha *= Math.min(1, st.furrow * 5) * (1 - seg(st.furrow, 0.85, 0.98));
+    ctx.strokeStyle = C.red; ctx.lineWidth = 7; ctx.setLineDash([4, 10]); ctx.lineCap = "round";
+    ctx.beginPath(); ctx.ellipse(0, 0, 18, Math.max(1, nk), 0, 0, TAU); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.restore();
+  A.k = k;
+  return A;
+}
+function cellNeck(R, s) {
+  const rr = R / Math.pow(2, 0.25), cs = [[-s, 0], [s, 0]];
+  if (field(0, 0, cs, rr) < 1) return 0;
+  let lo = 0, hi = rr * 2;
+  for (let i = 0; i < 18; i++) { const m = (lo + hi) / 2; if (field(0, m, cs, rr) >= 1) lo = m; else hi = m; }
+  return lo;
+}
+function fibre(a, b, g, col, ctrl = null, lw = 3) {
+  if (g <= 0) return;
+  const c = ctrl || [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  // partial quadratic bezier up to g
+  const q = (t) => { const u = 1 - t; return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]; };
+  ctx.beginPath();
+  const n = 16;
+  for (let i = 0; i <= n; i++) { const p = q((i / n) * g); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }
+  ctx.strokeStyle = rgba(col.startsWith("#") ? col : "#aef3ff", 0.18); ctx.lineWidth = lw * 3.5; ctx.stroke();
+  ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.stroke();
+}
+function centrosome(x, y, a = 1) {
+  ctx.save(); ctx.globalAlpha *= a;
+  glow(x, y, 46, C.centro, 0.55);
+  ctx.translate(x, y);
+  ctx.fillStyle = C.centro; ctx.strokeStyle = "#b8860b"; ctx.lineWidth = 3;
+  rrect(-13, -5, 26, 10, 5); ctx.fill(); ctx.stroke();
+  rrect(-5, -13, 10, 26, 5); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+// double-layered nuclear envelope that can break into drifting fragments (b = 0 intact .. 1 gone)
+function envelope(x, y, r, b, t, n = 7) {
+  if (b >= 1) return;
+  const segs = 16, r0 = rng(5);
+  ctx.save(); ctx.lineCap = "round";
+  for (let i = 0; i < segs; i++) {
+    const rnd = r0(), rnd2 = r0();
+    const a0 = (i / segs) * TAU + t * 0.05;
+    const len = (TAU / segs) * (1 - 0.6 * b) - 0.02;
+    const rad = r + b * (40 + 80 * rnd);
+    const da = b * (rnd2 - 0.5) * 0.8;
+    ctx.globalAlpha = 1 - seg(b, 0.45, 1);
+    for (const [dr, col, lw] of [[0, C.env, n], [-n * 1.6, rgba(C.env, 0.6), n * 0.6]]) {
+      ctx.beginPath(); ctx.arc(x, y, Math.max(1, rad + dr), a0 + da, a0 + da + len);
+      ctx.strokeStyle = col; ctx.lineWidth = lw * (1 - 0.4 * b); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------- small reusable characters
+function eyes(x, y, s, t, o = {}) {
+  const { look = 0, mood = 0, ph = 0 } = o;
+  const blink = (Math.sin(t * 0.9 + ph * 3) > 0.985) ? 0.12 : 1;
+  for (const sd of [-1, 1]) {
+    ctx.save(); ctx.translate(x + sd * s * 0.55, y);
+    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.ellipse(0, 0, s * 0.36, s * 0.46 * blink, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = "#14102b"; ctx.beginPath(); ctx.ellipse(look * s * 0.12, s * 0.06, s * 0.2, s * 0.26 * blink, 0, 0, TAU); ctx.fill();
+    circle(look * s * 0.12 + s * 0.07, -s * 0.06, s * 0.06 * blink, "#fff");
+    if (mood) { // worried eyebrows
+      ctx.strokeStyle = "#14102b"; ctx.lineWidth = s * 0.08; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(-s * 0.3, -s * 0.62 + sd * s * 0.08 * mood); ctx.lineTo(s * 0.3, -s * 0.62 - sd * s * 0.08 * mood); ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+function blob(x, y, r, col, t, o = {}) {
+  const { face = false, ph = 0, wob = 1, alpha = 1, look = 0, mood = 0 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha;
+  const pts = [];
+  for (let i = 0; i < 28; i++) {
+    const a = (i / 28) * TAU;
+    const rr = r * (1 + wob * 0.035 * Math.sin(3 * a + t * 1.6 + ph) + wob * 0.025 * Math.sin(5 * a - t * 1.2 + ph));
+    pts.push([x + Math.cos(a) * rr, y + Math.sin(a) * rr]);
+  }
+  smoothPath(pts, true);
+  const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.1, x, y, r * 1.1);
+  g.addColorStop(0, mix(col, "#ffffff", 0.25)); g.addColorStop(1, col);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = mix(col, "#0a0a30", 0.35); ctx.lineWidth = Math.max(2, r * 0.08); ctx.stroke();
+  if (face && r > 14) eyes(x, y - r * 0.08, r * 0.42, t, { ph, look, mood });
+  ctx.restore();
+}
+// a little cell splitting in two, f = 0..1
+function dividingBlob(x, y, r, col, t, f, o = {}) {
+  if (f <= 0) return blob(x, y, r, col, t, o);
+  ctx.save(); ctx.globalAlpha *= o.alpha ?? 1;
+  ctx.translate(x, y); ctx.scale(r / 360, r / 360);
+  for (const pts of cellOutline(360, ease(clamp(f)) * 450, t, 0.3)) {
+    smoothPath(pts, true);
+    ctx.fillStyle = col; ctx.fill();
+    ctx.strokeStyle = mix(col, "#0a0a30", 0.35); ctx.lineWidth = 28; ctx.stroke();
+  }
+  ctx.restore();
+}
+function phyllo(j, spacing) { const a = j * 2.39996, d = Math.sqrt(j + 0.5) * spacing; return [Math.cos(a) * d, Math.sin(a) * d]; }
+
+// cell-cycle ring (fractions for a typical 24 h human cell)
+const PHASES = [["G1", 11 / 24, C.G1], ["S", 8 / 24, C.S], ["G2", 4 / 24, C.G2], ["M", 1 / 24, C.M]];
+function cycleRing(x, y, r, w, o = {}) {
+  const { p = 1, active = null, labels = true, alpha = 1, size = 40, dim = 0.35 } = o;
+  ctx.save(); ctx.globalAlpha *= alpha;
+  let a = -Math.PI / 2;
+  const end = -Math.PI / 2 + TAU * p;
+  for (const [name, f, col] of PHASES) {
+    const a1 = a + TAU * f;
+    if (a < end) {
+      ctx.beginPath(); ctx.arc(x, y, r, a + 0.012, Math.min(a1, end) - 0.012);
+      ctx.strokeStyle = active && active !== name ? mix(col, "#151a3a", 1 - dim) : col;
+      ctx.lineWidth = active === name ? w * 1.25 : w; ctx.lineCap = "butt"; ctx.stroke();
+      if (labels && name !== "M" && p > (a1 + Math.PI / 2) / TAU - 0.02) {
+        const m = (a + a1) / 2;
+        text(name, x + Math.cos(m) * r, y + Math.sin(m) * r, { size, color: "#10122a", shadow: false });
+      }
+    }
+    a = a1;
+  }
+  ctx.restore();
+}
+function stopSign(x, y, r, a = 1) {
+  ctx.save(); ctx.globalAlpha *= a; ctx.translate(x, y);
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) { const an = Math.PI / 8 + (i / 8) * TAU; ctx.lineTo(Math.cos(an) * r, Math.sin(an) * r); }
+  ctx.closePath(); ctx.fillStyle = C.red; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = r * 0.1; ctx.stroke();
+  ctx.restore();
+  text("STOP", x, y + 1, { size: r * 0.5, alpha: a, shadow: false });
+}
+function check(x, y, r, p, col = C.green) {
+  if (p <= 0) return;
+  const s = back(clamp(p * 1.4));
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  circle(0, 0, r, col, "#fff", r * 0.12);
+  ctx.strokeStyle = "#fff"; ctx.lineWidth = r * 0.22; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  ctx.beginPath(); ctx.moveTo(-r * 0.45, 0); ctx.lineTo(-r * 0.1, r * 0.35); ctx.lineTo(r * 0.5, -r * 0.35); ctx.stroke();
+  ctx.restore();
+}
+function arrow(x1, y1, x2, y2, p = 1, col = "#fff", lw = 6) {
+  if (p <= 0) return;
+  const x = lerp(x1, x2, p), y = lerp(y1, y2, p), a = Math.atan2(y2 - y1, x2 - x1);
+  ctx.save(); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x, y); ctx.stroke();
+  ctx.translate(x, y); ctx.rotate(a);
+  ctx.beginPath(); ctx.moveTo(lw * 2.4, 0); ctx.lineTo(-lw * 1.4, -lw * 2); ctx.lineTo(-lw * 1.4, lw * 2); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function pmatTracker(active, p, extraC = false) {
+  if (p <= 0) return;
+  const items = [...PMAT.map(x => [x[0], x[2]]), ...(extraC ? [["+C", C.blue]] : [])];
+  const x0 = W - 80 - items.length * 70;
+  items.forEach(([l, col], i) => {
+    const on = i === active;
+    const x = x0 + i * 70 + 35, y = 110;
+    ctx.save(); ctx.globalAlpha *= clamp(p * 2);
+    circle(x, y, on ? 32 : 26, on ? col : "rgba(255,255,255,.08)", on ? "#fff" : rgba(col, 0.6), 3);
+    ctx.restore();
+    text(l, x, y + 2, { size: on ? 34 : 26, color: on ? "#14102b" : col, alpha: clamp(p * 2), shadow: false });
+  });
+}
+function footnote(s, a) { text(s, 80, H - 50, { size: 24, weight: 700, color: C.sub, align: "left", alpha: a * 0.85 }); }
+
+// ---------------------------------------------------------------- scenes
+// Each scene draws itself at local time t. S.b(i) / S.e(i) give the start / end of narration line i.
+const SCENES = {};
+
+SCENES.hook = (t, S) => {
+  background(t);
+  const zoomStart = S.b(3) - 0.3;
+  // --- 1) a person, buzzing with cell divisions
+  const personA = 1 - seg(t, zoomStart, zoomStart + 1.2);
+  if (personA > 0) {
+    const z = 1 + Math.pow(seg(t, zoomStart, zoomStart + 1.3), 2) * 7;
+    ctx.save(); ctx.globalAlpha = personA;
+    ctx.translate(760, 560); ctx.scale(z, z); ctx.translate(0, -60 * (z - 1) / 7);
+    const appear = back(seg(t, 0.3, 1.4));
+    ctx.scale(appear, appear);
+    person(0, 0);
+    const r = rng(3);
+    const parts = [[0, -60, 90, 120], [-150, -40, 30, 90], [150, -40, 30, 90], [-55, 240, 30, 110], [55, 240, 30, 110], [0, -300, 60, 60]];
+    for (let i = 0; i < 260; i++) {
+      const ti = S.b(1) - 1 + (zoomStart - S.b(1) + 1) * Math.sqrt(r());
+      const pp = parts[Math.floor(r() * parts.length)];
+      const px = pp[0] + (r() - 0.5) * 2 * pp[2], py = pp[1] + (r() - 0.5) * 2 * pp[3];
+      const col = C.chr[Math.floor(r() * 4)];
+      const a = (t - ti) / 0.9;
+      if (a > 0 && a < 1) {
+        ctx.save(); ctx.globalAlpha *= 1 - a;
+        circle(px, py, 4 + 22 * easeOut(a), null, col, 3);
+        circle(px - 7 * a, py, 4, col); circle(px + 7 * a, py, 4, col);
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+    // labels for body parts
+    const lw = (d) => win(t, S.b(1) + d, S.b(2) - 0.4) * personA;
+    label("skin", 760 - 160, 560 - 40, 760 - 330, 560 - 140, lw(0.4), { size: 40 });
+    label("gut", 760 + 20, 560 - 20, 760 + 260, 560 - 120, lw(1.2), { size: 40 });
+    label("bone marrow", 760 + 55, 560 + 230, 760 + 260, 560 + 260, lw(2.2), { size: 40 });
+    // counter
+    const ca = win(t, S.b(2), zoomStart + 0.4) ;
+    if (ca > 0) {
+      pop("≈ 4,000,000", 1450, 430, seg(t, S.b(2), S.b(2) + 0.8), { size: 110, color: C.accent });
+      text("new cells every second", 1450, 520, { size: 44, weight: 800, alpha: ca });
+      text("made since this video started:", 1450, 640, { size: 30, weight: 700, color: C.sub, alpha: ca });
+      text(fmt(4e6 * (S.start + t)), 1450, 695, { size: 56, alpha: ca });
+    }
+  }
+  // --- 2) zoom into tissue: cells splitting everywhere
+  const tissueA = win(t, zoomStart + 0.7, S.b(4) - 0.2, 0.6, 0.5);
+  if (tissueA > 0) {
+    ctx.save(); ctx.globalAlpha = tissueA;
+    const r = rng(9);
+    const sc = lerp(1.25, 1, es(t, zoomStart + 0.7, zoomStart + 2.5));
+    ctx.translate(W / 2, H / 2); ctx.scale(sc, sc); ctx.translate(-W / 2, -H / 2);
+    for (let row = -1; row < 9; row++) for (let col = -1; col < 14; col++) {
+      const x = col * 150 + (row % 2) * 75 + 20, y = row * 130 + 40;
+      const hue = ["#3fbfb0", "#46a8d8", "#5fd3a5", "#3f8fd8"][Math.floor(r() * 4)];
+      const t0 = zoomStart + 1 + r() * 5;
+      const f = seg(t, t0, t0 + 1.6);
+      dividingBlob(x + Math.sin(t + row) * 4, y + Math.cos(t * 0.8 + col) * 4, 62, hue, t, f, { face: r() < 0.5, ph: r() * 6 });
+    }
+    ctx.restore();
+    text("Every new cell comes from an old cell splitting in two", W / 2, H - 90, { size: 44, alpha: tissueA * win(t, S.b(3) + 1.5, S.b(4) - 0.6) });
+  }
+  // --- 3) one cell -> thirty trillion
+  const growA = win(t, S.b(4) - 0.1, S.b(5) - 0.3, 0.5, 0.5);
+  if (growA > 0) {
+    ctx.save(); ctx.globalAlpha = growA;
+    const steps = (t - S.b(4) - 0.6) / 0.42;
+    const kk = clamp(Math.floor(steps), 0, 11), n = Math.pow(2, kk), fr = steps - Math.floor(steps);
+    const spacing = 330 / Math.sqrt(n);
+    for (let j = 0; j < n; j++) {
+      const [x, y] = phyllo(j, spacing);
+      const isNew = j >= n / 2 && kk > 0 && steps < 12;
+      const sc = isNew ? back(clamp(fr * 2.5)) : 1;
+      blob(860 + x, 560 + y, spacing * 0.62 * sc, C.chr[j % 4], t, { face: n <= 8, ph: j, wob: 0.6 });
+    }
+    ctx.restore();
+    const big = kk >= 11 ? "30,000,000,000,000+" : fmt(n);
+    text(big, 1560, 520, { size: kk >= 11 ? 70 : 110, color: C.accent, alpha: growA });
+    text(kk >= 11 ? "cells — that's you" : "cells", 1560, 610, { size: 44, weight: 800, alpha: growA });
+  }
+  // --- 4) the question, then the title card
+  const qa = win(t, S.b(5) - 0.2, S.e(5) - 0.4, 0.5, 0.4);
+  if (qa > 0) {
+    ctx.save(); ctx.globalAlpha = qa;
+    blob(960, 560, 210 * back(seg(t, S.b(5) - 0.2, S.b(5) + 0.6)), "#3fbfb0", t, { face: true, mood: 1, look: Math.sin(t * 1.5) });
+    for (let i = 0; i < 3; i++) pop("?", 960 + [-300, 290, 230][i], 560 + [-170, -230, 120][i], seg(t, S.b(5) + 0.6 + i * 0.5, S.b(5) + 1.2 + i * 0.5), { size: [110, 140, 90][i], color: C.accent });
+    ctx.restore();
+  }
+  const ta = seg(t, S.e(5) + 0.1, S.e(5) + 0.9);
+  if (ta > 0) {
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * TAU + t * 0.15;
+      dividingBlob(960 + Math.cos(a) * 640, 540 + Math.sin(a) * 360, 46, C.chr[i % 4], t, (t * 0.35 + i * 0.13) % 1, { alpha: ta });
+    }
+    pop("MITOSIS", 960, 500, ta, { size: 200, spacing: 14 });
+    text("How one cell becomes two", 960, 640, { size: 56, weight: 800, color: C.accent, alpha: seg(t, S.e(5) + 0.6, S.e(5) + 1.4) });
+  }
+};
+function person(x, y) {
+  const fill = "#2a4a96", rim = "#4f7be0";
+  const shapes = (lwAdd, col) => {
+    ctx.strokeStyle = col; ctx.lineCap = "round";
+    for (const [a, b, c, d, w] of [[-105, -170, -175, 60, 64], [105, -170, 175, 60, 64], [-55, 90, -62, 330, 82], [55, 90, 62, 330, 82]]) {
+      ctx.lineWidth = w + lwAdd; ctx.beginPath(); ctx.moveTo(x + a, y + b); ctx.lineTo(x + c, y + d); ctx.stroke();
+    }
+    ctx.fillStyle = col;
+    rrect(x - 115 - lwAdd / 2, y - 205 - lwAdd / 2, 230 + lwAdd, 310 + lwAdd, 80); ctx.fill();
+    circle(x, y - 300, 88 + lwAdd / 2, col);
+  };
+  shapes(12, rim); shapes(0, fill);
+  eyes(x, y - 300, 46, 1.3, {});
+}
+
+SCENES.cell = (t, S) => {
+  background(t);
+  // camera: zoom into the nucleus for the chromatin close-up
+  const zin = es(t, S.b(6) - 0.2, S.b(6) + 1.6) * (1 - es(t, S.b(7) - 0.3, S.b(7) + 1.2));
+  const cellA = 1 - seg(t, S.b(8) - 0.4, S.b(8) + 0.4);
+  const cx = 700, cy = 570, R = 330;
+  let A = {};
+  if (cellA > 0) {
+    ctx.save(); ctx.globalAlpha = cellA;
+    const z = 1 + zin * 1.25;
+    ctx.translate(cx, cy); ctx.scale(z, z); ctx.translate(-cx, -cy);
+    ctx.translate(0, 0);
+    const appear = back(seg(t, 0.1, 1.2));
+    const st = cellState({ dup: 0, glowDNA: win(t, S.b(5), S.b(6) + 1) });
+    A = drawCell(st, cx, cy, R * appear, t);
+    ctx.restore();
+  }
+  stageTitle("SOMATIC CELL", "soma = body", win(t, 0.3, S.b(3) - 0.3));
+  // right panel: kinds of somatic cells
+  const k1 = win(t, S.b(1) + 1.2, S.b(3) - 0.4);
+  if (k1 > 0) {
+    const kinds = [["skin", "#f4a6a0"], ["muscle", "#ff6b6b"], ["liver", "#c47a4a"]];
+    kinds.forEach(([name, col], i) => {
+      const p = seg(t, S.b(1) + 1.2 + i * 0.7, S.b(1) + 2 + i * 0.7) * k1;
+      const x = 1250 + i * 220, y = 380;
+      ctx.save(); ctx.globalAlpha = clamp(p * 2); ctx.translate(x, y); ctx.scale(back(p), back(p));
+      if (i === 0) { rrect(-80, -40, 160, 80, 22); ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 4; ctx.stroke(); circle(0, 0, 18, "#7b3fa0"); }
+      if (i === 1) { ctx.beginPath(); ctx.ellipse(0, 0, 95, 34, 0, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 4; ctx.stroke(); for (let j = -3; j <= 3; j++) { ctx.beginPath(); ctx.moveTo(j * 22, -24); ctx.lineTo(j * 22, 24); ctx.strokeStyle = "rgba(255,255,255,.4)"; ctx.lineWidth = 3; ctx.stroke(); } circle(0, 0, 13, "#7b3fa0"); }
+      if (i === 2) { ctx.beginPath(); for (let j = 0; j < 6; j++) { const a = j / 6 * TAU; ctx.lineTo(Math.cos(a) * 72, Math.sin(a) * 72); } ctx.closePath(); ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 4; ctx.stroke(); circle(0, 0, 20, "#7b3fa0"); }
+      ctx.restore();
+      text(name, x, y + 110, { size: 38, alpha: clamp(p * 2) });
+    });
+    text("= body cells", 1470, 250, { size: 44, color: C.accent, alpha: k1 });
+  }
+  const k2 = win(t, S.b(2) + 0.6, S.b(3) - 0.4);
+  if (k2 > 0) {
+    ctx.save(); ctx.globalAlpha = k2;
+    circle(1330, 720, 70, "#ffd6a5", "#fff", 4); circle(1330, 720, 22, "#e09f3e");
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 5; ctx.lineCap = "round";
+    circle(1530, 720, 18, "#e9ecff", "#fff", 3);
+    ctx.beginPath(); for (let i = 0; i < 20; i++) ctx.lineTo(1548 + i * 6, 720 + Math.sin(i * 0.8 + t * 8) * 8); ctx.stroke();
+    ctx.restore();
+    text("egg & sperm cells", 1460, 840, { size: 38, alpha: k2 });
+    text("are NOT made by mitosis → meiosis", 1460, 890, { size: 32, weight: 800, color: C.pink, alpha: k2 * seg(t, S.b(2) + 2, S.b(2) + 2.6) });
+  }
+  // labels on the cell
+  if (cellA > 0 && zin < 0.05) {
+    label("cytoplasm", A.cytoplasm[0], A.cytoplasm[1], 1180, 780, win(t, S.b(3) + 0.5, S.b(6) - 0.4), { color: C.mem, sub: "jelly-like soup" });
+    label("nucleus", A.nucleus[0] + 60, A.nucleus[1] - 40, 1180, 330, win(t, S.b(4) + 0.4, S.b(6) - 0.4), { color: C.env, sub: "control centre" });
+    label("nuclear envelope", A.envelope[0], A.envelope[1], 1180, 520, win(t, S.b(4) + 2.6, S.b(6) - 0.4), { color: C.env, sub: "double-layered wall" });
+    label("DNA", 700 + 40, 570 + 60, 1180, 660, win(t, S.b(5) + 0.4, S.b(6) - 0.4), { color: C.pink });
+  }
+  // chromatin close-up with "thread on spools"
+  const ca = win(t, S.b(6) + 1.2, S.b(7) - 0.4);
+  if (ca > 0) {
+    text("CHROMATIN", 420, 140, { size: 72, alpha: ca, spacing: 2 });
+    text("loose, tangled DNA", 420, 200, { size: 34, weight: 800, color: C.pink, alpha: ca });
+    ctx.save(); ctx.globalAlpha = ca;
+    const px = 1440, py = 560, pr = 330;
+    circle(px, py, pr, "#1b1440", "#fff", 6);
+    ctx.save(); ctx.beginPath(); ctx.arc(px, py, pr - 3, 0, TAU); ctx.clip();
+    const spools = [[-240, -150], [-110, -60], [20, -140], [130, -20], [-40, 90], [90, 180], [230, 110]];
+    const reveal = seg(t, S.b(6) + 1.5, S.b(6) + 5);
+    // linker DNA
+    ctx.strokeStyle = C.pink; ctx.lineWidth = 9; ctx.lineCap = "round";
+    ctx.beginPath();
+    spools.forEach(([x, y], i) => { const X = px + x, Y = py + y + Math.sin(t + i) * 5; i ? ctx.lineTo(X, Y) : ctx.moveTo(X - 120, Y - 80); });
+    ctx.stroke();
+    spools.forEach(([x, y], i) => {
+      const p = seg(reveal, i / 9, i / 9 + 0.3);
+      const X = px + x, Y = py + y + Math.sin(t + i) * 5;
+      ctx.save(); ctx.translate(X, Y); ctx.scale(back(p), back(p));
+      circle(0, 0, 40, "#8e6cf0", "#d6c8ff", 4);
+      ctx.strokeStyle = C.pink; ctx.lineWidth = 9;
+      for (let j = 0; j < 2; j++) { ctx.beginPath(); ctx.ellipse(0, 0, 46, 22, -0.5 + j * 0.25, 0.2, Math.PI - 0.2); ctx.stroke(); }
+      ctx.restore();
+    });
+    ctx.restore(); ctx.restore();
+    label("DNA thread", 1440 - 120, 560 + 35, 1080, 840, win(t, S.b(6) + 3, S.b(7) - 0.4), { color: C.pink });
+    label("protein spool", 1440 + 130, 560 - 20, 1660, 940, win(t, S.b(6) + 4, S.b(7) - 0.4), { color: "#b9a2ff" });
+  }
+  // two metres of DNA
+  const da = win(t, S.b(7) + 0.4, S.b(8) - 0.4);
+  if (da > 0) {
+    const p = es(t, S.b(7) + 0.6, S.b(7) + 3.2);
+    ctx.save(); ctx.globalAlpha = da;
+    ctx.strokeStyle = C.pink; ctx.lineWidth = 5; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(700, 570);
+    const x1 = lerp(700, 1840, p);
+    for (let x = 700; x <= x1; x += 6) ctx.lineTo(x, 570 + Math.sin(x * 0.08) * 10 * (1 - (x - 700) / 1200));
+    ctx.stroke(); ctx.restore();
+    pop("≈ 2 metres", 1400, 450, seg(t, S.b(7) + 2.4, S.b(7) + 3.2), { size: 90, color: C.accent });
+    text("of DNA in every single cell", 1400, 530, { size: 38, weight: 800, alpha: da * seg(t, S.b(7) + 2.8, S.b(7) + 3.6) });
+    text("…packed into a nucleus about 0.006 mm wide", 1400, 690, { size: 34, weight: 800, color: C.sub, alpha: da * seg(t, S.b(7) + 5, S.b(7) + 5.8) });
+  }
+  // 46 chromosomes: 23 from mum, 23 from dad
+  const ka = seg(t, S.b(8) - 0.2, S.b(8) + 0.6);
+  if (ka > 0) {
+    pop("46 chromosomes", 960, 140, ka, { size: 80 });
+    for (let i = 0; i < 23; i++) {
+      const row = Math.floor(i / 8), col = i % 8;
+      const n = row < 2 ? 8 : 7;
+      const x = 960 + (col - (n - 1) / 2) * 210, y = 330 + row * 210;
+      const L = lerp(150, 55, i / 22);
+      const p = seg(t, S.b(8) + 0.4 + i * 0.12, S.b(8) + 1 + i * 0.12);
+      ctx.save(); ctx.translate(x, y); ctx.scale(back(p), back(p));
+      drawX(-34, 0, L, C.pink, 0, 13, clamp(p * 2));
+      drawX(34, 0, L, C.blue, 0, 13, clamp(p * 2));
+      ctx.restore();
+    }
+    const la = seg(t, S.b(8) + 2.5, S.b(8) + 3.2);
+    text("23 from mum", 660, 990, { size: 50, color: C.pink, alpha: la });
+    text("23 from dad", 1260, 990, { size: 50, color: C.blue, alpha: seg(t, S.b(8) + 3.6, S.b(8) + 4.3) });
+  }
+};
+
+SCENES.cycle = (t, S) => {
+  background(t);
+  const rx = 620, ry = 560, rr = 290;
+  const p = es(t, 0.3, 2.6);
+  // ring + interphase bracket
+  cycleRing(rx, ry, rr, 92, { p, labels: true, size: 46 });
+  const ia = win(t, S.b(1) + 0.2, 1e9);
+  if (ia > 0) {
+    ctx.save(); ctx.globalAlpha = ia;
+    ctx.strokeStyle = "rgba(255,255,255,.75)"; ctx.lineWidth = 4; ctx.setLineDash([2, 12]); ctx.lineCap = "round";
+    ctx.beginPath(); ctx.arc(rx, ry, rr + 78, -Math.PI / 2 + 0.05, -Math.PI / 2 + TAU * (23 / 24) * es(t, S.b(1) + 0.2, S.b(1) + 2) - 0.05); ctx.stroke();
+    ctx.restore();
+    text("INTERPHASE", rx, ry - 30, { size: 52, alpha: ia });
+    text("grow & prepare", rx, ry + 25, { size: 32, weight: 800, color: C.G1, alpha: ia });
+    label("MITOTIC PHASE", rx + Math.cos(-1.70) * rr, ry + Math.sin(-1.70) * rr, rx + 260, ry - rr - 110, win(t, S.b(1) + 3, 1e9), { color: C.M, size: 40, sub: "divide!" });
+  }
+  // a little cell travelling round the cycle, splitting as it passes M
+  if (p > 0.98) {
+    const sp = 0.55, ang = ((t - 2.6) * sp) % TAU;
+    const a = -Math.PI / 2 + ang;
+    const inM = ang > TAU * (23 / 24);
+    const x = rx + Math.cos(a) * rr, y = ry + Math.sin(a) * rr;
+    if (inM) { const f = (ang - TAU * 23 / 24) / (TAU / 24); dividingBlob(x, y, 30, "#e9fff9", t, f * 1.2); }
+    else blob(x, y, lerp(22, 32, ang / TAU), "#e9fff9", t, { face: true });
+  }
+  stageTitle("THE CELL CYCLE", null, win(t, 0.2, S.b(1)));
+  // hours bars
+  const ba = win(t, S.b(2), S.b(3) - 0.3);
+  if (ba > 0) {
+    const g1 = es(t, S.b(2) + 0.5, S.b(2) + 2.5), g2 = es(t, S.b(2) + 3.5, S.b(2) + 4.2);
+    ctx.save(); ctx.globalAlpha = ba;
+    rrect(1120, 420, 680 * g1, 70, 35); ctx.fillStyle = C.G1; ctx.fill();
+    rrect(1120, 600, Math.max(70 * g2, 1), 70, 35); ctx.fillStyle = C.M; ctx.fill();
+    ctx.restore();
+    text("Interphase  ≈ 23 hours", 1120, 380, { size: 42, align: "left", alpha: ba });
+    text("Mitosis  ≈ 1 hour", 1120, 560, { size: 42, align: "left", alpha: ba * seg(t, S.b(2) + 3.2, S.b(2) + 3.8) });
+    text("(a typical human cell that divides once a day)", 1120, 760, { size: 28, weight: 700, color: C.sub, align: "left", alpha: ba });
+  }
+  // cell social media
+  const pa = win(t, S.b(3) - 0.1, S.b(4) - 0.3);
+  if (pa > 0) {
+    ctx.save(); ctx.globalAlpha = pa;
+    rrect(1260, 200, 440, 760, 50); ctx.fillStyle = "#0d1230"; ctx.fill(); ctx.strokeStyle = "#9fb4e8"; ctx.lineWidth = 8; ctx.stroke();
+    rrect(1420, 222, 120, 18, 9); ctx.fillStyle = "#2a3366"; ctx.fill();
+    const posts = [["G1", "still preparing…"], ["S", "still preparing…"], ["G2", "still preparing…"], ["M", "DIVIDING!!!"]];
+    posts.forEach(([ph, msg], i) => {
+      const q = seg(t, S.b(3) + 0.4 + i * 0.75, S.b(3) + 0.9 + i * 0.75);
+      if (q <= 0) return;
+      const y = 280 + i * 165;
+      ctx.save(); ctx.translate(1480, y + 60); ctx.scale(back(q), back(q));
+      rrect(-195, -62, 390, 130, 24); ctx.fillStyle = i === 3 ? "#3a1030" : "#1a2150"; ctx.fill();
+      ctx.restore();
+      blob(1330, y + 50, 30, i === 3 ? C.M : "#3fbfb0", t, { face: true, alpha: q });
+      text("@cell_" + ph, 1380, y + 30, { size: 26, weight: 800, color: PHASES[i][2], align: "left", alpha: q });
+      text(msg, 1380, y + 78, { size: i === 3 ? 38 : 32, color: "#fff", align: "left", alpha: q });
+    });
+    ctx.restore();
+  }
+  // fast gut cells vs resting neurons
+  const na = win(t, S.b(4), 1e9);
+  if (na > 0) {
+    ctx.save(); ctx.globalAlpha = na;
+    // gut cell racing round a mini cycle
+    cycleRing(1250, 420, 95, 26, { labels: false });
+    const a = -Math.PI / 2 + t * 4;
+    blob(1250 + Math.cos(a) * 95, 420 + Math.sin(a) * 95, 22, "#e9fff9", t, { face: true });
+    text("gut-lining cells", 1250, 570, { size: 38, alpha: na });
+    text("divide again and again", 1250, 615, { size: 28, weight: 800, color: C.G1, alpha: na });
+    // neuron resting
+    const p2 = seg(t, S.b(4) + 3.5, S.b(4) + 4.3);
+    ctx.globalAlpha = na * p2;
+    ctx.strokeStyle = "#ffd6a5"; ctx.lineCap = "round";
+    for (let i = 0; i < 6; i++) {
+      const an = i / 6 * TAU + 0.3; ctx.lineWidth = 10;
+      ctx.beginPath(); ctx.moveTo(1640, 420); ctx.quadraticCurveTo(1640 + Math.cos(an) * 60, 420 + Math.sin(an) * 60 + 20, 1640 + Math.cos(an + 0.3) * 115, 420 + Math.sin(an + 0.3) * 115); ctx.stroke();
+    }
+    ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(1640, 420); ctx.bezierCurveTo(1700, 500, 1760, 480, 1820, 560); ctx.stroke();
+    blob(1640, 420, 48, "#ffb36b", t, { wob: 0.4 });
+    ctx.restore();
+    for (let i = 0; i < 3; i++) text("z", 1690 + i * 26, 340 - i * 34 - ((t * 20) % 20), { size: 30 + i * 8, color: C.sub, alpha: na * p2 * (0.5 + 0.5 * Math.sin(t * 2 + i)) });
+    text("most nerve cells", 1640, 570, { size: 38, alpha: na * p2 });
+    text("stop dividing (\"G0\")", 1640, 615, { size: 28, weight: 800, color: "#ffb36b", alpha: na * p2 });
+  }
+};
+
+SCENES.interphase = (t, S) => {
+  background(t);
+  const cx = 660, cy = 590;
+  const grow = lerp(0.8, 1, es(t, S.b(1) + 0.5, S.b(1) + 5)) * (1 + 0.04 * es(t, S.b(5), S.b(5) + 3));
+  const st = cellState({ grow, orgs: lerp(0.45, 1, es(t, S.b(1) + 0.5, S.b(1) + 5)), dup: es(t, S.b(2) + 1.5, S.b(2) + 5.5), glowDNA: win(t, S.b(2) + 1, S.b(3)) });
+  drawCell(st, cx, cy, 330, t);
+  stageTitle("INTERPHASE", "not a break: the busiest phase!", win(t, 0.2, S.b(1) + 0.3));
+  // which sub-phase are we in?
+  const active = t >= S.b(5) ? "G2" : t >= S.b(2) ? "S" : t >= S.b(1) ? "G1" : null;
+  cycleRing(1790, 140, 62, 24, { labels: false, active, alpha: seg(t, 0.5, 1.5) });
+  if (active) text(active, 1790, 142, { size: 36, color: PHASES.find(x => x[0] === active)[2] });
+  const head = (title, sub, col, a) => { text(title, 1080, 330, { size: 64, align: "left", color: col, alpha: a }); text(sub, 1082, 400, { size: 36, weight: 800, align: "left", alpha: a }); };
+  head("G1", "growth phase 1", C.G1, win(t, S.b(1), S.b(2) - 0.3));
+  if (win(t, S.b(1), S.b(2) - 0.3) > 0) {
+    const a = win(t, S.b(1), S.b(2) - 0.3);
+    ["the cell grows bigger", "builds proteins", "makes more organelles"].forEach((s, i) => text("• " + s, 1100, 500 + i * 70, { size: 38, weight: 800, align: "left", color: C.sub, alpha: a * seg(t, S.b(1) + 1 + i * 1.2, S.b(1) + 1.6 + i * 1.2) }));
+  }
+  head("S", "synthesis: copy ALL the DNA", C.S, win(t, S.b(2), S.b(3) + 0.3 - 0.6));
+  // six billion letters + library of books
+  const la = win(t, S.b(3), S.b(4) - 0.3);
+  if (la > 0) {
+    const n = 6e9 * es(t, S.b(3) + 0.2, S.b(3) + 2.4);
+    text(fmt(n), 1400, 300, { size: 88, color: C.S, alpha: la });
+    text("DNA letters copied", 1400, 375, { size: 38, weight: 800, alpha: la });
+    const r = rng(17);
+    ctx.save(); ctx.globalAlpha = la;
+    const shown = Math.floor(es(t, S.b(3) + 3, S.b(3) + 7) * 96);
+    for (let i = 0; i < 96; i++) {
+      const col = ["#ff5d8f", "#ffb347", "#ffe066", "#8be36b", "#4cc9f0", "#c77dff"][Math.floor(r() * 6)];
+      const hgt = 70 + r() * 30;
+      if (i >= shown) continue;
+      const shelf = Math.floor(i / 24), x = 1090 + (i % 24) * 29, y = 600 + shelf * 120;
+      rrect(x, y - hgt, 25, hgt, 4); ctx.fillStyle = col; ctx.fill();
+    }
+    for (let s = 0; s < 4; s++) { ctx.fillStyle = "#6b4f3a"; ctx.fillRect(1080, 600 + s * 120, 710, 10); }
+    ctx.restore();
+    // the one typo
+    const tp = seg(t, S.b(3) + 7.5, S.b(3) + 8.2);
+    text("≈ 1 mistake per 1,000,000,000 letters", 1440, 1010, { size: 36, weight: 800, color: C.accent, alpha: la * tp });
+  }
+  // sister chromatids close-up
+  const xa = win(t, S.b(4), S.b(5) - 0.3);
+  if (xa > 0) {
+    const p = seg(t, S.b(4) + 0.2, S.b(4) + 1);
+    ctx.save(); ctx.translate(1430, 560); ctx.scale(back(p), back(p));
+    drawX(0, 0, 330, C.chr[0], 0.12, 38, xa);
+    ctx.restore();
+    label("sister chromatid", 1430 - 70, 560 - 120, 1150, 300, win(t, S.b(4) + 1.6, S.b(5) - 0.3), { color: C.pink, size: 36 });
+    label("sister chromatid", 1430 + 55, 560 + 130, 1620, 900, win(t, S.b(4) + 2.2, S.b(5) - 0.3), { color: C.pink, size: 36 });
+    label("centromere", 1430, 560, 1650, 330, win(t, S.b(4) + 4.2, S.b(5) - 0.3), { color: C.accent, size: 36, sub: "where they're joined" });
+    text("(shown coiled up so you can see it)", 1430, 1000, { size: 26, weight: 700, color: C.sub, alpha: xa });
+  }
+  // G2 checklist + green light
+  const ga = win(t, S.b(5), 1e9);
+  if (ga > 0) {
+    head("G2", "growth phase 2 + final checks", C.G2, ga);
+    ["grown big enough", "DNA fully copied", "no damage found"].forEach((s, i) => {
+      const q = seg(t, S.b(5) + 2.2 + i * 1.1, S.b(5) + 2.8 + i * 1.1);
+      check(1120, 510 + i * 90, 30, q);
+      text(s, 1170, 512 + i * 90, { size: 40, weight: 800, align: "left", alpha: ga * clamp(q * 2) });
+    });
+    const go = seg(t, S.e(5) - 0.6, S.e(5));
+    if (go > 0) {
+      glow(1240, 860, 150, C.green, 0.5 * go);
+      pop("GO!", 1240, 862, go, { size: 120, color: C.green });
+    }
+  }
+};
+
+SCENES.mitosis = (t, S) => {
+  background(t);
+  // microscope view
+  const ma = win(t, 0.2, S.b(1) - 0.3);
+  if (ma > 0) {
+    ctx.save(); ctx.globalAlpha = ma;
+    const x = 640, y = 560, r = 340;
+    circle(x, y, r + 26, "#1a1a1a", "#3b3b3b", 10);
+    ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.clip();
+    ctx.fillStyle = "#efe2c0"; ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+    CHR.forEach((c, i) => {
+      for (const sd of [-1, 1]) {
+        const pts = c.pts.map(([px, py], q) => [x + px * 1.4 + sd * 4 + Math.sin(t + q * 0.3 + i) * 3, y + py * 1.4 + Math.cos(t * 0.8 + q * 0.2) * 3]);
+        noodle(pts, "#6b3f6b", 5, 0.8);
+      }
+    });
+    const g = ctx.createRadialGradient(x, y, r * 0.6, x, y, r);
+    g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(60,40,10,.55)");
+    ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+    ctx.restore(); ctx.restore();
+    pop("mitos", 1390, 380, seg(t, 2.8, 3.6), { size: 110, color: C.accent });
+    text("Greek for \"thread\"", 1390, 470, { size: 46, weight: 800, alpha: ma * seg(t, 3.5, 4.2) });
+    text("First described in the 1880s", 1390, 640, { size: 34, weight: 700, color: C.sub, alpha: ma * seg(t, S.b(0) + 7, S.b(0) + 7.8) });
+    text("by Walther Flemming, who drew what he saw", 1390, 685, { size: 30, weight: 700, color: C.sub, alpha: ma * seg(t, S.b(0) + 7.5, S.b(0) + 8.3) });
+  }
+  // PMAT tiles
+  const pa = seg(t, S.b(1) - 0.2, S.b(1) + 0.4);
+  if (pa > 0) {
+    const wordT = (i) => S.b(2) + (S.e(2) - S.b(2)) * (i / 4);
+    PMAT.forEach(([l, name, col], i) => {
+      const x = 960 + (i - 1.5) * 330, y = 470;
+      const p = seg(t, S.b(1) + 2 + i * 0.25, S.b(1) + 2.6 + i * 0.25);
+      ctx.save(); ctx.translate(x, y); ctx.scale(back(p), back(p));
+      const lit = t >= wordT(i) && t < wordT(i + 1) + 0.6;
+      rrect(-120, -120, 240, 240, 48); ctx.fillStyle = col; ctx.fill();
+      ctx.strokeStyle = lit ? "#fff" : mix(col, "#1a0a30", 0.4); ctx.lineWidth = lit ? 10 : 6; ctx.stroke();
+      ctx.restore();
+      text(l, x, y + 8, { size: 170, color: "#1a1236", shadow: false, alpha: clamp(p * 2), scale: back(p) });
+      pop(name, x, y + 205, seg(t, wordT(i), wordT(i) + 0.5), { size: 50 });
+    });
+  }
+};
+
+// The four PMAT scenes + cytokinesis share one continuously-evolving cell.
+const MCX = 1060, MCY = 585, MR = 350;
+function mitosisFrame(t, S, idx, st, title, sub, extraC = false) {
+  background(t);
+  const A = drawCell(st, MCX, MCY, MR, t);
+  stageTitle(title, sub, seg(t, 0.1, 0.8), idx < 4 ? PMAT[idx][2] : C.blue);
+  pmatTracker(idx, seg(t, 0, 0.6), extraC);
+  footnote("Simplified: 4 of the 46 chromosomes shown", seg(t, 0.5, 1.5));
+  return A;
+}
+SCENES.prophase = (t, S) => {
+  const st = cellState({ cond: es(t, S.b(1), S.b(1) + 6), spin: es(t, S.b(2), S.b(2) + 5.5), envBreak: es(t, S.b(3) + 0.3, S.b(3) + 3.8) });
+  const A = mitosisFrame(t, S, 0, st, "PROPHASE", "pro = before", false);
+  label("chromosome", A.chr0[0], A.chr0[1], 360, 420, win(t, S.b(1) + 4.5, S.b(2) + 2) , { color: C.chr[0], sub: "chromatin coiled up tight" });
+  label("centrosome", A.poleL[0], A.poleL[1], 330, 640, win(t, S.b(2) + 3, S.b(3) + 0.5), { color: C.centro });
+  label("spindle fibers", MCX - 150, MCY + 70, 360, 820, win(t, S.b(2) + 5, S.b(3) + 4), { color: C.spindle });
+  label("nuclear envelope", A.fragment[0], A.fragment[1], 360, 330, win(t, S.b(3) + 0.6, 1e9), { color: C.env, sub: "breaks apart" });
+};
+SCENES.metaphase = (t, S) => {
+  const st = cellState({ cond: 1, spin: 1, envBreak: 1, attach: seg(t, S.b(1) + 0.3, S.b(1) + 3.5), toPlate: es(t, S.b(1) + 2, S.b(2) + 2.5) });
+  const A = mitosisFrame(t, S, 1, st, "METAPHASE", "M for middle", false);
+  const pl = win(t, S.b(2) + 1.5, 1e9);
+  if (pl > 0) {
+    ctx.save(); ctx.globalAlpha = pl * 0.8; ctx.setLineDash([10, 14]); ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(MCX, MCY - 330); ctx.lineTo(MCX, MCY + 330); ctx.stroke(); ctx.restore();
+    label("the cell's middle", MCX, MCY - 300, MCX + 300, 160, win(t, S.b(2) + 2, S.b(3) + 1), { color: "#fff", sub: "(the metaphase plate)" });
+  }
+  label("spindle fiber grabs the centromere", A.chr2[0] - 4, A.chr2[1], 300, 820, win(t, S.b(1) + 2.6, S.b(2) + 1.5), { color: C.spindle, size: 34 });
+  // checkpoint
+  const ck = win(t, S.b(3), 1e9);
+  if (ck > 0) {
+    CHR.forEach((c, i) => check(A["chrB" + i][0] + 70, A["chrB" + i][1], 22, seg(t, S.b(3) + 2.5 + i * 0.6, S.b(3) + 3 + i * 0.6)));
+    pop("CHECKPOINT", 330, 520, seg(t, S.b(3) + 0.3, S.b(3) + 1), { size: 60, color: C.accent });
+    text("every chromosome attached?", 330, 590, { size: 32, weight: 800, alpha: ck * seg(t, S.b(3) + 1, S.b(3) + 1.6) });
+    const ok = seg(t, S.b(3) + 5.5, S.b(3) + 6.2);
+    if (ok > 0) pop("all clear ✓", 330, 680, ok, { size: 46, color: C.green });
+  }
+};
+SCENES.anaphase = (t, S) => {
+  const sep = es(t, S.b(1) + 0.5, S.b(1) + 6.5);
+  const st = cellState({ cond: 1, spin: 1, envBreak: 1, attach: 1, toPlate: 1, sep });
+  const A = mitosisFrame(t, S, 2, st, "ANAPHASE", "A for apart", false);
+  label("sister chromatids pulled apart", A.chr1[0], A.chr1[1] + 30, 330, 860, win(t, S.b(1) + 2.5, S.b(2) + 1), { color: C.chr[1], size: 34 });
+  const sa = win(t, S.b(2) + 0.3, 1e9);
+  if (sa > 0) {
+    for (const [x, s] of [[A.poleL[0] - 10, "full set"], [A.poleR[0] + 10, "full set"]]) {
+      pop("46", x, MCY - 300, seg(t, S.b(2) + 0.3, S.b(2) + 1), { size: 64, color: C.accent });
+      text(s, x, MCY - 250, { size: 28, weight: 800, alpha: sa });
+    }
+  }
+  const sp = win(t, S.b(3) + 0.3, 1e9);
+  if (sp > 0) {
+    text("speed ≈ 0.001 mm per minute", 330, 560, { size: 34, weight: 800, alpha: sp, color: C.spindle });
+    pop("TUG OF WAR!", 330, 640, seg(t, S.b(3) + 3, S.b(3) + 3.7), { size: 50, color: C.accent });
+  }
+};
+SCENES.telophase = (t, S) => {
+  const st = cellState({ cond: 1, spin: 1, envBreak: 1, attach: 1, toPlate: 1, sep: 1, newEnv: es(t, S.b(1) + 1.5, S.b(1) + 5), decond: es(t, S.b(2) + 0.2, S.b(2) + 4.5), spinFade: es(t, S.b(2) + 1.5, S.b(2) + 5) });
+  const A = mitosisFrame(t, S, 3, st, "TELOPHASE", "telo = end", false);
+  label("new nuclear envelope", A.newNucL[0] - 100, A.newNucL[1] - 80, 330, 360, win(t, S.b(1) + 3, S.b(2) + 2), { color: C.env, size: 36 });
+  label("uncoils into chromatin", A.newNucR[0] + 40, A.newNucR[1] + 60, 1480, 980, win(t, S.b(2) + 2, S.b(3)), { color: C.pink, size: 36 });
+  const two = win(t, S.b(3) + 0.2, 1e9);
+  if (two > 0) {
+    pop("2 nuclei", 330, 560, seg(t, S.b(3) + 0.2, S.b(3) + 0.9), { size: 70, color: C.accent });
+    text("in one cell (for now)", 330, 630, { size: 32, weight: 800, alpha: two });
+  }
+};
+SCENES.cytokinesis = (t, S) => {
+  const furrow = es(t, S.b(1) - 0.4, S.b(1) + 5.5);
+  const st = cellState({ cond: 1, spin: 1, envBreak: 1, attach: 1, toPlate: 1, sep: 1, newEnv: 1, decond: 1, spinFade: 1, furrow });
+  background(t);
+  // slide the animal cell left to make room for the plant cell
+  const side = es(t, S.b(2) - 0.4, S.b(2) + 0.8) * (1 - es(t, S.b(3) - 0.6, S.b(3) + 0.6));
+  const cx = lerp(MCX - 100, 520, side), sc = lerp(1, 0.62, side);
+  const A = drawCell(st, cx, MCY, MR * sc, t);
+  stageTitle("CYTOKINESIS", "cyto = cell · kinesis = movement", seg(t, 0.1, 0.8) * (1 - side * 0.0), C.blue);
+  pmatTracker(4, seg(t, 0, 0.6) * (1 - side), true);
+  label("ring of protein pinches in", A.neckTop[0], A.neckTop[1], cx + 150, 250, win(t, S.b(1) + 1.2, S.b(2) - 0.5), { color: "#ff8a95", size: 36, sub: "the cleavage furrow" });
+  // plant cell
+  const pa = win(t, S.b(2) + 0.2, S.b(3) - 0.5);
+  if (pa > 0) {
+    ctx.save(); ctx.globalAlpha = pa;
+    const x = 1360, y = 600, w = 640, h = 420;
+    rrect(x - w / 2, y - h / 2, w, h, 24); ctx.fillStyle = "#1e5e3a"; ctx.fill(); ctx.strokeStyle = "#7ed957"; ctx.lineWidth = 22; ctx.stroke();
+    rrect(x - w / 2 + 16, y - h / 2 + 16, w - 32, h - 32, 14); ctx.fillStyle = "rgba(120,220,170,.25)"; ctx.fill(); ctx.strokeStyle = "#b6f5c8"; ctx.lineWidth = 4; ctx.stroke();
+    const r = rng(23);
+    for (let i = 0; i < 12; i++) { const ox = (r() - 0.5) * (w - 100), oy = (r() - 0.5) * (h - 100); if (Math.abs(ox) < 50) continue; ctx.beginPath(); ctx.ellipse(x + ox, y + oy, 26, 14, r() * 3, 0, TAU); ctx.fillStyle = "#3fbf5f"; ctx.fill(); }
+    for (const sd of [-1, 1]) { circle(x + sd * 160, y, 62, C.nuc, C.env, 5); }
+    const pp = es(t, S.b(2) + 2, S.b(2) + 6.5);
+    for (let i = 0; i < 14; i++) { const yy = y + (i / 13 - 0.5) * (h - 40); const d = Math.abs(yy - y) / (h / 2); if (d > pp + 0.15) circle(x + Math.sin(i * 3 + t * 2) * 30 * (1 - pp), yy, 7, "#d9ffb3"); }
+    ctx.fillStyle = "#c6f56a"; rrect(x - 7, y - (h / 2 - 16) * pp, 14, (h - 32) * pp, 7); ctx.fill();
+    ctx.restore();
+    label("cell plate", x, y - 60, x + 120, 290, win(t, S.b(2) + 4, S.b(3) - 0.5), { color: "#c6f56a", size: 40, sub: "a new wall, built from the middle" });
+    text("plant cell", x, y + h / 2 + 70, { size: 40, alpha: pa });
+    text("animal cell", cx, MCY + 300, { size: 40, alpha: pa });
+  }
+  const da = win(t, S.b(3) + 0.3, 1e9);
+  if (da > 0) {
+    pop("1 parent cell  →  2 daughter cells", cx, MCY + 400, seg(t, S.b(3) + 0.3, S.b(3) + 1), { size: 56, color: C.accent });
+  }
+};
+
+SCENES.daughters = (t, S) => {
+  background(t);
+  const st = cellState({ dup: 0, orgs: 0.8 });
+  const da = 1 - seg(t, S.b(2) - 0.4, S.b(2) + 0.3);
+  if (da > 0) {
+    ctx.save(); ctx.globalAlpha = da;
+    const sh = lerp(1, 0.78, es(t, S.b(1), S.b(1) + 1.2)) * lerp(1, 1.18, es(t, S.b(1) + 2, S.b(1) + 6));
+    for (const [x, ph] of [[620, 0], [1300, 2]]) {
+      drawCell(st, x, 640, 230 * sh, t + ph);
+      eyes(x, 640 - 230 * sh * 0.72, 46 * sh, t + ph * 3, { look: x < 900 ? 0.6 : -0.6, ph });
+      pop("46", x + 230 * sh * 0.8, 640 - 230 * sh * 0.8, seg(t, 1 + ph * 0.2, 1.7 + ph * 0.2), { size: 52, color: C.accent });
+    }
+    // parent icon
+    const pp = seg(t, 0.2, 0.9);
+    ctx.save(); ctx.globalAlpha *= pp;
+    circle(960, 200, 80, rgba(C.cyto, 0.35), C.mem, 6); circle(960, 200, 40, C.nuc, C.env, 4);
+    ctx.restore();
+    text("parent", 960, 315, { size: 30, weight: 800, alpha: pp });
+    arrow(900, 260, 720, 380, es(t, 0.6, 1.4)); arrow(1020, 260, 1200, 380, es(t, 0.6, 1.4));
+    pop("identical clones", 960, 1010, seg(t, S.b(0) + 4, S.b(0) + 4.7) * (1 - seg(t, S.b(1), S.b(1) + 0.5)), { size: 50 });
+    // back to G1 rings
+    const g1 = win(t, S.b(1) + 1.2, 1e9);
+    if (g1 > 0) for (const x of [620, 1300]) {
+      ctx.save(); ctx.globalAlpha *= g1; ctx.strokeStyle = C.G1; ctx.lineWidth = 8; ctx.setLineDash([2, 16]); ctx.lineCap = "round";
+      ctx.beginPath(); ctx.arc(x, 640, 300, t * 0.6, t * 0.6 + TAU * 0.8); ctx.stroke(); ctx.restore();
+      text("back to G1", x, 1000, { size: 40, color: C.G1, alpha: g1 * da });
+    }
+    ctx.restore();
+  }
+  // skin repair
+  const ra = win(t, S.b(2) - 0.1, S.b(3) - 0.4);
+  if (ra > 0) {
+    ctx.save(); ctx.globalAlpha = ra;
+    const cw = 96, rows = 4, cols = 21, y0 = 380;
+    const r = rng(31);
+    for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
+      const x = 30 + col * cw + (row % 2) * cw / 2, y = y0 + row * 92;
+      const dist = Math.abs(x - 960);
+      const gapW = 330 - row * 40;
+      const inGap = dist < gapW;
+      const tApp = S.b(2) + 1.5 + (1 - dist / gapW) * 5 + r() * 0.5;
+      const p = inGap ? seg(t, tApp, tApp + 0.6) : 1;
+      if (p <= 0) continue;
+      ctx.save(); ctx.translate(x, y); ctx.scale(back(p), back(p));
+      rrect(-cw / 2 + 4, -40, cw - 8, 80, 26); ctx.fillStyle = row === 0 ? "#f6b8a8" : mix("#f39c8a", "#c86b7a", row / 3); ctx.fill();
+      ctx.strokeStyle = "#ffe1d6"; ctx.lineWidth = 3; ctx.stroke(); circle(0, 0, 12, "#9c4a6e");
+      ctx.restore();
+    }
+    const heal = seg(t, S.b(2) + 2, S.b(2) + 8);
+    ctx.globalAlpha = ra * (1 - heal) * 0.5;
+    ctx.fillStyle = "#b3122e"; ctx.beginPath(); ctx.moveTo(960 - 330, y0 - 45); ctx.lineTo(960 + 330, y0 - 45); ctx.lineTo(960, y0 + 300); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    text("SCRAPED KNEE", 960, 180, { size: 66, alpha: ra, spacing: 2 });
+    text("mitosis fills the gap with new skin cells", 960, 250, { size: 38, weight: 800, color: C.accent, alpha: ra * seg(t, S.b(2) + 2.5, S.b(2) + 3.2) });
+  }
+  // replacement times
+  const fa = win(t, S.b(3) - 0.1, 1e9);
+  if (fa > 0) {
+    [["gut lining", "replaced every few days", 600, "#ff9f80"], ["outer skin", "replaced about every month", 1320, "#f6b8a8"]].forEach(([a, b, x, col], i) => {
+      const p = seg(t, S.b(3) + i * 1.8, S.b(3) + 0.7 + i * 1.8);
+      ctx.save(); ctx.translate(x, 540); ctx.scale(back(p), back(p)); ctx.globalAlpha = clamp(p * 2) * fa;
+      rrect(-300, -260, 600, 520, 50); ctx.fillStyle = "rgba(255,255,255,.07)"; ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 6; ctx.stroke();
+      ctx.fillStyle = col;
+      if (i === 0) { ctx.beginPath(); ctx.moveTo(-200, 40); for (let k = 0; k <= 6; k++) { const xx = -200 + k * 66; ctx.lineTo(xx, -60); ctx.arc(xx + 16, -60, 16, Math.PI, 0); ctx.lineTo(xx + 32, 40); } ctx.lineTo(200, 40); ctx.closePath(); ctx.fill(); }
+      else { for (let k = 0; k < 3; k++) { rrect(-200, -70 + k * 45, 400, 36, 18); ctx.globalAlpha = clamp(p * 2) * fa * (1 - k * 0.25); ctx.fill(); } }
+      ctx.restore();
+      text(a, x, 680, { size: 50, alpha: clamp(p * 2) * fa });
+      text(b, x, 740, { size: 34, weight: 800, color: C.accent, alpha: clamp(p * 2) * fa });
+    });
+    pop("A lot of you is newer than you think!", 960, 950, seg(t, S.b(3) + 5, S.b(3) + 5.7), { size: 46 });
+  }
+};
+
+SCENES.wrong = (t, S) => {
+  const tint = es(t, S.b(1), S.b(1) + 1.5) * (1 - es(t, S.b(2) - 0.5, S.b(2) + 1)) * 0.75;
+  background(t, tint);
+  const ra = win(t, 0.1, S.b(2) - 0.4);
+  if (ra > 0) {
+    cycleRing(560, 580, 230, 70, { labels: true, size: 40, alpha: ra });
+    const stops = [[-Math.PI / 2 + TAU * (11 / 24)], [-Math.PI / 2 + TAU * (23 / 24)], [-Math.PI / 2 + TAU * (23.5 / 24)]];
+    stops.forEach(([a], i) => {
+      const q = seg(t, 1 + i * 0.8, 1.6 + i * 0.8);
+      const rr = i === 2 ? 420 : 320;
+      stopSign(560 + Math.cos(a) * rr, 580 + Math.sin(a) * rr, 46 * back(q), ra * clamp(q * 2));
+    });
+    text("checkpoints = brakes", 560, 960, { size: 52, alpha: ra * seg(t, S.b(0) + 3, S.b(0) + 3.6) });
+  }
+  const ca = win(t, S.b(1) + 0.2, S.b(2) - 0.4);
+  if (ca > 0) {
+    const r = rng(77);
+    const n = Math.floor(Math.pow(2, 1 + es(t, S.b(1) + 0.5, S.b(1) + 6) * 7.3));
+    ctx.save(); ctx.globalAlpha = ca;
+    for (let i = 0; i < n; i++) {
+      const [x, y] = phyllo(i, 17);
+      const jx = (r() - 0.5) * 22, jy = (r() - 0.5) * 22, rad = 12 + r() * 14;
+      const age = clamp((n - i) / 8);
+      blob(1400 + x * 1.1 + jx, 560 + y + jy, rad * back(age), ["#d94c7a", "#b83a8f", "#e0607a"][i % 3], t + i, { wob: 2 });
+    }
+    ctx.restore();
+    text("cancer:", 1400, 170, { size: 60, color: "#ff9fb8", alpha: ca });
+    text("cells dividing out of control", 1400, 235, { size: 40, weight: 800, alpha: ca });
+  }
+  const ja = win(t, S.b(2) - 0.2, 1e9);
+  if (ja > 0) {
+    ctx.save(); ctx.globalAlpha = ja;
+    const jam = seg(t, S.b(2) + 2, S.b(2) + 3.5);
+    const st = cellState({ cond: 1, spin: 1, envBreak: 1, attach: 1, toPlate: 1, jam, tint: 1 });
+    drawCell(st, 1100, 600, 320, t);
+    // medicine capsules drifting in
+    for (let i = 0; i < 6; i++) {
+      const p = seg(t, S.b(2) + i * 0.3, S.b(2) + 2.2 + i * 0.3);
+      const a = i * 1.1 + 0.4;
+      const x = lerp(1100 + Math.cos(a) * 900, 1100 + Math.cos(a) * 160, easeOut(p)), y = lerp(600 + Math.sin(a) * 700, 600 + Math.sin(a) * 140, easeOut(p));
+      ctx.save(); ctx.translate(x, y); ctx.rotate(a + t);
+      rrect(-30, -13, 60, 26, 13); ctx.fillStyle = "#fff"; ctx.fill();
+      ctx.fillStyle = C.blue; rrect(0, -13, 30, 26, [0, 13, 13, 0]); ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+    text("some medicines", 380, 480, { size: 50, alpha: ja });
+    text("jam the spindle fibers", 380, 545, { size: 40, weight: 800, color: C.blue, alpha: ja * seg(t, S.b(2) + 1.5, S.b(2) + 2.2) });
+    pop("mitosis can't finish ✕", 380, 650, seg(t, S.b(2) + 4, S.b(2) + 4.7), { size: 40, color: "#ff9fb8" });
+  }
+};
+
+SCENES.recap = (t, S) => {
+  background(t);
+  pop("RECAP", 960, 90, seg(t, 0.1, 0.8), { size: 76, spacing: 4 });
+  const panels = [
+    ["Interphase", "grow + copy DNA", { dup: 1 }, C.G1],
+    ["Prophase", "chromosomes condense,\nspindle forms, envelope breaks", { cond: 0.9, spin: 0.75, envBreak: 0.6 }, PMAT[0][2]],
+    ["Metaphase", "line up in the middle", { cond: 1, spin: 1, envBreak: 1, attach: 1, toPlate: 1 }, PMAT[1][2]],
+    ["Anaphase", "chromatids pulled apart", { cond: 1, spin: 1, envBreak: 1, attach: 1, toPlate: 1, sep: 0.7 }, PMAT[2][2]],
+    ["Telophase", "two new nuclei form", { cond: 1, spin: 1, envBreak: 1, attach: 1, toPlate: 1, sep: 1, newEnv: 1, decond: 0.6, spinFade: 0.7, furrow: 0.2 }, PMAT[3][2]],
+    ["Cytokinesis", "cytoplasm splits:\n2 identical daughter cells", { cond: 1, spin: 1, envBreak: 1, attach: 1, toPlate: 1, sep: 1, newEnv: 1, decond: 1, spinFade: 1, furrow: 1 }, C.blue],
+  ];
+  panels.forEach(([name, desc, o, col], i) => {
+    const start = S.b(i + 1);
+    const p = seg(t, start - 0.3, start + 0.5);
+    if (p <= 0) return;
+    const cur = t >= start && (i === 5 || t < S.b(i + 2));
+    const x = 420 + (i % 3) * 540, y = i < 3 ? 330 : 750;
+    const a = clamp(p * 2) * (cur ? 1 : 0.55);
+    ctx.save(); ctx.globalAlpha = a;
+    const sc = back(p) * (cur ? 1.06 : 1);
+    ctx.translate(x, y); ctx.scale(sc, sc); ctx.translate(-x, -y);
+    rrect(x - 255, y - 200, 510, 390, 40); ctx.fillStyle = cur ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.04)"; ctx.fill();
+    ctx.strokeStyle = cur ? col : "rgba(255,255,255,.15)"; ctx.lineWidth = cur ? 6 : 3; ctx.stroke();
+    drawCell(cellState(o), x, y - 40, i === 5 ? 92 : 118, t);
+    ctx.restore();
+    text(name, x, y + 120, { size: 40, color: col, alpha: a });
+    desc.split("\n").forEach((ln, j) => text(ln, x, y + 160 + j * 30, { size: 27, weight: 800, alpha: a }));
+  });
+};
+
+SCENES.outro = (t, S) => {
+  background(t);
+  const a0 = win(t, 0.1, S.b(1) - 0.3);
+  if (a0 > 0) {
+    text("You started as one cell", 1600, 520, { size: 110, alpha: a0, align: "right" });
+    // the full stop and the zygote
+    circle(1625, 556, 11, "#fff");
+    const zp = seg(t, 2, 2.8);
+    glow(1700, 560, 40, "#aef3ff", 0.6 * zp * a0);
+    ctx.save(); ctx.globalAlpha = a0 * zp; circle(1700, 560, 4 * back(zp), "#e9fff9", C.mem, 1.5); ctx.restore();
+    label("you, at the very start (≈ 0.1 mm)", 1700, 568, 1500, 740, win(t, 3, S.b(1) - 0.3), { size: 32, color: C.mem });
+    label("a full stop", 1625, 548, 1450, 380, win(t, 3.6, S.b(1) - 0.3), { size: 32, color: "#fff" });
+  }
+  const a1 = win(t, S.b(1) - 0.2, 1e9);
+  if (a1 > 0) {
+    const steps = (t - S.b(1)) / 0.55;
+    const kk = clamp(Math.floor(steps), 0, 12), n = Math.pow(2, kk), fr = steps - Math.floor(steps);
+    const spacing = 470 / Math.sqrt(n);
+    const fade = 1 - 0.75 * seg(t, S.b(2) + 2, S.b(2) + 4);
+    ctx.save(); ctx.globalAlpha = a1 * 0.55 * fade;
+    for (let j = 0; j < n; j++) {
+      const [x, y] = phyllo(j, spacing);
+      const isNew = j >= n / 2 && kk > 0 && steps < 13;
+      blob(960 + x, 560 + y, spacing * 0.6 * (isNew ? back(clamp(fr * 2.5)) : 1), C.chr[j % 4], t, { wob: 0.5, face: n <= 4 });
+    }
+    ctx.restore();
+    const words = ["COPY.", "LINE UP.", "PULL APART.", "SPLIT."];
+    const span = (S.e(1) - S.b(1)) * 0.62;
+    words.forEach((w, i) => pop(w, [360, 695, 1140, 1550][i], 200, seg(t, S.b(1) + span * i / 4, S.b(1) + span * i / 4 + 0.5) * (1 - seg(t, S.b(2) - 0.3, S.b(2) + 0.3)), { size: 66, color: C.chr[i] }));
+  }
+  const a2 = seg(t, S.b(2) + 4.5, S.b(2) + 5.5);
+  if (a2 > 0) {
+    PMAT.forEach(([l, , col], i) => {
+      const at = S.b(2) + 5 + i * 0.35;
+      pop(l, 960 + (i - 1.5) * 260, 520, seg(t, at, at + 0.5), { size: 260, color: col });
+    });
+  }
+  const end = seg(t, S.e(2) + 1.2, S.e(2) + 2.2);
+  if (end > 0) text("Mitosis: how one cell becomes two", 960, 800, { size: 50, weight: 800, alpha: end });
+};
+
+// ---------------------------------------------------------------- timeline + compositor
+const SC = TL.scenes.map(s => ({
+  ...s, dur: s.end - s.start,
+  b(i) { return this.lines[Math.min(i, this.lines.length - 1)].start - this.start; },
+  e(i) { return this.lines[Math.min(i, this.lines.length - 1)].end - this.start; },
+}));
+const buf = document.createElement("canvas"); buf.width = W; buf.height = H;
+const XF = 0.6; // cross-fade seconds
+function drawScene(i, T) {
+  const s = SC[i];
+  ctx.save();
+  SCENES[s.id](T - s.start, s);
+  ctx.restore();
+  ctx.globalAlpha = 1; ctx.setLineDash([]);
+}
+function renderAt(T) {
+  let i = SC.findIndex(s => T < s.end);
+  if (i < 0) i = SC.length - 1;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const s = SC[i];
+  const into = T - s.start;
+  if (i > 0 && into < XF) {
+    drawScene(i - 1, T);
+    // draw the new scene into an off-screen buffer and fade it in
+    const main = ctx;
+    const bctx = buf.getContext("2d");
+    bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalAlpha = 1; bctx.clearRect(0, 0, W, H);
+    swapCtx(bctx); drawScene(i, T); swapCtx(main);
+    ctx.globalAlpha = ease(into / XF); ctx.drawImage(buf, 0, 0); ctx.globalAlpha = 1;
+  } else drawScene(i, T);
+  vignette();
+  // fade from / to black
+  const fade = Math.max(1 - seg(T, 0, 1), seg(T, TL.duration - 1.5, TL.duration));
+  if (fade > 0) { ctx.fillStyle = `rgba(0,0,0,${fade})`; ctx.fillRect(0, 0, W, H); }
+}
+function swapCtx(c) { ctx = c; }

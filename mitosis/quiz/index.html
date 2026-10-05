@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mitosis Quiz</title>
+<style>
+  @font-face { font-family: Nunito; font-weight: 700; src: url(../fonts/nunito-latin-700-normal.woff2) format("woff2"); }
+  @font-face { font-family: Nunito; font-weight: 800; src: url(../fonts/nunito-latin-800-normal.woff2) format("woff2"); }
+  @font-face { font-family: Nunito; font-weight: 900; src: url(../fonts/nunito-latin-900-normal.woff2) format("woff2"); }
+  :root {
+    --bg1: #11235a; --bg2: #070f2a; --card: rgba(255,255,255,.06); --line: rgba(255,255,255,.12);
+    --fg: #f2f5ff; --muted: #a9bcf0; --accent: #ffd23f; --good: #5be37d; --bad: #ff4d5e;
+    --p: #ff5d8f; --m: #ffb347; --a: #ffe066; --t: #8be36b; --teal: #5ce8d2;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body { background: linear-gradient(180deg, var(--bg1), var(--bg2)) fixed; color: var(--fg); font-family: Nunito, system-ui, sans-serif; font-weight: 700; }
+  main { max-width: 980px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  h1 { margin: 0; font-weight: 900; font-size: clamp(26px, 5vw, 40px); letter-spacing: 1px; }
+  h1 span { display: inline-block; width: 1.15em; height: 1.15em; line-height: 1.15em; text-align: center; border-radius: .3em; color: #1a1236; margin-right: 3px; font-size: .8em; vertical-align: .08em; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 15px; color: var(--muted); }
+  .chip b { color: var(--fg); font-weight: 900; }
+  .dots { display: flex; gap: 6px; margin: 4px 0 16px; }
+  .dot { flex: 1; height: 8px; border-radius: 4px; background: var(--line); }
+  .dot.good { background: var(--good); } .dot.bad { background: var(--bad); } .dot.now { background: var(--accent); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: clamp(14px, 3vw, 24px); }
+  .kind { color: var(--accent); font-weight: 900; font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; }
+  .q { font-weight: 900; font-size: clamp(20px, 3.4vw, 28px); line-height: 1.25; margin: 6px 0 14px; }
+  .q .blank { display: inline-block; min-width: 4em; border-bottom: 4px solid var(--accent); }
+  canvas { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; background: #081230; margin-bottom: 16px; }
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 640px) { .opts { grid-template-columns: 1fr; } }
+  .opt { display: flex; gap: 12px; align-items: center; text-align: left; font: 800 clamp(16px, 2.4vw, 19px) Nunito, sans-serif; color: var(--fg);
+         background: rgba(255,255,255,.07); border: 2px solid var(--line); border-radius: 16px; padding: 12px 14px; cursor: pointer; transition: transform .08s, background .15s; }
+  .opt:hover:not(:disabled) { background: rgba(255,255,255,.13); transform: translateY(-1px); }
+  .opt .key { flex: none; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: rgba(255,255,255,.12); font-weight: 900; }
+  .opt.right { border-color: var(--good); background: rgba(91,227,125,.18); }
+  .opt.wrong { border-color: var(--bad); background: rgba(255,77,94,.18); }
+  .opt:disabled { cursor: default; }
+  .feedback { display: none; margin-top: 16px; border-radius: 16px; padding: 14px 16px; background: rgba(0,0,0,.25); border-left: 6px solid var(--good); }
+  .feedback.show { display: block; }
+  .feedback.bad { border-left-color: var(--bad); }
+  .feedback h3 { margin: 0 0 6px; font-weight: 900; font-size: 20px; }
+  .feedback p { margin: 0 0 12px; color: #dbe4ff; line-height: 1.45; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn { font: 900 16px Nunito, sans-serif; border: 0; border-radius: 999px; padding: 10px 20px; cursor: pointer; }
+  .btn.primary { background: var(--accent); color: #1a1530; }
+  .btn.ghost { background: rgba(255,255,255,.1); color: var(--fg); }
+  .clip { display: none; margin-top: 14px; }
+  .clip.show { display: block; }
+  .clip video { width: 100%; border-radius: 14px; background: #000; }
+  .clip small { color: var(--muted); }
+  .end { text-align: center; padding: 20px 8px; }
+  .end .big { font-size: clamp(56px, 12vw, 96px); font-weight: 900; color: var(--accent); line-height: 1; }
+  .end p { color: var(--muted); font-size: 18px; }
+  footer { margin-top: 18px; color: var(--muted); font-size: 14px; text-align: center; }
+  footer a { color: var(--teal); }
+  kbd { background: rgba(255,255,255,.12); border-radius: 6px; padding: 1px 6px; font-family: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1><span style="background:var(--p)">P</span><span style="background:var(--m)">M</span><span style="background:var(--a)">A</span><span style="background:var(--t)">T</span> Mitosis Quiz</h1>
+    <div class="chips">
+      <div class="chip">Score <b id="score">0</b></div>
+      <div class="chip">Streak <b id="streak">0</b></div>
+      <div class="chip">Best <b id="best">–</b></div>
+    </div>
+  </header>
+  <div class="dots" id="dots"></div>
+  <section class="card" id="card"></section>
+  <footer>Every question is freshly generated from the explainer video's own animation and narration. Keys: <kbd>1</kbd>–<kbd>4</kbd> to answer, <kbd>Enter</kbd> for next.
+    · <a href="../animation.html">Interactive player</a> · <a href="../mitosis-explainer.mp4">Video</a></footer>
+</main>
+<script src="../timeline.js"></script>
+<script src="../engine.js"></script>
+<script>
+(() => {
+"use strict";
+const ROUND = 10;
+const rnd = Math.random;
+const rr = (a, b) => a + rnd() * (b - a);
+const pick = a => a[Math.floor(rnd() * a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const scene = id => TIMELINE.scenes.find(s => s.id === id);
+const lineClip = (id, i, j = i) => { const s = scene(id); return { start: s.lines[i].start, end: s.lines[j].end }; };
+
+// ---------------------------------------------------------------- stages, drawn with the video's cell model
+const ALL = { cond: 1, spin: 1, envBreak: 1, attach: 1, toPlate: 1 };
+const STAGES = [
+  { name: "Interphase", state: () => ({ dup: rr(0, 1) }), clip: lineClip("interphase", 1, 2),
+    desc: "the cell grows and copies its DNA", why: "The DNA is still loose chromatin inside an intact nucleus: the cell is growing and copying its DNA, not dividing yet." },
+  { name: "Prophase", state: () => ({ cond: rr(0.8, 1), spin: rr(0.55, 1), envBreak: rr(0, 0.5) }), clip: lineClip("prophase", 1, 3),
+    desc: "chromatin condenses into chromosomes, spindle fibers form and the nuclear envelope breaks down", why: "The chromosomes have coiled into X-shapes, the spindle is forming and the nuclear envelope is breaking apart." },
+  { name: "Metaphase", state: () => ({ ...ALL }), clip: lineClip("metaphase", 1, 2),
+    desc: "the chromosomes line up in the middle of the cell", why: "Every chromosome is attached to spindle fibers from both sides and lined up across the middle." },
+  { name: "Anaphase", state: () => ({ ...ALL, sep: rr(0.35, 0.85) }), clip: lineClip("anaphase", 1, 2),
+    desc: "the sister chromatids are pulled apart to opposite ends", why: "The sister chromatids have separated and are being reeled towards opposite poles." },
+  { name: "Telophase", state: () => ({ ...ALL, sep: 1, newEnv: rr(0.75, 1), decond: rr(0.35, 0.8), spinFade: rr(0.5, 1), furrow: rr(0, 0.2) }), clip: lineClip("telophase", 1, 3),
+    desc: "two new nuclei form and the chromosomes uncoil", why: "New nuclear envelopes have formed around two sets of chromosomes, which are uncoiling. There is still only one cell." },
+  { name: "Cytokinesis", state: () => ({ ...ALL, sep: 1, newEnv: 1, decond: 1, spinFade: 1, furrow: rr(0.55, 1) }), clip: lineClip("cytokinesis", 0, 1),
+    desc: "the cytoplasm divides, making two daughter cells", why: "The cell is pinching in two around the middle: the cytoplasm is dividing into two daughter cells." },
+];
+function drawStage(st, x, y, R, t, rot = 0) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+  const A = drawCell(cellState(st), 0, 0, R, t);
+  ctx.restore();
+  return A;
+}
+
+// ---------------------------------------------------------------- structures you can point at
+const PARTS = [
+  { name: "Nucleus", st: { dup: 1 }, at: A => [A.nucleus[0] + 40 * A.k, A.nucleus[1] + 150 * A.k], not: ["Chromatin", "Chromosome", "Nuclear envelope"],
+    why: "The nucleus is the control centre that holds the DNA." },
+  { name: "Nuclear envelope", st: { dup: 1 }, at: A => A.envelope, not: ["Nucleus"],
+    why: "The nuclear envelope is the double membrane around the nucleus. It breaks down in prophase and re-forms in telophase." },
+  { name: "Cytoplasm", st: { dup: 1 }, at: A => A.cytoplasm, not: [],
+    why: "The cytoplasm is the jelly-like soup that fills the cell. Cytokinesis divides it in two." },
+  { name: "Cell membrane", st: { dup: 1 }, at: A => A.membrane, not: ["Cleavage furrow"],
+    why: "The cell membrane is the thin outer boundary of an animal cell." },
+  { name: "Chromatin", st: { dup: 0 }, at: (A, x, y) => [x + CHR[0].pts[12][0] * A.k, y + CHR[0].pts[12][1] * A.k], not: ["Nucleus", "Chromosome"],
+    why: "Chromatin is DNA wound around proteins, in its loose, tangled form, as it is for most of the cell's life." },
+  { name: "Centrosome", st: { ...ALL }, at: A => A.poleL, not: ["Spindle fibers"],
+    why: "Centrosomes sit at opposite ends of the cell and build the spindle fibers." },
+  { name: "Spindle fibers", st: { ...ALL }, at: A => [lerp(A.poleL[0], A.chr2[0], 0.45), lerp(A.poleL[1], A.chr2[1], 0.45) - 12 * A.k], not: ["Centrosome"],
+    why: "Spindle fibers are protein ropes that line up the chromosomes and pull the sister chromatids apart." },
+  { name: "Chromosome", st: { ...ALL }, at: A => [A.chr1[0] - 14 * A.k, A.chr1[1] + 42 * A.k], not: ["Centromere", "Sister chromatid", "Chromatin"],
+    why: "This is a chromosome: DNA coiled up tightly so it can be moved safely." },
+  { name: "Centromere", st: { ...ALL }, at: A => A.chr2, not: ["Chromosome", "Sister chromatid", "Centrosome"],
+    why: "The centromere is where the two sister chromatids are joined, and where the spindle fibers grab on." },
+  { name: "Sister chromatid", st: { ...ALL, sep: 0.55 }, at: A => A.chr0, not: ["Chromosome", "Centromere"],
+    why: "In anaphase the two identical sister chromatids are pulled apart. Each one goes to a different daughter cell." },
+  { name: "Cleavage furrow", st: { ...ALL, sep: 1, newEnv: 1, decond: 1, spinFade: 1, furrow: 0.6 }, at: A => A.neckTop, not: ["Cell membrane"],
+    why: "The cleavage furrow is where a ring of protein pinches an animal cell in two during cytokinesis." },
+];
+const EXTRA_PARTS = ["Cell wall", "Cell plate", "Mitochondrion"];
+
+// ---------------------------------------------------------------- glossary (same as script.md)
+const GLOSSARY = [
+  ["Somatic cell", "Any body cell, such as skin, muscle or liver, but not egg or sperm cells"],
+  ["Cytoplasm", "The jelly-like fluid inside the cell membrane where the organelles float"],
+  ["Nuclear envelope", "The double membrane wrapped around the nucleus"],
+  ["Chromatin", "DNA wound around proteins, in its loose, tangled form"],
+  ["Chromosome", "One tightly coiled piece of DNA (humans have 46)"],
+  ["Sister chromatids", "The two identical copies of a chromosome made in the S phase"],
+  ["Centromere", "The point where two sister chromatids are joined"],
+  ["Cell cycle", "The repeating life of a cell: interphase, then the mitotic phase"],
+  ["Interphase", "The long phase where the cell grows, copies its DNA and checks it"],
+  ["Mitosis", "Division of the nucleus into two identical nuclei"],
+  ["Spindle fibers", "Protein ropes that line up chromosomes and pull sister chromatids apart"],
+  ["Cytokinesis", "Division of the cytoplasm to make two separate cells"],
+  ["Daughter cells", "The two genetically identical cells made when a parent cell divides"],
+];
+const GLOSS_CLIP = {
+  "Somatic cell": lineClip("cell", 0, 1), "Cytoplasm": lineClip("cell", 3), "Nuclear envelope": lineClip("cell", 4), "Chromatin": lineClip("cell", 6),
+  "Chromosome": lineClip("cell", 8), "Sister chromatids": lineClip("interphase", 4), "Centromere": lineClip("interphase", 4), "Cell cycle": lineClip("cycle", 0, 1),
+  "Interphase": lineClip("interphase", 0, 1), "Mitosis": lineClip("mitosis", 0), "Spindle fibers": lineClip("prophase", 2), "Cytokinesis": lineClip("cytokinesis", 0, 1),
+  "Daughter cells": lineClip("daughters", 0),
+};
+
+// ---------------------------------------------------------------- narrator's sentences with a word missing
+const BLANKS = [
+  ["cell", 1, "body", ["thread", "end", "cell"]],
+  ["cell", 2, "meiosis", ["mitosis", "cytokinesis", "interphase"]],
+  ["cell", 3, "cytoplasm", ["chromatin", "the nucleus", "DNA"]],
+  ["cell", 4, "nuclear envelope", ["cell wall", "cell plate", "spindle fiber"]],
+  ["cell", 6, "chromatin", ["cytoplasm", "a centromere", "a cell plate"]],
+  ["cell", 7, "two metres", ["two millimetres", "two kilometres", "two centimetres"]],
+  ["cell", 8, "forty-six", ["twenty-three", "ninety-two", "twelve"]],
+  ["cycle", 1, "interphase", ["metaphase", "anaphase", "cytokinesis"]],
+  ["interphase", 2, "S phase", ["G1 phase", "G2 phase", "M phase"]],
+  ["interphase", 4, "sister chromatids", ["daughter cells", "spindle fibers", "centrosomes"]],
+  ["mitosis", 0, "thread", ["body", "split", "end"]],
+  ["prophase", 2, "centrosomes", ["chromosomes", "ribosomes", "nuclei"]],
+  ["prophase", 3, "nuclear envelope", ["cell membrane", "cell wall", "cytoplasm"]],
+  ["metaphase", 2, "middle", ["edge", "nucleus", "top"]],
+  ["anaphase", 1, "sister chromatids", ["centrosomes", "daughter cells", "nuclei"]],
+  ["telophase", 1, "nuclear envelope", ["cell wall", "spindle fiber", "cell plate"]],
+  ["telophase", 2, "chromatin", ["cytoplasm", "centromeres", "membranes"]],
+  ["cytokinesis", 0, "cytokinesis", ["telophase", "interphase", "meiosis"]],
+  ["cytokinesis", 2, "cell plate", ["cleavage furrow", "cell membrane", "metaphase plate"]],
+  ["cytokinesis", 3, "parent", ["daughter", "sister", "plant"]],
+  ["daughters", 0, "identical", ["different", "opposite", "unrelated"]],
+  ["daughters", 1, "G1", ["G2", "anaphase", "metaphase"]],
+  ["wrong", 1, "cancer", ["meiosis", "healing", "growth"]],
+  ["wrong", 2, "spindle fibers", ["nuclear envelope", "cell plate", "cytoplasm"]],
+];
+
+// ---------------------------------------------------------------- facts and numbers from the video
+const FACTS = [
+  ["About how many new cells does your body make every second?", "About 4 million", ["About 40", "About 4 thousand", "About 4 billion"], lineClip("hook", 2), "Around four million new cells every second, mostly blood cells."],
+  ["How many chromosomes are in a human body (somatic) cell?", "46", ["23", "92", "12"], lineClip("cell", 8), "46 chromosomes: 23 from your mother and 23 from your father."],
+  ["How many chromosomes does each human daughter cell get after mitosis?", "46, identical to the parent", ["23, half of the parent's", "92, double the parent's", "A random number"], lineClip("daughters", 0), "Mitosis makes genetically identical cells, each with the same 46 chromosomes."],
+  ["For a cell that divides once a day, about how long is interphase?", "About 23 hours", ["About 1 hour", "About 12 hours", "About 5 minutes"], lineClip("cycle", 2), "Interphase takes almost all of the cycle. Mitosis takes only about an hour."],
+  ["About how long does mitosis itself take in a typical human cell?", "About 1 hour", ["About 1 minute", "About 12 hours", "About 1 week"], lineClip("cycle", 2), "Mitosis is quick: about an hour, compared with about 23 hours of interphase."],
+  ["If you unravelled the DNA from one of your cells, about how long would it be?", "About 2 metres", ["About 2 millimetres", "About 2 kilometres", "About 2 micrometres"], lineClip("cell", 7), "About two metres, packed into a nucleus far narrower than a hair."],
+  ["About how many DNA letters are copied in the S phase?", "About 6 billion", ["About 46", "About 6 thousand", "About 6 trillion"], lineClip("interphase", 3), "About six billion letters, with only around one mistake per billion."],
+  ["Roughly how many cells make up your body?", "More than 30 trillion", ["About 30 thousand", "About 30 million", "About 30 billion"], lineClip("hook", 4), "You grew from one cell into more than thirty trillion."],
+  ["\"Telo\" in telophase means…", "End", ["Before", "Middle", "Apart"], lineClip("telophase", 0), "Telo = end: telophase is the last stage of mitosis."],
+  ["\"Pro\" in prophase means…", "Before", ["End", "Middle", "Thread"], lineClip("prophase", 0), "Pro = before: the cell packs up before the big move."],
+  ["Which memory hook goes with metaphase?", "M for middle", ["A for apart", "Telo = end", "Pro = before"], lineClip("metaphase", 0), "Metaphase: think M for middle, where the chromosomes line up."],
+  ["Which memory hook goes with anaphase?", "A for apart", ["M for middle", "Telo = end", "Soma = body"], lineClip("anaphase", 0), "Anaphase: think A for apart, as the sister chromatids are pulled apart."],
+  ["Which cells are NOT made by mitosis?", "Egg and sperm cells", ["Skin cells", "Muscle cells", "Liver cells"], lineClip("cell", 2), "Egg and sperm cells are made by a different process, meiosis."],
+  ["Why can't plant cells pinch in two during cytokinesis?", "They have a stiff cell wall", ["They have no cytoplasm", "They have no nucleus", "They don't have chromosomes"], lineClip("cytokinesis", 2), "The cell wall is too stiff, so plants build a new wall (the cell plate) down the middle."],
+  ["What can happen when the cell cycle's checkpoints (brakes) fail?", "Cells divide out of control (cancer)", ["Cells stop growing forever", "Cells turn into plant cells", "Cells make extra cytoplasm"], lineClip("wrong", 1), "Without working brakes, cells can divide out of control. That's what happens in cancer."],
+  ["What do most nerve cells in your brain do?", "Stop dividing", ["Divide every few minutes", "Divide once a day", "Turn into skin cells"], lineClip("cycle", 4), "Most nerve cells step off the cycle and may never divide again."],
+  ["What is mitosis used for in your body?", "Growth and repair", ["Making egg and sperm cells", "Digesting food", "Sending nerve signals"], lineClip("daughters", 2), "Mitosis builds new body cells for growth and repair, like healing a scraped knee."],
+  ["What does the cell do in the G2 phase?", "Grows a bit more and checks its DNA", ["Splits its cytoplasm", "Lines up its chromosomes", "Copies its DNA for the first time"], lineClip("interphase", 5), "G2 is the final check: is the DNA copied and undamaged? Only then is it a green light."],
+];
+
+// ---------------------------------------------------------------- question generators
+function mc(correct, distractors) {
+  const options = shuffle([correct, ...shuffle(distractors).slice(0, 3)]);
+  return { options, answer: options.indexOf(correct) };
+}
+const GEN = {
+  stage() {
+    const i = Math.floor(rnd() * STAGES.length), S = STAGES[i], st = S.state();
+    const rot = pick([0, 0, Math.PI / 2]) + rr(-0.35, 0.35), t0 = rnd() * 100;
+    return { key: "stage" + i, kind: "Spot the stage", prompt: "Which stage is this cell in?",
+      ...mc(S.name, STAGES.filter(x => x !== S).map(x => x.name)),
+      draw: t => { background(t0 + t); drawStage(st, 960, 560, 400, t0 + t, rot); vignette(); },
+      why: S.why, clip: S.clip };
+  },
+  next() {
+    const i = Math.floor(rnd() * (STAGES.length - 1)), S = STAGES[i], N = STAGES[i + 1], st = S.state(), t0 = rnd() * 100;
+    const byDesc = rnd() < 0.5;
+    return { key: "next" + i, kind: "What happens next?", prompt: `This cell is in ${S.name.toLowerCase()}. What happens ${byDesc ? "next" : "in the next stage"}?`,
+      ...(byDesc ? mc(cap(N.desc), STAGES.filter(x => x !== N && x !== S).map(x => cap(x.desc))) : mc(N.name, STAGES.filter(x => x !== N && x !== S).map(x => x.name))),
+      draw: t => { background(t0 + t); drawStage(st, 960, 560, 400, t0 + t); vignette(); },
+      why: `After ${S.name.toLowerCase()} comes ${N.name.toLowerCase()}: ${N.desc}.`, clip: N.clip };
+  },
+  part() {
+    const i = Math.floor(rnd() * PARTS.length), P = PARTS[i], t0 = rnd() * 100;
+    const pool = [...PARTS.map(p => p.name), ...EXTRA_PARTS].filter(n => n !== P.name && !P.not.includes(n));
+    const cx = 900, cy = 570, R = 400;
+    return { key: "part" + i, kind: "Name the structure", prompt: "What is the arrow pointing at?", ...mc(P.name, pool),
+      draw: t => {
+        background(t0 + t);
+        const A = drawStage(P.st, cx, cy, R, t0 + t);
+        const [ax, ay] = P.at(A, cx, cy);
+        pointer(ax, ay, cx, cy, t);
+        vignette();
+      },
+      why: P.why, clip: P.name === "Cleavage furrow" ? lineClip("cytokinesis", 1) : P.name === "Centrosome" || P.name === "Spindle fibers" ? lineClip("prophase", 2) : GLOSS_CLIP[P.name] || GLOSS_CLIP[P.name + "s"] || lineClip("cell", 3, 4) };
+  },
+  order() {
+    const s0 = Math.floor(rnd() * (STAGES.length - 3)), four = STAGES.slice(s0, s0 + 4);
+    const letters = ["A", "B", "C", "D"], placed = shuffle(four), t0 = rnd() * 100;
+    const states = placed.map(S => S.state());
+    const seq = four.map(S => letters[placed.indexOf(S)]).join(" → ");
+    const wrong = new Set();
+    while (wrong.size < 3) { const p = shuffle(letters).join(" → "); if (p !== seq) wrong.add(p); }
+    return { key: "order" + s0, kind: "Put them in order", prompt: "Put these four cells in the right order.", ...mc(seq, [...wrong]),
+      draw: t => {
+        background(t0 + t);
+        placed.forEach((S, k) => {
+          const x = 255 + k * 470;
+          drawStage(states[k], x, 610, S.name === "Cytokinesis" ? 128 : 200, t0 + t + k);
+          text(letters[k], x, 270, { size: 96, color: C.accent });
+        });
+        vignette();
+      },
+      why: `The order is ${four.map(S => S.name).join(" → ")}.`, clip: lineClip("recap", s0 + 1, s0 + 4) };
+  },
+  define() {
+    const i = Math.floor(rnd() * GLOSSARY.length), [term, def] = GLOSSARY[i];
+    const others = GLOSSARY.filter((_, j) => j !== i);
+    if (rnd() < 0.5) return { key: "def" + i, kind: "Key words", prompt: `Which word means: "${def}"?`, ...mc(term, others.map(g => g[0])), why: `${term}: ${def.toLowerCase()}.`, clip: GLOSS_CLIP[term] };
+    return { key: "term" + i, kind: "Key words", prompt: `What does "${term}" mean?`,
+      ...mc(def, others.map(g => g[1])), why: `${term}: ${def.toLowerCase()}.`, clip: GLOSS_CLIP[term] };
+  },
+  blank() {
+    const i = Math.floor(rnd() * BLANKS.length), [sid, li, ans, ds] = BLANKS[i];
+    const line = scene(sid).lines[li];
+    const at = line.text.toLowerCase().indexOf(ans.toLowerCase());
+    if (at < 0) return null;
+    const before = line.text.slice(0, at), after = line.text.slice(at + ans.length);
+    const glue = after.match(/^\S*/)[0]; // keep punctuation attached to the blank
+    return { key: "blank" + i, kind: "Finish the narrator's sentence", promptHTML: `${esc(before)}<span style="white-space:nowrap"><span class="blank">&nbsp;</span>${esc(glue)}</span>${esc(after.slice(glue.length))}`,
+      ...mc(ans, ds), why: `"${line.text}"`, clip: { start: line.start, end: line.end } };
+  },
+  fact() {
+    const i = Math.floor(rnd() * FACTS.length), [q, a, ds, clip, why] = FACTS[i];
+    return { key: "fact" + i, kind: "From the video", prompt: q, ...mc(a, ds), why, clip };
+  },
+};
+const WEIGHTS = [["stage", 3], ["part", 3], ["next", 1.5], ["order", 1.2], ["define", 1.5], ["blank", 2], ["fact", 2]];
+function cap(s) { return s[0].toUpperCase() + s.slice(1); }
+function esc(s) { return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
+function pointer(ax, ay, cx, cy, t) {
+  let dx = ax - cx, dy = ay - cy; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+  if (d < 40) { dx = 0.7; dy = -0.7; }
+  const tx = ax + dx * 300, ty = ay + dy * 300;
+  const pulse = 1 + 0.12 * Math.sin(t * 5);
+  ctx.save();
+  circle(ax, ay, 26 * pulse, null, C.accent, 6);
+  arrow(tx, ty, ax + dx * 38, ay + dy * 38, 1, C.accent, 9);
+  circle(tx, ty, 54, C.accent, "#fff", 5);
+  ctx.restore();
+  text("?", tx, ty + 4, { size: 72, color: "#1a1236", shadow: false });
+}
+function makeQuestion(used) {
+  const total = WEIGHTS.reduce((a, w) => a + w[1], 0);
+  for (let tries = 0; tries < 60; tries++) {
+    let r = rnd() * total, kind = WEIGHTS[0][0];
+    for (const [k, w] of WEIGHTS) { if ((r -= w) < 0) { kind = k; break; } }
+    const q = GEN[kind]();
+    if (q && !used.has(q.key)) { used.add(q.key); return q; }
+  }
+  return GEN.stage();
+}
+
+// ---------------------------------------------------------------- UI
+const $ = id => document.getElementById(id);
+const card = $("card");
+let qs = [], idx = 0, score = 0, streak = 0, results = [], current = null, answered = false, canvas = null, qctx = null, raf = 0, video = null, clipEnd = 0;
+const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
+$("best").textContent = store.get("mitosis-quiz-best") ?? "–";
+
+function newRound() {
+  const used = new Set();
+  qs = Array.from({ length: ROUND }, () => makeQuestion(used));
+  idx = 0; score = 0; streak = 0; results = [];
+  show();
+}
+function dots() {
+  $("dots").innerHTML = qs.map((_, i) => `<div class="dot ${results[i] === true ? "good" : results[i] === false ? "bad" : i === idx ? "now" : ""}"></div>`).join("");
+  $("score").textContent = score; $("streak").textContent = streak;
+}
+function show() {
+  cancelAnimationFrame(raf);
+  current = qs[idx]; answered = false;
+  const q = current;
+  card.innerHTML = `
+    <div class="kind">Question ${idx + 1} of ${ROUND} · ${q.kind}</div>
+    <div class="q">${q.promptHTML || esc(q.prompt)}</div>
+    ${q.draw ? '<canvas id="qc" width="1280" height="720" role="img" aria-label="Animated cell from the explainer video"></canvas>' : ""}
+    <div class="opts">${q.options.map((o, i) => `<button class="opt" data-i="${i}"><span class="key">${i + 1}</span><span>${esc(o)}</span></button>`).join("")}</div>
+    <div class="feedback" id="fb"></div>
+    <div class="clip" id="clip"></div>`;
+  card.querySelectorAll(".opt").forEach(b => b.onclick = () => answer(+b.dataset.i));
+  dots();
+  if (q.draw) {
+    canvas = $("qc"); qctx = canvas.getContext("2d");
+    const t0 = performance.now();
+    const loop = now => {
+      swapCtx(qctx);
+      qctx.setTransform(1280 / 1920, 0, 0, 720 / 1080, 0, 0); qctx.globalAlpha = 1; qctx.setLineDash([]);
+      q.draw((now - t0) / 1000);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+  }
+}
+function answer(i) {
+  if (answered) return;
+  answered = true;
+  const q = current, ok = i === q.answer;
+  results[idx] = ok;
+  if (ok) { score++; streak++; } else streak = 0;
+  card.querySelectorAll(".opt").forEach((b, j) => { b.disabled = true; if (j === q.answer) b.classList.add("right"); else if (j === i) b.classList.add("wrong"); });
+  const fb = $("fb");
+  fb.className = "feedback show" + (ok ? "" : " bad");
+  const praise = ok ? pick(["Correct!", "Nailed it!", "Yes!", "Spot on!"]) + (streak >= 3 ? ` ${streak} in a row!` : "") : "Not quite";
+  fb.innerHTML = `<h3>${praise}</h3><p>${ok ? "" : `The answer is <b>${esc(q.options[q.answer])}</b>. `}${esc(q.why)}</p>
+    <div class="row">${q.clip ? '<button class="btn ghost" id="watch">▶ Watch this part of the video</button>' : ""}
+    <button class="btn primary" id="next">${idx + 1 < ROUND ? "Next question →" : "See my score →"}</button></div>`;
+  $("next").onclick = nextQ;
+  if (q.clip) $("watch").onclick = () => playClip(q.clip);
+  dots();
+  $("next").focus({ preventScroll: true });
+}
+function nextQ() {
+  stopClip();
+  if (++idx < ROUND) show(); else end();
+}
+function end() {
+  cancelAnimationFrame(raf);
+  const best = Math.max(score, +(store.get("mitosis-quiz-best") || 0));
+  store.set("mitosis-quiz-best", best); $("best").textContent = best;
+  const msg = score === ROUND ? "Perfect! You could teach this." : score >= 8 ? "Excellent: you really know your PMAT." : score >= 5 ? "Good work! Watch the video again to fill the gaps." : "Keep going! Every round is different, so try again.";
+  dots();
+  card.innerHTML = `<div class="end"><div class="kind">Round complete</div><div class="big">${score}/${ROUND}</div><p>${msg}</p>
+    <div class="row" style="justify-content:center"><button class="btn primary" id="again">New random round</button>
+    <a class="btn ghost" href="../mitosis-explainer.mp4" style="text-decoration:none">Rewatch the video</a></div></div>`;
+  $("again").onclick = newRound;
+  $("again").focus({ preventScroll: true });
+}
+
+// video clips: play the matching part of the explainer (with captions)
+function playClip({ start, end }) {
+  const box = $("clip");
+  box.className = "clip show";
+  if (!video || !box.contains(video)) {
+    box.innerHTML = '<video controls playsinline preload="metadata" src="../mitosis-explainer.mp4"></video><small>Clip from the explainer video</small>';
+    video = box.querySelector("video");
+    addCaptions(video);
+    video.addEventListener("timeupdate", () => { if (clipEnd && video.currentTime >= clipEnd) { video.pause(); clipEnd = 0; } });
+  }
+  clipEnd = end + 0.4;
+  const go = () => { video.currentTime = Math.max(0, start - 0.3); video.play().catch(() => {}); };
+  if (video.readyState >= 1) go(); else video.addEventListener("loadedmetadata", go, { once: true });
+  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+function stopClip() { if (video) video.pause(); clipEnd = 0; }
+let vttURL = null;
+function addCaptions(v) {
+  const attach = url => { const tr = document.createElement("track"); tr.kind = "captions"; tr.srclang = "en"; tr.label = "English"; tr.src = url; tr.default = true; v.appendChild(tr); };
+  if (vttURL) return attach(vttURL);
+  // the captions are generated from the same timeline the quiz uses
+  const ts = s => { const ms = Math.round(s * 1000), h = Math.floor(ms / 3.6e6), m = Math.floor(ms / 6e4) % 60, sec = Math.floor(ms / 1000) % 60; return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}.${String(ms % 1000).padStart(3, "0")}`; };
+  const vtt = "WEBVTT\n\n" + TIMELINE.scenes.flatMap(s => s.lines).map(l => `${ts(l.start)} --> ${ts(l.end)}\n${l.text}\n`).join("\n");
+  vttURL = URL.createObjectURL(new Blob([vtt], { type: "text/vtt" }));
+  attach(vttURL);
+}
+
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "VIDEO") return;
+  if (!answered && current && /^[1-4]$/.test(e.key)) answer(+e.key - 1);
+  else if (!answered && current && /^[a-d]$/i.test(e.key)) answer(e.key.toLowerCase().charCodeAt(0) - 97);
+  else if (answered && e.key === "Enter" && document.activeElement?.id !== "watch") { e.preventDefault(); $("next")?.click(); }
+});
+
+Promise.all(["700", "800", "900"].map(w => document.fonts.load(`${w} 40px Nunito`))).catch(() => {}).then(newRound);
+window.__quiz = { GEN, makeQuestion, STAGES, PARTS, BLANKS, FACTS, GLOSSARY, setQuestions: list => { qs = list; idx = 0; results = []; score = 0; streak = 0; show(); }, answer };
+})();
+</script>
+</body>
+</html>
