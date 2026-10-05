@@ -109,6 +109,11 @@ function drawStage(st, x, y, R, t, rot = 0) {
   ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
   const A = drawCell(cellState(st), 0, 0, R, t);
   ctx.restore();
+  // drawCell reports anchors relative to the origin it was drawn at; move them to canvas space
+  const c = Math.cos(rot), s = Math.sin(rot);
+  for (const [key, v] of Object.entries(A)) {
+    if (Array.isArray(v)) A[key] = [x + v[0] * c - v[1] * s, y + v[0] * s + v[1] * c];
+  }
   return A;
 }
 
@@ -122,7 +127,7 @@ const PARTS = [
     why: "The cytoplasm is the jelly-like soup that fills the cell. Cytokinesis divides it in two." },
   { name: "Cell membrane", st: { dup: 1 }, at: A => A.membrane, not: ["Cleavage furrow"],
     why: "The cell membrane is the thin outer boundary of an animal cell." },
-  { name: "Chromatin", st: { dup: 0 }, at: (A, x, y) => [x + CHR[0].pts[12][0] * A.k, y + CHR[0].pts[12][1] * A.k], not: ["Nucleus", "Chromosome"],
+  { name: "Chromatin", st: { dup: 0 }, at: A => [A.nucleus[0] + CHR[0].pts[12][0] * A.k, A.nucleus[1] + CHR[0].pts[12][1] * A.k], not: ["Nucleus", "Chromosome"],
     why: "Chromatin is DNA wound around proteins, in its loose, tangled form, as it is for most of the cell's life." },
   { name: "Centrosome", st: { ...ALL }, at: A => A.poleL, not: ["Spindle fibers"],
     why: "Centrosomes sit at opposite ends of the cell and build the spindle fibers." },
@@ -294,8 +299,13 @@ function cap(s) { return s[0].toUpperCase() + s.slice(1); }
 function esc(s) { return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
 function pointer(ax, ay, cx, cy, t) {
   let dx = ax - cx, dy = ay - cy; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
-  if (d < 40) { dx = 0.7; dy = -0.7; }
-  const tx = ax + dx * 300, ty = ay + dy * 300;
+  // near the middle of the cell, come in from the side so the arrow doesn't cross other structures
+  if (d < 120) { dx = 0.97; dy = -0.25; }
+  // keep the "?" bubble inside the frame: shorten the arrow, or swing it sideways if there's no room
+  const room = (dx, dy) => Math.min(dx > 0 ? (1920 - 80 - ax) / dx : dx < 0 ? (80 - ax) / dx : 1e9, dy > 0 ? (1080 - 80 - ay) / dy : dy < 0 ? (80 - ay) / dy : 1e9);
+  let len = Math.min(300, room(dx, dy));
+  if (len < 170) { dx = ax >= cx ? 1 : -1; dy = 0; len = Math.min(300, room(dx, dy)); }
+  const tx = ax + dx * len, ty = ay + dy * len;
   const pulse = 1 + 0.12 * Math.sin(t * 5);
   ctx.save();
   circle(ax, ay, 26 * pulse, null, C.accent, 6);
