@@ -1,0 +1,42 @@
+# Publishes the repository to GitHub Pages. Runs only when started by hand:
+# Actions tab -> "Deploy GitHub Pages" -> Run workflow.
+# Requires Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
+name: Deploy GitHub Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; a new run waits for the current one instead of cancelling it.
+concurrency:
+  group: pages-manual
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      # Same Jekyll build the branch-based Pages used, so READMEs still render as pages.
+      - uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./
+          destination: ./_site
+      - uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
