@@ -1,8 +1,16 @@
 /* ===== Battle mode UI: host a room, join with a code / link / QR, timed questions, live leaderboard ===== */
 (function(){
 const ROOM_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-const LVL_NAMES = { M:"Mixed levels", A:"Level 1–4", B:"Level 5–6", C:"Level 7–8" };
-const setup = { len:10, lvl:"M", secs:60 };
+const SECS_OPTS = [30, 60, 90, 120];
+const hostSettings = {};
+let hostTopic = null;
+function hostSet(id){
+  const t = TOPICS[id], s = hostSettings[id] || {};
+  return { len: t.lengths.includes(s.len) ? s.len : t.defaultLen, lvl: t.levels.some(l => l.id === s.lvl) ? s.lvl : t.defaultLevel, secs: SECS_OPTS.includes(s.secs) ? s.secs : t.defaultSecs };
+}
+const curTopic = () => hostTopic || (window.ExpLab ? window.ExpLab.currentTopic() : TOPIC_LIST[0].id);
+const describe = id => { const t = TOPICS[id], s = hostSet(id); return s.len + " questions · " + levelName(t, s.lvl) + " · " + s.secs + " s per question"; };
+const roomTopic = () => TOPICS[meta().topic] || TOPICS.exponents;
 let net = null, netPromise = null, netNote = "";
 let role = null, code = null, room = null, unwatch = null, Qb = [], qbKey = "", sig = "", tick = 0, prefill = "";
 const recs = {};
@@ -43,8 +51,8 @@ function onRoom(data){
   if (!data || !data.meta) { const wasPlayer = role === "player"; resetLocal(); renderHome(wasPlayer ? "The host closed the room." : ""); return; }
   const m = data.meta;
   if (role === "host" && m.host !== net.uid) { resetLocal(); renderHome(); return; }
-  const k = m.seed + "-" + m.len + m.lvl;
-  if (k !== qbKey) { Qb = buildQuiz(m.seed, m.len, m.lvl); qbKey = k; }
+  const k = (m.topic || "exponents") + "-" + m.seed + "-" + m.len + m.lvl;
+  if (k !== qbKey) { Qb = buildTopicQuiz(m.topic || "exponents", m.seed, m.len, m.lvl); qbKey = k; }
   if (role === "player") {
     const me = data.players && data.players[net.uid];
     if (me && (me.round || 0) !== (m.round || 0)) net.setPlayer(code, { score:0, streak:0, round:m.round || 0 });
@@ -63,6 +71,7 @@ function seg(name, opts, cur){
 }
 function renderHome(msg){
   stopTimer();
+  const tid = curTopic(), T = TOPICS[tid], hs = hostSet(tid);
   const demo = !window.FIREBASE_CONFIG || (net && net.mode === "local");
   box().innerHTML =
     '<div class="stack"><h2>Battle mode</h2>' +
@@ -77,16 +86,19 @@ function renderHome(msg){
         '<p class="small redtxt" id="bj-err" role="alert" hidden></p>' +
         '<div class="btnrow"><button class="btn" type="button" id="bj-go">Join</button></div></div>' +
       '<div class="sheet"><h3>Host a battle</h3>' +
-        '<div class="field"><span>Questions</span>' + seg("bh-len", [[5,"5"],[10,"10"],[15,"15"]], setup.len) + "</div>" +
-        '<div class="field"><span>Level</span>' + seg("bh-lvl", [["M","Mixed"],["A","1–4"],["B","5–6"],["C","7–8"]], setup.lvl) + "</div>" +
-        '<div class="field"><span>Seconds per question</span>' + seg("bh-secs", [[30,"30"],[60,"60"],[90,"90"],[120,"120"]], setup.secs) + "</div>" +
+        '<label class="field"><span>Topic</span><select id="bh-topic" class="select">' + TOPIC_LIST.map(t => '<option value="' + t.id + '"' + (t.id === tid ? " selected" : "") + ">" + esc(topicLabel(t)) + "</option>").join("") + "</select></label>" +
+        '<div class="field"><span>Difficulty</span>' + seg("bh-lvl", T.levels.map(l => [l.id, l.name]), hs.lvl) + "</div>" +
+        '<div class="field"><span>Questions</span>' + seg("bh-len", T.lengths.map(n => [n, String(n)]), hs.len) + "</div>" +
+        '<div class="field"><span>Seconds per question</span>' + seg("bh-secs", SECS_OPTS.map(n => [n, String(n)]), hs.secs) + "</div>" +
         '<p class="small muted">Put the host screen on the projector. Players join on their own devices with paper ready for working.</p>' +
         '<p class="small redtxt" id="bh-err" role="alert" hidden></p>' +
         '<div class="btnrow"><button class="btn" type="button" id="bh-go">Create room</button></div></div>' +
     "</div>";
-  $$('input[name="bh-len"]').forEach(r => r.addEventListener("change", () => { setup.len = Number(r.value); }));
-  $$('input[name="bh-lvl"]').forEach(r => r.addEventListener("change", () => { setup.lvl = r.value; }));
-  $$('input[name="bh-secs"]').forEach(r => r.addEventListener("change", () => { setup.secs = Number(r.value); }));
+  const upd = (k, v) => { hostSettings[tid] = Object.assign(hostSet(tid), { [k]:v }); if (window.ExpLab) window.ExpLab.refreshPicker(); };
+  $$('input[name="bh-len"]').forEach(r => r.addEventListener("change", () => upd("len", Number(r.value))));
+  $$('input[name="bh-lvl"]').forEach(r => r.addEventListener("change", () => upd("lvl", r.value)));
+  $$('input[name="bh-secs"]').forEach(r => r.addEventListener("change", () => upd("secs", Number(r.value))));
+  $("#bh-topic").addEventListener("change", e => { hostTopic = e.target.value; if (window.ExpLab) window.ExpLab.setTopic(hostTopic); else renderHome(); });
   $("#bj-go").addEventListener("click", join);
   $("#bh-go").addEventListener("click", host);
   ["#bj-code", "#bj-name"].forEach(s => $(s).addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); join(); } }));
@@ -107,23 +119,21 @@ async function join(){
   role = "player"; BSS.set("player", { code:c, name }); prefill = ""; watch(c);
 }
 async function host(){
-  $("#bh-go").disabled = true;
+  const tid = curTopic(), hs = hostSet(tid);
+  const go = $("#bh-go"); if (go) go.disabled = true;
   await getNet();
   let c = "", ok = false;
   for (let i = 0; i < 6 && !ok; i++) {
     c = Array.from({ length:5 }, () => ROOM_CHARS[Math.floor(Math.random() * ROOM_CHARS.length)]).join("");
-    try { ok = await net.createRoom(c, { host:net.uid, seed:newSeed(), len:setup.len, lvl:setup.lvl, secs:setup.secs, state:"lobby", q:-1, qStart:0, round:0, created:Date.now() }); }
-    catch(e) { const err = $("#bh-err"); err.hidden = false; err.textContent = "Could not create the room: " + (e.code || e.message); $("#bh-go").disabled = false; return; }
+    try { ok = await net.createRoom(c, { host:net.uid, topic:tid, seed:newSeed(), len:hs.len, lvl:hs.lvl, secs:hs.secs, state:"lobby", q:-1, qStart:0, round:0, created:Date.now() }); }
+    catch(e) { const err = $("#bh-err"); if (err) { err.hidden = false; err.textContent = "Could not create the room: " + (e.code || e.message); } if (go) go.disabled = false; return; }
   }
-  if (!ok) { $("#bh-go").disabled = false; return; }
+  if (!ok) { if (go) go.disabled = false; return; }
   role = "host"; BSS.set("host", { code:c }); watch(c);
 }
 
 /* ---------- shared bits ---------- */
-function qHead(m, q){
-  return '<div class="qhead"><span class="count">Question ' + (m.q + 1) + " of " + m.len + "</span>" +
-    '<span class="lvl ' + q.level + '">' + LEVEL_LABELS[q.level] + '</span><span class="tag">' + esc(SKILLS[q.skill].short) + "</span></div>";
-}
+const qHead = (m, q) => qHeadHtml(q, "Question " + (m.q + 1) + " of " + m.len);
 const timerHtml = () => '<div class="timer"><div class="tbar"><i id="b-tbar"></i></div><span class="tnum" id="b-tnum"></span></div>';
 function startTimer(){ stopTimer(); tick = setInterval(onTick, 200); onTick(); }
 function stopTimer(){ if (tick) clearInterval(tick); tick = 0; }
@@ -180,7 +190,7 @@ function hostLobby(){
       '<div class="codebar"><code id="b-link">' + esc(url) + '</code><button class="btn quiet" type="button" id="b-copy">Copy link</button></div></div>' +
       '<div class="qr" id="b-qr" aria-label="QR code for the join link"></div></div>' +
     '<h3>Players (<span id="b-count">0</span>)</h3><div class="chips" id="b-players"></div>' +
-    '<p class="small muted">' + m.len + " questions · " + LVL_NAMES[m.lvl] + " · " + m.secs + " s per question</p>" +
+    '<p class="small muted">' + esc(topicLabel(roomTopic())) + " · " + m.len + " questions · " + esc(levelName(roomTopic(), m.lvl)) + " · " + m.secs + " s per question</p>" +
     '<div class="btnrow"><button class="btn" type="button" id="b-start" disabled>Start battle</button><button class="btn quiet" type="button" id="b-close">Close room</button></div></div>';
   try { if (window.QRCode) new QRCode($("#b-qr"), { text:url, width:180, height:180, colorDark:"#000000", colorLight:"#ffffff", correctLevel:QRCode.CorrectLevel.M }); else $("#b-qr").hidden = true; } catch(e) { $("#b-qr").hidden = true; }
   $("#b-copy").addEventListener("click", () => copyText(url, $("#b-copy"), $("#b-link")));
@@ -188,14 +198,9 @@ function hostLobby(){
   $("#b-close").addEventListener("click", closeRoom);
   fillPlayers();
 }
-function staticChoices(q){
-  return q.type === "mc" ? '<div class="choices">' + q.options.map(o => '<div class="choice">' + (o.tex ? "\\(" + o.tex + "\\)" : esc(o.label)) + "</div>").join("") + "</div>" : "";
-}
 function hostQuestion(){
   const m = meta(), q = Qb[m.q];
-  const work = q.work ? "<div>" + q.work.map((w, i) => '<div class="workline"><span class="ln">Line ' + (i + 1) + '</span><span class="m">\\(\\displaystyle ' + w + "\\)</span></div>").join("") + "</div>" : "";
-  box().innerHTML = '<div class="sheet" id="bh">' + qHead(m, q) + timerHtml() +
-    '<p class="qprompt">' + q.prompt + '</p><div class="qmath bigq">\\[' + q.tex + "\\]</div>" + work + staticChoices(q) +
+  box().innerHTML = '<div class="sheet hostq" id="bh">' + qHead(m, q) + timerHtml() + questionStaticHtml(q) +
     '<p class="answered"><span id="b-answered">0</span> of <span id="b-total">0</span> answered</p>' +
     '<div class="btnrow"><button class="btn quiet" type="button" id="b-endq">End question now</button></div></div>';
   $("#b-endq").addEventListener("click", () => { stopTimer(); net.setMeta(code, { state:"reveal" }); });
@@ -208,11 +213,10 @@ function updateAnswered(){
 }
 function hostReveal(){
   const m = meta(), q = Qb[m.q];
-  const steps = q.steps.map(s => '<li><div><div class="m">\\(\\displaystyle ' + s.m + '\\)</div><p class="why">' + s.why + "</p></div></li>").join("");
-  box().innerHTML = '<div class="sheet">' + qHead(m, q) + '<div class="qmath">\\[' + q.tex + "\\]</div>" +
-    '<div class="verdict ok"><h3>Answer: \\(' + answerTex(q) + '\\)</h3><p id="b-stats"></p><div class="meterbar"><i id="b-statbar"></i></div></div>' +
+  box().innerHTML = '<div class="sheet">' + qHead(m, q) + promptHtml(q) +
+    '<div class="verdict ok"><h3>Answer: ' + answerDisplay(q) + '</h3><p id="b-stats"></p><div class="meterbar"><i id="b-statbar"></i></div></div>' +
     '<div class="two"><div class="stack"><h3>Leaderboard</h3><ol class="lb" id="b-lb"></ol></div>' +
-      '<div class="explain"><h4>Solution</h4><ol class="steps">' + steps + '</ol><p class="keyidea">' + q.key + "</p></div></div>" +
+      '<div class="explain"><h4>Solution</h4>' + solutionHtml(q) + '<p class="keyidea">' + q.key + "</p></div></div>" +
     '<div class="btnrow"><button class="btn" type="button" id="b-next">' + (m.q + 1 < m.len ? "Next question" : "Show final results") + "</button></div></div>";
   $("#b-next").addEventListener("click", () => {
     const mm = meta();
@@ -247,7 +251,7 @@ function playerLobby(){
   const m = meta(), me = (room.players || {})[net.uid];
   box().innerHTML = '<div class="sheet center"><span class="eyebrow">Room ' + code + "</span>" +
     "<h2>You're in, " + esc(me ? me.name : "player") + "!</h2>" +
-    '<p class="muted">Waiting for the host to start. ' + m.len + " questions · " + LVL_NAMES[m.lvl] + " · " + m.secs + " s each. Have paper and a pen ready.</p>" +
+    '<p class="muted">' + esc(topicLabel(roomTopic())) + '</p><p class="muted">Waiting for the host to start. ' + m.len + " questions · " + esc(levelName(roomTopic(), m.lvl)) + " · " + m.secs + " s each. Have paper and a pen ready.</p>" +
     '<h3>Players (<span id="b-count">0</span>)</h3><div class="chips" id="b-players"></div>' +
     '<div class="btnrow"><button class="btn quiet" type="button" id="b-leave">Leave</button></div></div>';
   fillPlayers(); leaveBtn();
@@ -258,6 +262,7 @@ function playerQuestion(){
     '<p class="small redtxt" id="b-err" role="alert" hidden></p>' +
     '<div class="btnrow" id="b-act"><button class="btn" type="button" id="b-submit">Lock in answer</button></div>' +
     '<div class="verdict wait" id="b-locked" hidden><h3 id="b-locked-h">Answer locked in</h3><p>Waiting for the others…</p></div></div>';
+  bindQuestion(q, $("#bq"), "b");
   $("#b-submit").addEventListener("click", submit);
   $$("input", $("#bq")).forEach(inp => inp.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); submit(); } }));
   const mine = recs[key] || (room.answers && room.answers[key] && room.answers[key][net.uid]);
@@ -276,7 +281,7 @@ function submit(){
   rec.secs = Math.round(elapsed * 10) / 10;
   recs[key] = rec;
   const me = (room.players || {})[net.uid] || {}, same = (me.round || 0) === (m.round || 0);
-  net.submitAnswer(code, key, { ok:rec.correct, pts:rec.pts, secs:rec.secs, raw:rec.raw || null, vals:rec.vals || null, choice:rec.choice === undefined ? null : rec.choice });
+  net.submitAnswer(code, key, { ok:rec.correct, pts:rec.pts, secs:rec.secs, raw:rec.raw || null, vals:rec.vals || null, choice:rec.choice === undefined ? null : rec.choice, ord:rec.ord || null });
   net.setPlayer(code, { score:(same ? me.score || 0 : 0) + rec.pts, streak: rec.correct ? (same ? me.streak || 0 : 0) + 1 : 0, round:m.round || 0 });
   showLocked(q, rec, false);
 }
@@ -295,13 +300,13 @@ function myRec(){
   const key = ansKey(), db = room.answers && room.answers[key] && room.answers[key][net.uid];
   const local = recs[key];
   if (local && !local.none) return local;
-  if (db) return { correct:db.ok, pts:db.pts, secs:db.secs, raw:db.raw || {}, vals:db.vals || {}, choice:db.choice };
+  if (db) return { correct:db.ok, pts:db.pts, secs:db.secs, raw:db.raw || {}, vals:db.vals || {}, choice:db.choice, ord:db.ord || null };
   return null;
 }
 function playerReveal(){
   const m = meta(), q = Qb[m.q], rec = myRec();
   const head = rec && rec.correct ? "Correct! +" + fmt(rec.pts) + " points" : (rec ? "Not quite · 0 points" : "Time's up · 0 points");
-  box().innerHTML = '<div class="sheet" id="br">' + qHead(m, q) + '<div class="qmath">\\[' + q.tex + "\\]</div>" +
+  box().innerHTML = '<div class="sheet" id="br">' + qHead(m, q) + promptHtml(q) +
     '<p class="myrank" id="b-myrank"></p>' +
     feedbackHtml(q, rec, { headline:head, extra: rec && rec.correct ? "You answered in " + rec.secs + " seconds." : "", lessonButton:false }) +
     '<p class="small muted">Waiting for the host to continue…</p></div>';
@@ -340,6 +345,16 @@ async function boot(){
   }
   renderHome();
 }
-window.Battle = { onShow(){ if (!booted) boot(); else if (!role) renderHome(); } };
+async function quickHost(id){
+  hostTopic = id;
+  if (!booted) await boot();
+  if (role) return;
+  await host();
+}
+window.Battle = {
+  onShow(){ if (!booted) boot(); else if (!role) renderHome(); },
+  describe, quickHost,
+  topicChanged(id){ hostTopic = id; if (booted && !role && !$("#panel-battle").hidden) renderHome(); }
+};
 if (!$("#panel-battle").hidden) window.Battle.onShow();
 })();

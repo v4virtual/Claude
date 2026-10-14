@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Learn and practise exponent laws (IB MYP Year 10): visual lessons, random quizzes with full solutions, and live class battles.">
+<meta name="description" content="Mahoot: learn, practise and battle your class on IB MYP topics. Visual lessons, random quizzes with full solutions, and live class battles.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%232340c4%27/%3E%3Ctext x=%2712%27 y=%2748%27 font-family=%27Georgia,serif%27 font-style=%27italic%27 font-size=%2738%27 fill=%27white%27%3Ex%3C/text%3E%3Ctext x=%2738%27 y=%2728%27 font-family=%27Arial%27 font-weight=%27bold%27 font-size=%2722%27 fill=%27%23fff09a%27%3En%3C/text%3E%3C/svg%3E">
-<title>Exponent Lab</title>
+<title>Mahoot</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@600;700&display=swap">
@@ -32,6 +32,7 @@ window.MathJax = {
   --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
   --f-hand:"Caveat","Comic Sans MS","Bradley Hand",cursive;
   --f-var:"Times New Roman",Georgia,serif;
+  --f-num:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -313,7 +314,66 @@ a{color:var(--blue)}
 .pcol.p2 .block{height:100px}
 .pcol.p3 .block{height:70px; border-color:var(--teal); background:var(--teal-soft); color:var(--teal)}
 
+
+/* topics: picker, pill */
+.select{font:inherit; padding:8px 10px; border:2px solid var(--line); border-radius:9px; background:var(--card); color:var(--ink); max-width:100%}
+.hostq .qmath{font-size:1.9rem}
+.hostq .expr{font-size:clamp(2rem,6vw,3.2rem)}
+.masthead h1 .oo{color:var(--blue)}
+.topics{display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))}
+.tcard{display:grid; gap:4px; text-align:left; border:2px solid var(--line); border-radius:12px; padding:12px 14px; background:var(--card); color:var(--ink); cursor:pointer; font:inherit}
+.tcard b{font-family:var(--f-display); font-size:1.1rem}
+.tcard span{font-size:.88rem; color:var(--muted)}
+.tcard[aria-checked="true"]{border-color:var(--blue); background:var(--blue-soft)}
+.tcard[aria-checked="true"] b{color:var(--blue)}
+.topicpill{margin-left:auto; font:inherit; font-size:.82rem; font-weight:700; white-space:nowrap; border:1.5px dashed var(--line); background:transparent; color:var(--muted); border-radius:999px; padding:6px 12px; cursor:pointer}
+.btn.small{padding:5px 12px; font-size:.85rem}
+.ans .unit{font-family:var(--f-body); font-weight:700; font-size:1.2rem; padding:0 6px}
+/* decimal questions (moved from the decimal quiz) */
+.num{font-family:var(--f-num); font-weight:700; white-space:nowrap; font-variant-numeric:tabular-nums}
+.num .pt{color:var(--blue)}
+.prompt{font-size:1.1rem; max-width:62ch}
+.expr{font-family:var(--f-num); font-weight:700; font-size:clamp(1.7rem,7vw,2.5rem); line-height:1.2; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:.1em .35em; padding-block:8px}
+.expr .pt{background:var(--hi); color:var(--ink); border-radius:4px; padding:0 .02em}
+.expr .op{color:var(--muted); font-weight:400}
+.expr .side{white-space:nowrap}
+.expr .box{display:inline-grid; place-items:center; width:1.25em; height:1.25em; border:3px dashed var(--line); border-radius:10px; color:var(--blue); font-size:.8em}
+.choices.signs{grid-template-columns:repeat(3,minmax(0,1fr))}
+.choices.signs .choice{justify-content:center; text-align:center}
+.choice .sign{font-family:var(--f-num); font-weight:800; font-size:1.6rem; display:block; line-height:1}
+.choice .lbl{font-size:.8rem; color:var(--muted)}
+.order-area{display:flex; flex-direction:column; gap:10px}
+.axis{display:flex; align-items:center; gap:10px; font-size:.8rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+.axis .arrow{flex:1; height:2px; background:var(--line); position:relative}
+.axis .arrow::after{content:""; position:absolute; right:-1px; top:-4px; border:5px solid transparent; border-left:8px solid var(--line); border-right:0}
+.slot-row,.pool{display:flex; flex-wrap:wrap; gap:8px; min-height:52px}
+.pool{padding-top:6px; border-top:1px dashed var(--line)}
+.pool.static{border-top:0; justify-content:center}
+.ochip{font:inherit; cursor:pointer; font-size:1.25rem; padding:8px 14px; min-width:4.5ch; border-radius:10px; border:2px solid var(--line); background:var(--card); color:var(--ink)}
+.ochip:hover:not(:disabled){border-color:var(--blue)}
+.ochip.placed{border-color:var(--blue); background:var(--blue-soft)}
+.ochip.ok{border-color:var(--good); background:var(--good-soft)}
+.ochip.no{border-color:var(--red); background:var(--red-soft)}
+.ochip:disabled{cursor:default}
+.slot{width:5.2em; height:48px; border:2px dashed var(--line); border-radius:10px}
+.pool-empty{color:var(--muted); font-size:.92rem; align-self:center}
+.work{background:var(--paper); border:1.5px solid var(--line); border-radius:10px; padding:14px 16px; display:flex; flex-direction:column; gap:8px; min-width:0}
+.work p{max-width:62ch}
+.col-wrap{overflow-x:auto; padding:4px 0}
+.col{display:inline-flex; flex-direction:column; font-family:var(--f-num); font-size:1.35rem; line-height:1.55; font-weight:700}
+.col .row{display:grid; grid-template-columns:var(--cols)}
+.col .c{text-align:center}
+.col .c.sg{color:var(--muted)}
+.col .c.pt{background:var(--hi); color:var(--ink)}
+.col .c.add{color:var(--blue); font-weight:400}
+.col .c.hl{background:var(--blue-soft); color:var(--blue); box-shadow:inset 0 -3px 0 var(--blue)}
+.col .row.res{border-top:2px solid var(--ink)}
+.legend{font-size:.88rem; color:var(--muted)}
+.legend .sw{font-family:var(--f-num); color:var(--blue)}
+.legend .st{display:inline-block; width:.7em; height:1em; vertical-align:-2px; background:var(--hi); border-radius:2px}
+
 @media (max-width:520px){
+  .topicpill{display:none}
   .joinbox{grid-template-columns:1fr}
   .bigq{font-size:1.4rem}
   body{font-size:16px}
@@ -334,35 +394,51 @@ a{color:var(--blue)}
 
 <div class="wrap">
 <header class="masthead">
-  <div class="eyebrow">IB MYP Year 10 · Mathematics · Exponent laws</div>
-  <h1>Exponent<sup>Lab</sup></h1>
-  <p class="lede">Learn the exponent laws with pictures, then practise with a new random quiz every time. Every answer comes with a full step-by-step explanation.</p>
+  <div class="eyebrow">IB MYP · Learn, practise, battle your class</div>
+  <h1>Mah<span class="oo">oo</span>t</h1>
+  <p class="lede">Pick your year, subject and topic. Learn the ideas with pictures, practise with a new random quiz every time, or battle your class live. Every answer comes with a full explanation.</p>
 </header>
 
 <nav class="tabs" role="tablist" aria-label="Sections">
-  <button class="tab" role="tab" id="tab-start" data-panel="start" aria-selected="true"><span class="n">1</span>Start here</button>
+  <button class="tab" role="tab" id="tab-start" data-panel="start" aria-selected="true"><span class="n">1</span>Start</button>
   <button class="tab" role="tab" id="tab-learn" data-panel="learn" aria-selected="false"><span class="n">2</span>Learn</button>
   <button class="tab" role="tab" id="tab-practice" data-panel="practice" aria-selected="false"><span class="n">3</span>Practice</button>
   <button class="tab" role="tab" id="tab-battle" data-panel="battle" aria-selected="false"><span class="n">4</span>Battle</button>
+  <button class="topicpill" type="button" id="topicpill" data-go="start" title="Change topic"></button>
 </nav>
 
-<!-- ============ PANEL 1: START HERE ============ -->
+<!-- ============ PANEL 1: START ============ -->
 <section class="panel stack-lg" id="panel-start" role="tabpanel" aria-labelledby="tab-start">
+  <div class="sheet">
+    <h2>Pick your topic</h2>
+    <div class="field"><span>Year</span><div class="seg" id="pk-year" role="radiogroup" aria-label="Year"></div></div>
+    <div class="field"><span>Subject</span><div class="seg" id="pk-subject" role="radiogroup" aria-label="Subject"></div></div>
+    <div class="field"><span>Topic</span><div class="topics" id="pk-topic" role="radiogroup" aria-label="Topic"></div></div>
+    <div class="btnrow">
+      <button class="btn" type="button" id="pk-practice">Quick practice</button>
+      <button class="btn" type="button" id="pk-host">Host a battle</button>
+      <button class="btn ghost" type="button" data-go="battle">Join a battle</button>
+      <button class="btn ghost" type="button" data-go="learn">Learn first</button>
+    </div>
+    <p class="small muted" id="pk-defaults"></p>
+  </div>
+
   <div class="quote">
     <p class="pen">"Keep exponents in the expression for as long as possible. Working with exponents is easier than fractions."</p>
     <span class="who">Mr. P</span>
   </div>
 
   <div class="stack">
-    <h2>How the lab works</h2>
+    <h2>How it works</h2>
     <div class="howto">
-      <div><span class="hn">1</span><h3>Learn</h3><p class="small">Eight short lessons that show <i>why</i> each law works, with tiles, charts and worked examples.</p></div>
-      <div><span class="hn">2</span><h3>Practise</h3><p class="small">Pick a length and a level. The questions and numbers are random, so every quiz is new. Work on paper, then type your answer.</p></div>
+      <div><span class="hn">1</span><h3>Learn</h3><p class="small">Short visual lessons that show <i>why</i> each rule works, with worked examples.</p></div>
+      <div><span class="hn">2</span><h3>Practise</h3><p class="small">A new random quiz every time. Pick the difficulty, the number of questions and, if you like, a timer.</p></div>
       <div><span class="hn">3</span><h3>Check</h3><p class="small">After each answer you see the full solution, and if you slipped, the most likely reason why.</p></div>
-      <div><span class="hn">4</span><h3>Battle</h3><p class="small">Play live against your class. Everyone gets the same timed question; fast, correct answers score the most points.</p></div>
+      <div><span class="hn">4</span><h3>Battle</h3><p class="small">Play live against your class. Everyone gets the same timed question; fast, correct answers score the most.</p></div>
     </div>
   </div>
 
+  <div class="topic-intro stack-lg" data-topic="exponents">
   <div class="stack">
     <h2>Five habits that win marks</h2>
     <div class="habits">
@@ -415,16 +491,26 @@ a{color:var(--blue)}
     </div>
   </div>
 
-  <div class="btnrow">
-    <button class="btn" type="button" data-go="learn">Start the lessons</button>
-    <button class="btn ghost" type="button" data-go="practice">Go straight to practice</button>
-    <button class="btn ghost" type="button" data-go="battle">Start or join a battle</button>
+  </div>
+
+  <div class="topic-intro stack" data-topic="decimals" hidden>
+    <h2>Six details that win marks</h2>
+    <p class="muted">Every decimal question is built around one small detail that is easy to miss.</p>
+    <div class="habits">
+      <div class="habit"><span class="hn">1</span><h3>Comparing</h3><p class="small">Give both numbers the same number of decimal places: <span class="num">0.5 = 0.50 &gt; 0.45</span>.</p></div>
+      <div class="habit"><span class="hn">2</span><h3>Ordering</h3><p class="small">Pad every number to the same length, then compare place by place from the left.</p></div>
+      <div class="habit"><span class="hn">3</span><h3>Adding</h3><p class="small">Line up the decimal points, not the last digits.</p></div>
+      <div class="habit"><span class="hn">4</span><h3>Subtracting</h3><p class="small">Fill empty places with zeros (<span class="num">5 = 5.00</span>), then borrow.</p></div>
+      <div class="habit"><span class="hn">5</span><h3>Multiplying</h3><p class="small">Multiply without the points, then count the decimal places in the question.</p></div>
+      <div class="habit"><span class="hn">6</span><h3>Dividing</h3><p class="small">Make the divisor a whole number by moving both decimal points the same way.</p></div>
+    </div>
   </div>
 </section>
 
 <!-- ============ PANEL 2: LEARN ============ -->
 <section class="panel stack" id="panel-learn" role="tabpanel" aria-labelledby="tab-learn" hidden>
   <nav class="lnav" aria-label="Lessons" id="lnav"></nav>
+  <div class="lessons" data-topic="exponents">
 
   <!-- Lesson 1 -->
   <article class="sheet lesson" data-title="Powers">
@@ -736,6 +822,25 @@ a{color:var(--blue)}
     <div class="btnrow"><button class="btn" type="button" data-go="practice">Start the practice quiz</button></div>
   </article>
 
+  </div>
+
+  <div class="lessons" data-topic="decimals" hidden>
+  <article class="sheet lesson" data-title="Key rules">
+    <div class="lhead"><span class="eyebrow">Lesson 1 of 1</span><h2>Six rules for decimals</h2></div>
+    <p>Each rule fixes one detail that is easy to miss. In practice, every answer shows the full column working with the decimal points lined up.</p>
+    <div class="two">
+      <div class="rule"><span class="name">Comparing</span><p>Give both numbers the same number of decimal places, then compare from the left.</p><p class="num">0.5 vs 0.45 → 0.50 vs 0.45 → 0.5 &gt; 0.45</p></div>
+      <div class="rule"><span class="name">Ordering</span><p>Pad every number to the same number of places, then compare place by place.</p><p class="num">0.6, 0.06, 0.606 → 0.600, 0.060, 0.606 → 0.06 &lt; 0.6 &lt; 0.606</p></div>
+      <div class="rule"><span class="name">Adding</span><p>Line up the decimal points, not the last digits. Fill gaps with zeros.</p><p class="num">3.5 + 12.25 → 3.50 + 12.25 = 15.75</p></div>
+      <div class="rule"><span class="name">Subtracting</span><p>Write a whole number with a point and zeros, then borrow when the top digit is smaller.</p><p class="num">5 − 2.37 → 5.00 − 2.37 = 2.63</p></div>
+      <div class="rule"><span class="name">Multiplying</span><p>Multiply without the points, then count the decimal places in the question. The answer gets that many.</p><p class="num">0.4 × 0.03 → 4 × 3 = 12 → 3 places → 0.012</p></div>
+      <div class="rule"><span class="name">Dividing</span><p>Move both decimal points the same way until the divisor is a whole number.</p><p class="num">3.015 ÷ 0.67 → 301.5 ÷ 67 = 4.5</p></div>
+    </div>
+    <div class="warn"><span class="name">Estimate first</span><p class="small">Before you calculate, round to a quick estimate. If 0.4 × 0.03 came out as 1.2, the estimate (less than 0.4 × 0.1 = 0.04) tells you the point is in the wrong place.</p></div>
+    <div class="btnrow"><button class="btn" type="button" data-go="practice">Start a practice quiz</button></div>
+  </article>
+  </div>
+
   <div class="lfoot">
     <button class="btn quiet" type="button" id="lprev">Previous</button>
     <button class="btn" type="button" id="lnext">Next lesson</button>
@@ -745,21 +850,11 @@ a{color:var(--blue)}
 <!-- ============ PANEL 3: PRACTICE ============ -->
 <section class="panel stack" id="panel-practice" role="tabpanel" aria-labelledby="tab-practice" hidden>
   <div class="sheet" id="p-setup">
-    <h2>Practice quiz</h2>
-    <p class="muted">Every quiz is new: the questions come from 24 kinds of exponent problem, each with random numbers. Work on paper, type your answer, then read the full solution.</p>
-    <div class="field"><span>Number of questions</span>
-      <div class="seg" role="radiogroup" aria-label="Number of questions">
-        <label><input type="radio" name="p-len" value="10">10</label>
-        <label><input type="radio" name="p-len" value="15" checked>15</label>
-        <label><input type="radio" name="p-len" value="20">20</label>
-      </div></div>
-    <div class="field"><span>Level</span>
-      <div class="seg" role="radiogroup" aria-label="Level">
-        <label><input type="radio" name="p-lvl" value="M" checked>Mixed</label>
-        <label><input type="radio" name="p-lvl" value="A">Level 1–4</label>
-        <label><input type="radio" name="p-lvl" value="B">Level 5–6</label>
-        <label><input type="radio" name="p-lvl" value="C">Level 7–8</label>
-      </div></div>
+    <div class="stack" style="gap:4px"><span class="eyebrow" id="p-topic"></span><h2>Practice quiz</h2></div>
+    <p class="muted">A new random quiz every time. Work on paper, type your answer, then read the full solution. The settings below are ready to go; change them if you like.</p>
+    <div class="field"><span>Difficulty</span><div class="seg" id="p-lvl" role="radiogroup" aria-label="Difficulty"></div><p class="small muted" id="p-lvl-desc"></p></div>
+    <div class="field"><span>Number of questions</span><div class="seg" id="p-len" role="radiogroup" aria-label="Number of questions"></div></div>
+    <div class="field"><span>Time per question</span><div class="seg" id="p-secs" role="radiogroup" aria-label="Time per question"></div></div>
     <div class="btnrow">
       <button class="btn" type="button" id="p-start">Start a new quiz</button>
       <button class="btn ghost" type="button" id="p-continue" hidden>Continue</button>
@@ -767,7 +862,7 @@ a{color:var(--blue)}
     <h3>Got a quiz code from a friend?</h3>
     <p class="small muted">Type it here to get exactly the same questions, then compare scores.</p>
     <div class="codein">
-      <input id="p-code-in" placeholder="7GK2QX-15M" autocomplete="off" aria-label="Quiz code">
+      <input id="p-code-in" placeholder="D-7GK2QX-12-3" autocomplete="off" aria-label="Quiz code">
       <button class="btn quiet" type="button" id="p-code-load">Load quiz</button>
     </div>
     <p class="small redtxt" id="p-code-err" role="alert" hidden></p>
@@ -778,6 +873,7 @@ a{color:var(--blue)}
       <button class="btn quiet" type="button" id="p-copy">Copy</button>
       <button class="btn quiet" type="button" id="p-new">New quiz</button></div>
     <div class="progress" aria-hidden="true"><i id="qbar" style="width:0%"></i></div>
+    <div class="timer" id="p-timer" hidden><div class="tbar"><i id="p-tbar"></i></div><span class="tnum" id="p-tnum"></span></div>
     <article class="sheet" id="qcard" aria-live="polite"></article>
   </div>
 
@@ -790,14 +886,16 @@ a{color:var(--blue)}
 </section>
 
 <footer class="foot">
-  <p>Exponent Lab: practice for IB MYP Year 10 Mathematics. Questions are generated in your browser. Practice answers stay on your device; battle mode shares only nicknames and scores with the other players in the room.</p>
+  <p>Mahoot: practice and class battles for IB MYP. Questions are generated in your browser. Practice answers stay on your device; battle mode shares only nicknames and scores with the other players in the room.</p>
 </footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/firebase-config.js"></script>
 <script src="js/questions.js"></script>
+<script src="js/topic-decimals.js"></script>
 <script src="js/quizui.js"></script>
+<script src="js/topics.js"></script>
 <script src="js/app.js"></script>
 <script src="js/battle-net.js"></script>
 <script src="js/battle-ui.js"></script>
