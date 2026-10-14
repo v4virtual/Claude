@@ -40,6 +40,25 @@ document.addEventListener("click", e => {
   const les = e.target.closest("[data-lesson]"); if (les) openLesson(Number(les.dataset.lesson));
 });
 
+/* ---------- topic content from topic files (lessons, intro) ---------- */
+function mountTopicContent(){
+  const foot = $("#panel-learn .lfoot"), start = $("#panel-start");
+  TOPIC_LIST.forEach(t => {
+    if (t.lessons && !$(".lessons[data-topic='" + t.id + "']")) {
+      const d = document.createElement("div");
+      d.className = "lessons"; d.dataset.topic = t.id; d.hidden = true;
+      d.innerHTML = t.lessons.map((l, i) => '<article class="sheet lesson" data-title="' + esc(l.title) + '"><div class="lhead"><span class="eyebrow">Lesson ' + (i + 1) + " of " + t.lessons.length + "</span><h2>" + (l.heading || l.title) + "</h2></div>" + l.html + "</article>").join("");
+      foot.parentNode.insertBefore(d, foot);
+    }
+    if (t.introHtml && !$(".topic-intro[data-topic='" + t.id + "']")) {
+      const d = document.createElement("div");
+      d.className = "topic-intro stack"; d.dataset.topic = t.id; d.hidden = true; d.innerHTML = t.introHtml;
+      start.appendChild(d);
+    }
+  });
+}
+mountTopicContent();
+
 /* ---------- topic picker ---------- */
 function renderPicker(){
   const t = topic();

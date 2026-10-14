@@ -3,7 +3,11 @@
    Each topic gives: id, code (one capital letter, used in quiz codes), year, subject, name, blurb,
    levels [{id, name, desc}], defaultLevel, lengths, defaultLen, defaultSecs, skills, lessonNames, build(seed, len, lvl). */
 const TOPICS = {}, TOPIC_LIST = [];
-function registerTopic(t){ TOPICS[t.id] = t; TOPIC_LIST.push(t); }
+function registerTopic(t){
+  if (TOPICS[t.id] || TOPIC_LIST.some(x => x.code === t.code)) throw new Error("Topic id or code already used: " + t.id + " / " + t.code);
+  if (!t.lessonNames) t.lessonNames = (t.lessons || []).map(l => l.title);
+  TOPICS[t.id] = t; TOPIC_LIST.push(t);
+}
 
 registerTopic({
   id:"exponents", code:"E", year:10, subject:"Math", name:"Exponent laws",

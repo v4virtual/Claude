@@ -1,5 +1,5 @@
 /* ===== Shared question rendering, grading and feedback (solo practice + battle, every topic) =====
-   Question types: "fields" (number + letters with exponent boxes), "num" (one number), "mc" (choices), "order" (tap in order).
+   Question types: "fields" (boxes mixed with text), "num" (one number), "mc" (choices), "order" (tap in order), "text" (typed word or phrase).
    A question shows either TeX (prompt + tex + steps) or HTML (promptHtml + exprHtml + workHtml). */
 const SKILLS = {
   laws:  { name:"Core laws (add, subtract, multiply exponents)", short:"Core laws", lesson:2 },
@@ -52,7 +52,18 @@ function answerTex(q){
   const o = q.options.find(o => o.correct); return o.tex || ("\\text{" + o.label + "}");
 }
 /* The correct answer as HTML, for verdicts and the battle reveal */
-const answerDisplay = q => q.answerHtml || "\\(" + answerTex(q) + "\\)";
+const answerDisplay = q => q.answerHtml || (q.type === "text" ? "<b>" + esc(q.answers[0]) + "</b>"
+  : q.type === "num" && (q.pre || q.suf) ? esc(q.pre || "") + fmtNum(q.answer) + (q.suf ? " " + esc(q.suf) : "")
+  : "\\(" + answerTex(q) + "\\)");
+/* Typed answers: case, spaces and final punctuation never matter; accents optionally lenient */
+const stripAccents = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const normText = s => String(s || "").trim().toLowerCase().replace(/\s+/g, " ").replace(/[.!?¡¿,;:]+$/g, "").replace(/^[¡¿]+/, "");
+function textMatch(q, raw){
+  const v = normText(raw), list = q.answers.map(normText);
+  if (list.includes(v)) return "exact";
+  if (q.accentLenient !== false && list.map(stripAccents).includes(stripAccents(v))) return "accent";
+  return "";
+}
 const optionHtml = o => o.html || (o.tex ? "\\(" + o.tex + "\\)" : esc(o.label));
 function qHeadHtml(q, countText){
   return '<div class="qhead"><span class="count">' + countText + "</span>" +
@@ -71,7 +82,7 @@ function promptHtml(q){
 function questionStaticHtml(q){
   let extra = "";
   if (q.type === "mc") extra = '<div class="choices' + (q.choiceRow ? " signs" : "") + '">' + q.options.map(o => '<div class="choice">' + optionHtml(o) + "</div>").join("") + "</div>";
-  if (q.type === "order") extra = '<div class="pool static">' + q.items.map(s => '<span class="ochip">' + q.itemHtml(s) + "</span>").join("") + "</div>";
+  if (q.type === "order") { if (!q.itemHtml) q.itemHtml = s => esc(s); extra = '<div class="pool static">' + q.items.map(s => '<span class="ochip">' + q.itemHtml(s) + "</span>").join("") + "</div>"; }
   return promptHtml(q) + extra;
 }
 
@@ -81,9 +92,10 @@ function questionHtml(q, ns){
   let ans;
   if (q.type === "fields") {
     ans = '<div class="ans">' + q.parts.map((p, i) => {
-      if (p.c) return '<input id="' + id(p.c) + '" class="' + (p.wide ? "wide" : "") + '" inputmode="text" autocomplete="off" aria-label="Number in front">';
+      if (p.c) return '<input id="' + id(p.c) + '" class="' + (p.wide ? "wide" : "") + '" inputmode="text" autocomplete="off" aria-label="' + esc(p.label || "Number in front") + '">';
       if (p.v) return '<span class="lv">' + p.v + "</span>";
       if (p.t) return '<span class="times">×</span><span>10</span>';
+      if (p.txt != null) return '<span class="ftxt">' + p.txt + "</span>";
       const prev = q.parts[i - 1];
       return '<input id="' + id(p.sup) + '" class="sup" inputmode="text" autocomplete="off" aria-label="Exponent of ' + (prev && prev.v ? prev.v : "10") + '">';
     }).join("") + "</div>";
@@ -95,8 +107,11 @@ function questionHtml(q, ns){
   } else if (q.type === "mc") {
     ans = '<div class="choices' + (q.choiceRow ? " signs" : "") + '" role="radiogroup" aria-label="Choices">' + q.options.map((o, i) =>
       '<label class="choice" id="' + id("opt" + i) + '"><input type="radio" name="' + id("mc") + '" value="' + i + '"><span>' + optionHtml(o) + "</span></label>").join("") + "</div>";
+  } else if (q.type === "text") {
+    ans = '<div class="ans textans"><input id="' + id("t") + '" class="tword" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Your answer" placeholder="type your answer"></div>' +
+      (q.accentKeys ? '<div class="accents" data-for="' + id("t") + '">' + ["á","é","í","ó","ú","ñ","ü","¿","¡"].map(c => '<button type="button" class="btn quiet small" data-ch="' + c + '">' + c + "</button>").join("") + "</div>" : "");
   } else {
-    const [e1, e2] = q.dir === "asc" ? ["smallest", "largest"] : ["largest", "smallest"];
+    const [e1, e2] = q.axis || (q.dir === "asc" ? ["smallest", "largest"] : ["largest", "smallest"]);
     ans = '<div class="order-area" id="' + id("order") + '"><div class="axis" aria-hidden="true"><span>' + e1 + '</span><span class="arrow"></span><span>' + e2 + "</span></div>" +
       '<div class="slot-row" aria-label="Your order"></div><div class="pool" aria-label="Numbers to place"></div>' +
       '<div><button type="button" class="btn quiet small" data-clear>Clear</button></div></div>';
@@ -105,6 +120,17 @@ function questionHtml(q, ns){
 }
 /* Wire up interactive answer types (only "order" needs it). Safe to call for any question. */
 function bindQuestion(q, root, ns){
+  if (q.type === "order" && !q.itemHtml) q.itemHtml = s => esc(s);
+  if (q.type === "text" && q.accentKeys) {
+    const box = $(".accents", root), inp = box && $("#" + box.dataset.for, root);
+    if (box && inp) box.addEventListener("click", e => {
+      const b = e.target.closest("[data-ch]"); if (!b || inp.disabled) return;
+      const a = inp.selectionStart ?? inp.value.length, z = inp.selectionEnd ?? a;
+      inp.value = inp.value.slice(0, a) + b.dataset.ch + inp.value.slice(z);
+      inp.focus(); inp.setSelectionRange(a + 1, a + 1);
+    });
+    return;
+  }
   if (q.type !== "order") return;
   const el = $("#" + ns + "-" + q.id + "-order", root); if (!el) return;
   el._ord = el._ord || [];
@@ -132,6 +158,7 @@ function readAnswer(q, root, ns){
   const id = k => "#" + ns + "-" + q.id + "-" + k;
   if (q.type === "mc") { const c = $('input[name="' + ns + "-" + q.id + '-mc"]:checked', root); return c ? { choice:Number(c.value) } : null; }
   if (q.type === "order") { const el = $(id("order"), root); return el && el._ord && el._ord.length === q.items.length ? { ord:el._ord.slice() } : null; }
+  if (q.type === "text") { const el = $(id("t"), root); return el && el.value.trim() ? { raw:{ t:el.value } } : null; }
   const keys = q.type === "num" ? ["v"] : q.parts.filter(p => p.c || p.sup).map(p => p.c || p.sup);
   const vals = {}, raw = {};
   for (const k of keys) {
@@ -147,11 +174,13 @@ function grade(q, rec){
   if (!rec) return false;
   if (q.type === "mc") return !!(q.options[rec.choice] && q.options[rec.choice].correct);
   if (q.type === "order") return !!rec.ord && rec.ord.length === q.correct.length && rec.ord.every((v, k) => v === q.correct[k]);
-  if (q.type === "num") return near(rec.vals.v, q.answer);
-  return Object.keys(q.answer).every(k => near(rec.vals[k], q.answer[k]));
+  if (q.type === "text") return !!textMatch(q, rec.raw.t);
+  if (q.type === "num") return near(rec.vals.v, q.answer, q.tol);
+  return Object.keys(q.answer).every(k => near(rec.vals[k], q.answer[k], q.tol));
 }
 const MISSING_MSG = q => q.type === "mc" ? "Pick one of the choices first."
-  : q.type === "order" ? "Place all the numbers first."
+  : q.type === "order" ? (q.missingMsg || "Place all the numbers first.")
+  : q.type === "text" ? "Type your answer first."
   : q.missingMsg || "Fill in every box with a number. Fractions like 3/4 and negative numbers like -2 are fine.";
 
 /* Show what was entered, lock the inputs, color right and wrong parts (unless noMarks). rec may be null (no answer in time). */
@@ -169,13 +198,18 @@ function lockAnswer(q, root, ns, rec, noMarks){
       if (noMarks) return;
       if (o.correct) lab.classList.add("right"); else if (rec && rec.choice === i) lab.classList.add("wrong");
     });
+  } else if (q.type === "text") {
+    const el = $(id("t"), root); if (!el) return;
+    if (rec) el.value = rec.raw.t;
+    $$(".accents button", root).forEach(b => { b.disabled = true; });
+    if (!noMarks && rec) el.classList.add(rec.correct ? "ok" : "no");
   } else if (rec) {
     Object.keys(rec.raw).forEach(k => {
       const el = $(id(k), root); if (!el) return;
       el.value = rec.raw[k];
       if (noMarks) return;
       const target = q.type === "num" ? q.answer : q.answer[k];
-      el.classList.add(near(rec.vals[k], target) ? "ok" : "no");
+      el.classList.add(near(rec.vals[k], target, q.tol) ? "ok" : "no");
     });
   }
 }
@@ -183,10 +217,14 @@ function mistakeNotes(q, rec){
   if (!rec || rec.correct) return [];
   if (q.diagnose) { try { const m = q.diagnose(rec); return m ? [m] : []; } catch(e) { return []; } }
   if (q.type === "mc") { const o = q.options[rec.choice]; return o && o.fb ? [o.fb] : []; }
+  if (q.type === "text") return (q.wrong || []).filter(w => w.answers.map(normText).includes(normText(rec.raw.t))).map(w => w.msg);
+  if (q.type === "order") return [];
   return (q.mistakes || []).filter(m => Object.keys(m.when).every(k => rec.vals[k] !== undefined && near(rec.vals[k], m.when[k], 5e-3))).map(m => m.msg);
 }
 function yourAnswerHtml(q, rec){
   if (!rec) return "no answer";
+  if (q.formatAnswer) return q.formatAnswer(rec);
+  if (q.type === "text") return esc(rec.raw.t);
   if (q.type === "mc") return optionHtml(q.options[rec.choice]);
   if (q.type === "order") return rec.ord.map(k => q.itemHtml(q.items[k])).join(", ");
   if (q.type === "num") return (q.prefix ? q.prefix + " = " : "") + (q.pre ? esc(q.pre) : "") + esc(rec.raw.v) + (q.suf ? " " + esc(q.suf) : "");
@@ -197,6 +235,7 @@ function lessonNamesFor(q){ return (typeof TOPICS !== "undefined" && TOPICS[q.to
 function feedbackHtml(q, rec, opts){
   opts = opts || {};
   const correct = !!(rec && rec.correct), notes = mistakeNotes(q, rec);
+  if (correct && q.type === "text" && textMatch(q, rec.raw.t) === "accent" && !opts.extra) opts = Object.assign({}, opts, { extra:"Correct, but check the accents: <b>" + esc(q.answers[0]) + "</b>." });
   const okMsgs = ["That's it.", "Spot on.", "Clean work.", "Exactly right."];
   const verdict = correct
     ? '<div class="verdict ok"><h3>' + (opts.headline || "Correct") + "</h3><p>" + (opts.extra || okMsgs[q.id % okMsgs.length] + " Check that your method matches the solution.") + "</p></div>"

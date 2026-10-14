@@ -316,6 +316,20 @@ a{color:var(--blue)}
 
 
 /* topics: picker, pill */
+.tblwrap{overflow-x:auto; max-width:100%}
+.tbl{border-collapse:collapse; width:100%; font-size:.95rem}
+.tbl th,.tbl td{border:1.5px solid var(--line); padding:6px 10px; text-align:left; vertical-align:top}
+.tbl th{background:var(--blue-soft); font-family:var(--f-display)}
+.tbl.punnett{width:auto; margin:6px auto}
+.tbl.punnett th,.tbl.punnett td{text-align:center; min-width:3.2rem; font-size:1.2rem; font-family:var(--f-num)}
+.tbl.punnett th{background:var(--hi); color:var(--ink)}
+.es{font-style:italic}
+.quotebox{border-left:4px solid var(--line); padding:6px 12px; background:var(--paper); border-radius:0 8px 8px 0}
+.ftxt{font-family:var(--f-body); font-size:1.15rem; padding:0 4px}
+.fv{color:var(--blue)}
+.textans input.tword{width:min(100%,18rem); font-size:1.15rem; text-align:left; padding:8px 10px}
+.accents{display:flex; flex-wrap:wrap; gap:6px; justify-content:center}
+.accents .btn{min-width:2.4rem}
 .select{font:inherit; padding:8px 10px; border:2px solid var(--line); border-radius:9px; background:var(--card); color:var(--ink); max-width:100%}
 .hostq .qmath{font-size:1.9rem}
 .hostq .expr{font-size:clamp(2rem,6vw,3.2rem)}
@@ -423,10 +437,6 @@ a{color:var(--blue)}
     <p class="small muted" id="pk-defaults"></p>
   </div>
 
-  <div class="quote">
-    <p class="pen">"Keep exponents in the expression for as long as possible. Working with exponents is easier than fractions."</p>
-    <span class="who">Mr. P</span>
-  </div>
 
   <div class="stack">
     <h2>How it works</h2>
@@ -439,6 +449,10 @@ a{color:var(--blue)}
   </div>
 
   <div class="topic-intro stack-lg" data-topic="exponents">
+    <div class="quote">
+      <p class="pen">"Keep exponents in the expression for as long as possible. Working with exponents is easier than fractions."</p>
+      <span class="who">Mr. P</span>
+    </div>
   <div class="stack">
     <h2>Five habits that win marks</h2>
     <div class="habits">
@@ -896,6 +910,15 @@ a{color:var(--blue)}
 <script src="js/topic-decimals.js"></script>
 <script src="js/quizui.js"></script>
 <script src="js/topics.js"></script>
+<script src="js/topic-kit.js"></script>
+<script src="js/topics/business.js"></script>
+<script src="js/topics/genetics.js"></script>
+<script src="js/topics/heros-journey.js"></script>
+<script src="js/topics/polynomials.js"></script>
+<script src="js/topics/scifi.js"></script>
+<script src="js/topics/spanish-adolescence.js"></script>
+<script src="js/topics/spanish-present.js"></script>
+<script src="js/topics/stoichiometry.js"></script>
 <script src="js/app.js"></script>
 <script src="js/battle-net.js"></script>
 <script src="js/battle-ui.js"></script>

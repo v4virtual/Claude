@@ -10,17 +10,24 @@ On the start page students pick **Year → Subject → Topic**. Each topic has:
 
 ## Topics
 
-| Year | Subject | Topic | Difficulty levels | Defaults |
-| --- | --- | --- | --- | --- |
-| 10 | Math | Exponent laws: 24 question types (laws, coefficients, zero, negative and fractional exponents, roots, scientific notation, same base, exponential equations), 8 visual lessons | Mixed, Level 1–4, 5–6, 7–8 | 10 questions, Mixed, battle 90 s |
-| 8 | Math | Decimals: comparing, ordering, adding, subtracting, multiplying, dividing, word problems (moved here from the old `decimal-quiz` folder), key rules lesson | Warm-up, Core, Stretch, Challenge, Expert | 12 questions, Stretch, battle 60 s |
+| Year | Subject | Topic | What it covers |
+| --- | --- | --- | --- |
+| 8 | Math | Decimals | Comparing, ordering, adding, subtracting, multiplying, dividing, word problems (moved here from `decimal-quiz/`). Levels Warm-up to Expert. |
+| 10 | Math | Exponent laws | 24 question types, 8 visual lessons. Levels Mixed, 1–4, 5–6, 7–8. |
+| 10 | Math | Polynomials | Terms, coefficients and degree; naming; like terms; adding and subtracting; distributive property; FOIL, squares and difference of squares. |
+| 8 | Science | Genetics and inheritance | DNA, genes and chromosomes; genotype and phenotype; dominant and recessive; homozygous and heterozygous; generated Punnett squares; diploid and haploid; Human Genome Project. |
+| 10 | Science | Stoichiometry | Significant figures and measurement; scientific notation and units; moles and Avogadro's number; balancing (64 verified equations); mole ratios and mass-to-mass; limiting reactant; conservation of mass. |
+| 8 | I&S | Business, markets and marketing | Needs and wants; goods and services; factors of production; markets; the 7Ps; target customers and value propositions; evaluating a pitch. |
+| 8 | English | Science-fiction storytelling | Genre features, world-building, conflict and plot, foreshadowing and suspense, theme and symbol, language and editing, *The Veldt* (themes only, no quoted text). |
+| 10 | English | The Hero's Journey | The 12 stages, archetypes, spotting stages in scenarios, myths and modern stories, *The Alchemist* (symbols and plot in our own words), choosing evidence. |
+| 8 | Spanish | Present tense and everyday activities | Regular -ar/-er/-ir verbs (typed and multiple choice), agreement, everyday vocabulary, sentence completion, reading notices. |
+| 10 | Spanish | Adolescence and daily life | Vocabulary, reflexive and stem-changing verbs, ponerse, reading, replies, correcting mistakes, matching meanings. |
+
+Science, Math and Spanish verb questions are generated with random numbers or words; English, I&S and vocabulary use large banks of original items with shuffled answers. Levels for the new topics: Mixed (default), Core, Stretch, Challenge. Typed Spanish answers accept missing accents with a reminder, and there are buttons for á é í ó ú ñ.
 
 ### Adding a topic
 
-1. Write a question builder in `js/topic-<name>.js`. Take every random number from `seededRandom()` (or `ri` / `pick` / `shuffle`) so a quiz code or a battle room rebuilds the same questions on every device. Questions use the shared shapes in `js/quizui.js`: `fields`, `num`, `mc` or `order`, with either TeX (`prompt`, `tex`, `steps`) or HTML (`promptHtml`, `exprHtml`, `workHtml`).
-2. Register it in `js/topics.js` with `registerTopic({ id, code, year, subject, name, blurb, levels, defaultLevel, lengths, defaultLen, defaultSecs, skills, lessonNames, build })`. `code` is one capital letter used in quiz codes. A new year or subject appears in the picker automatically.
-3. Optional: add an intro block (`<div class="topic-intro" data-topic="<id>">`) and lessons (`<div class="lessons" data-topic="<id>">` with `<article class="lesson" data-title="…">`) to `index.html`.
-4. Add `<script src="js/topic-<name>.js"></script>` at the bottom of `index.html`, before `js/topics.js`.
+Each topic is one self-contained file in `js/topics/` that calls `registerTopic({...})` with its year, subject, levels, defaults, lessons, intro and question generators, using the helpers in `js/topic-kit.js`. Add its `<script>` line to `index.html` (after `js/topic-kit.js`, before `js/app.js`). A new year or subject appears in the picker automatically. See [`TOPIC_GUIDE.md`](TOPIC_GUIDE.md) for the question shapes, CSS classes and content rules.
 
 ## 1. Publish on GitHub Pages
 
@@ -94,6 +101,10 @@ Then open <http://localhost:8000>. To try a battle without Firebase, open the si
 | `js/questions.js` | Exponent laws: the 24 question generators and the seeded random number source shared by all topics. |
 | `js/topic-decimals.js` | Decimals: the question engine from the former decimal quiz, seeded. |
 | `js/topics.js` | Topic registry (year, subject, levels, defaults) and quiz codes. |
+| `js/topic-kit.js` | Helpers for writing topics (multiple choice, typed answers, ordering, boxes, seeded quiz builder). |
+| `js/topics/*.js` | One file per topic added since: stoichiometry, polynomials, genetics, business, heros-journey, scifi, spanish-present, spanish-adolescence. |
+| `TOPIC_GUIDE.md` | How to write a new topic. |
+| `tools/validate-topics.js` | Checks every topic: `node tools/validate-topics.js`. Not loaded by the site. |
 | `js/quizui.js` | Shows a question, checks the answer and writes the feedback. Shared by every topic, practice and battle. |
 | `js/app.js` | Topic picker, tabs, lessons, practice quizzes with optional timer, results. |
 | `js/battle-net.js` | Battle networking: Firebase, or the local demo. |
