@@ -349,11 +349,11 @@ const DEC = (() => {
         text = `${NAME} has ${N('€' + w)}, buys a book for ${N('€' + S(bs[0]))} and a drink for ${N('€' + S(bs[1]))}. How much money is left?`; break;
       }
       case 'bottle':
-        a = rdec(1.1, 2.9, 1); bs = [rdec(0.15, V(a) - 0.3, 2)]; word = true; unit = { suf: 'litres' };
-        text = `A water bottle holds ${NX(a)} litres. ${NAME} drinks ${NX(bs[0])} litres. How much water is left?`; break;
+        a = rdec(1.1, 2.9, 1); bs = [rdec(0.15, V(a) - 0.3, 2)]; word = true; unit = { suf: 'liters' };
+        text = `A water bottle holds ${NX(a)} liters. ${NAME} drinks ${NX(bs[0])} liters. How much water is left?`; break;
       case 'bottle3':
-        a = rdec(1.5, 3, 1); bs = [rdec(0.25, 0.75, 2), rdec(0.105, 0.495, 3)]; word = true; unit = { suf: 'litres' };
-        text = `A jug holds ${NX(a)} litres of juice. ${NAME} pours out ${NX(bs[0])} litres, then another ${NX(bs[1])} litres. How much juice is left in the jug?`; break;
+        a = rdec(1.5, 3, 1); bs = [rdec(0.25, 0.75, 2), rdec(0.105, 0.495, 3)]; word = true; unit = { suf: 'liters' };
+        text = `A jug holds ${NX(a)} liters of juice. ${NAME} pours out ${NX(bs[0])} liters, then another ${NX(bs[1])} liters. How much juice is left in the jug?`; break;
       default: // temp
         a = rdec(1.1, 6.9, 1); bs = [rdec(V(a) + 0.51, V(a) + 6, 2)]; word = true; unit = { suf: '°C' };
         text = `At 6 pm the temperature is ${NX(a)} °C. By midnight it has fallen by ${NX(bs[0])} °C. What is the temperature at midnight?`;
@@ -426,10 +426,10 @@ const DEC = (() => {
         text = `A vegetable bed is a rectangle ${NX(fs[0])} m long and ${NX(fs[1])} m wide. What is its area?`; break;
       case 'fabric':
         fs = [X(rnd(15, 99) * 10 + 5, 2), norm(X(rnd(3, 12) * 2, 1))]; word = true; isMoney = true; unit = { pre: '€' };
-        text = `Fabric costs ${N('€' + S(fs[0]))} per metre. ${NAME} buys ${NX(fs[1])} m. How much does it cost?`; break;
+        text = `Fabric costs ${N('€' + S(fs[0]))} per meter. ${NAME} buys ${NX(fs[1])} m. How much does it cost?`; break;
       case 'fuel':
-        fs = [X(rnd(4, 9), 2), rdec(12.5, 48.5, 1)]; word = true; unit = { suf: 'litres' };
-        text = `A scooter uses ${NX(fs[0])} litres of fuel for every kilometre. How much fuel does it use on a ${NX(fs[1])} km trip?`; break;
+        fs = [X(rnd(4, 9), 2), rdec(12.5, 48.5, 1)]; word = true; unit = { suf: 'liters' };
+        text = `A scooter uses ${NX(fs[0])} liters of fuel for every kilometer. How much fuel does it use on a ${NX(fs[1])} km trip?`; break;
       default: // area2
         fs = [rdec(2.05, 9.95, 2), rdec(1.1, 4.9, 1)]; word = true; unit = { suf: 'm²' };
         text = `A rectangular garden is ${NX(fs[0])} m long and ${NX(fs[1])} m wide. What is its area?`;
@@ -538,7 +538,7 @@ const DEC = (() => {
         text = `A ${S(b)} kg bag of rice costs ${N('€' + money(a))}. What is the price for 1 kg?`; break;
       case 'glasses':
         b = X(pick([15, 25, 33, 35, 45]), 2); q = X(rnd(5, 14)); a = norm(mulX(q, b)); word = true; unit = { suf: 'glasses' };
-        text = `A jug holds ${NX(a)} litres of water. How many glasses holding ${NX(b)} litres each can ${NAME} fill from it?`; break;
+        text = `A jug holds ${NX(a)} liters of water. How many glasses holding ${NX(b)} liters each can ${NAME} fill from it?`; break;
       default: // speed
         b = pick([X(15, 1), X(25, 1), X(75, 2), X(5, 1)]); q = rdec(8.5, 24.5, 1); a = norm(mulX(q, b)); word = true; unit = { suf: 'km/h' };
         text = `${NAME} cycles ${NX(a)} km in ${NX(b)} hours. What is ${NAME}'s average speed in km per hour?`;

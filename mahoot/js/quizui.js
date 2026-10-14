@@ -154,7 +154,7 @@ const MISSING_MSG = q => q.type === "mc" ? "Pick one of the choices first."
   : q.type === "order" ? "Place all the numbers first."
   : q.missingMsg || "Fill in every box with a number. Fractions like 3/4 and negative numbers like -2 are fine.";
 
-/* Show what was entered, lock the inputs, colour right and wrong parts (unless noMarks). rec may be null (no answer in time). */
+/* Show what was entered, lock the inputs, color right and wrong parts (unless noMarks). rec may be null (no answer in time). */
 function lockAnswer(q, root, ns, rec, noMarks){
   const id = k => "#" + ns + "-" + q.id + "-" + k;
   $$("input", root).forEach(i => { i.disabled = true; });

@@ -1,6 +1,6 @@
 # Mahoot
 
-Learn, practise and battle your class on IB MYP topics. Live at <https://v4virtual.github.io/Claude/mahoot/>.
+Learn, practice and battle your class on IB MYP topics. Live at <https://v4virtual.github.io/Claude/mahoot/>.
 
 On the start page students pick **Year → Subject → Topic**. Each topic has:
 

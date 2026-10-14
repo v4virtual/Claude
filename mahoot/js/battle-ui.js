@@ -82,7 +82,7 @@ function renderHome(msg){
       '<div class="sheet"><h3>Join a battle</h3>' +
         '<label class="field"><span>Room code</span><div class="codein"><input id="bj-code" maxlength="5" autocomplete="off" placeholder="ABCDE" value="' + esc(prefill) + '"></div></label>' +
         '<label class="field"><span>Nickname</span><div class="codein"><input id="bj-name" maxlength="16" autocomplete="off" placeholder="Your name" style="text-transform:none"></div></label>' +
-        '<p class="small muted">Use a nickname your class will recognise. Keep it friendly.</p>' +
+        '<p class="small muted">Use a nickname your class will recognize. Keep it friendly.</p>' +
         '<p class="small redtxt" id="bj-err" role="alert" hidden></p>' +
         '<div class="btnrow"><button class="btn" type="button" id="bj-go">Join</button></div></div>' +
       '<div class="sheet"><h3>Host a battle</h3>' +
@@ -323,7 +323,7 @@ function playerFinal(){
   box().innerHTML = '<div class="sheet center"><span class="eyebrow">Battle over</span>' +
     "<h2>You finished " + (i >= 0 ? ordinal(i + 1) + " of " + r.length : "") + "</h2>" +
     '<p class="big">' + fmt(me.score) + " points</p>" + podiumHtml(r) +
-    '<div class="btnrow"><button class="btn" type="button" data-go="practice">Practise solo</button><button class="btn quiet" type="button" id="b-leave">Leave the room</button></div></div>';
+    '<div class="btnrow"><button class="btn" type="button" data-go="practice">Practice solo</button><button class="btn quiet" type="button" id="b-leave">Leave the room</button></div></div>';
   leaveBtn();
 }
 
