@@ -1,0 +1,805 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Learn and practise exponent laws (IB MYP Year 10): visual lessons, random quizzes with full solutions, and live class battles.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%232340c4%27/%3E%3Ctext x=%2712%27 y=%2748%27 font-family=%27Georgia,serif%27 font-style=%27italic%27 font-size=%2738%27 fill=%27white%27%3Ex%3C/text%3E%3Ctext x=%2738%27 y=%2728%27 font-family=%27Arial%27 font-weight=%27bold%27 font-size=%2722%27 fill=%27%23fff09a%27%3En%3C/text%3E%3C/svg%3E">
+<title>Exponent Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@600;700&display=swap">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+  svg: { fontCache: 'global' },
+  options: { enableMenu: false }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
+<style>
+/* Layout: one notebook column on quad-ruled maths paper. Blue = student's pen, red = teacher's pen, yellow = highlighter.
+   Tabs on top: Start here -> Learn (lesson pager) -> Practice (one question at a time) -> Results. */
+:root{
+  --paper:#f6f8fd; --grid:#e2e8f4; --card:#ffffff; --line:#d2daea;
+  --ink:#17223a; --muted:#56627d;
+  --blue:#2340c4; --blue-soft:#e7ecff;
+  --teal:#0a7a82; --teal-soft:#ddf3f2;
+  --red:#cc3226; --red-soft:#fde9e6;
+  --good:#17804a; --good-soft:#e0f4e8;
+  --hi:#fff09a;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  --f-hand:"Caveat","Comic Sans MS","Bradley Hand",cursive;
+  --f-var:"Times New Roman",Georgia,serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0e1423; --grid:#172036; --card:#141c30; --line:#2a3553;
+    --ink:#e7ecf8; --muted:#9ca8c5;
+    --blue:#91a6ff; --blue-soft:#1c2650;
+    --teal:#5cd0d0; --teal-soft:#113336;
+    --red:#ff7d6e; --red-soft:#3b1c1c;
+    --good:#5bd391; --good-soft:#123222;
+    --hi:#4c4615; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0e1423; --grid:#172036; --card:#141c30; --line:#2a3553;
+  --ink:#e7ecf8; --muted:#9ca8c5;
+  --blue:#91a6ff; --blue-soft:#1c2650;
+  --teal:#5cd0d0; --teal-soft:#113336;
+  --red:#ff7d6e; --red-soft:#3b1c1c;
+  --good:#5bd391; --good-soft:#123222;
+  --hi:#4c4615; color-scheme:dark;
+}
+body{
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  color:var(--ink); font-family:var(--f-body); font-size:17px; line-height:1.55;
+}
+.wrap{max-width:800px; margin:0 auto; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); padding-block:18px 72px}
+h1,h2,h3{font-family:var(--f-display); text-wrap:balance; margin:0; line-height:1.15}
+h2{font-size:clamp(1.5rem,4.5vw,2rem); font-weight:800; letter-spacing:-.015em}
+h3{font-size:1.2rem; font-weight:800}
+p{margin:0}
+.stack{display:grid; gap:16px}
+.stack-lg{display:grid; gap:28px}
+.muted{color:var(--muted)}
+.small{font-size:.9rem}
+.v{font-family:var(--f-var); font-style:italic}
+mark,.hl{background:linear-gradient(transparent 38%,var(--hi) 38%,var(--hi) 92%,transparent 92%); color:inherit; padding:0 .12em}
+.pen{font-family:var(--f-hand); color:var(--red); font-size:1.45em; line-height:1.1; font-weight:600}
+.ink{color:var(--blue)}
+.redtxt{color:var(--red)}
+.goodtxt{color:var(--good)}
+.math-scroll{overflow-x:auto; overflow-y:hidden; max-width:100%}
+.display{font-size:1.25rem; text-align:center; padding-block:6px; overflow-x:auto; overflow-y:hidden; max-width:100%}
+
+/* masthead */
+.masthead{display:grid; gap:6px; padding-block:8px 14px}
+.eyebrow{font-family:var(--f-display); font-weight:600; text-transform:uppercase; letter-spacing:.12em; font-size:.75rem; color:var(--muted)}
+.masthead h1{font-weight:800; font-size:clamp(2.4rem,8vw,3.6rem); letter-spacing:-.03em; line-height:.95}
+.masthead h1 sup{font-size:.42em; color:var(--blue); vertical-align:top; position:relative; top:-.15em; margin-left:.08em; letter-spacing:0}
+.masthead .lede{max-width:62ch; color:var(--muted)}
+
+/* tabs */
+.tabs{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; display:flex; gap:8px; background:var(--paper); padding-block:10px; margin-bottom:22px; border-bottom:2px solid var(--line); overflow-x:auto; scrollbar-width:none}
+.tab{font-family:var(--f-display); font-weight:700; font-size:.95rem; border:2px solid var(--line); background:var(--card); color:var(--ink); padding:7px 14px; border-radius:999px; cursor:pointer; white-space:nowrap}
+.tab .n{color:var(--muted); font-weight:600; margin-right:4px}
+.tab[aria-selected="true"]{background:var(--ink); border-color:var(--ink); color:var(--paper)}
+.tab[aria-selected="true"] .n{color:var(--paper); opacity:.7}
+
+/* surfaces */
+.sheet{background:var(--card); border:1.5px solid var(--line); border-radius:14px; padding:clamp(16px,4vw,28px); display:grid; gap:16px; min-width:0}
+.rule{border:2px dashed var(--blue); border-radius:12px; padding:14px 16px; background:var(--blue-soft); display:grid; gap:6px}
+.rule .law{font-size:1.3rem; text-align:center; overflow-x:auto; overflow-y:hidden; max-width:100%}
+.sheet > *, .rule, .warn, .visual, .rule > *, .warn > *{min-width:0}
+.rule .name{font-family:var(--f-display); font-weight:800; color:var(--blue); font-size:.8rem; letter-spacing:.1em; text-transform:uppercase}
+.warn{border:2px solid var(--red); border-radius:12px; padding:14px 16px; background:var(--red-soft); display:grid; gap:6px}
+.warn .name{font-family:var(--f-display); font-weight:800; color:var(--red); font-size:.8rem; letter-spacing:.1em; text-transform:uppercase}
+.two{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:14px}
+.two > *{min-width:0}
+.three{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr)); gap:12px}
+.three > *{min-width:0}
+
+.btn{font-family:var(--f-display); font-weight:700; font-size:1rem; padding:10px 18px; border-radius:10px; border:2px solid var(--blue); background:var(--blue); color:var(--card); cursor:pointer}
+.btn.ghost{background:transparent; color:var(--blue)}
+.btn.quiet{border-color:var(--line); background:var(--card); color:var(--ink)}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+.btnrow{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+button:focus-visible,input:focus-visible,a:focus-visible,label:focus-within{outline:3px solid var(--blue); outline-offset:2px}
+a{color:var(--blue)}
+
+/* level chips */
+.lvl{display:inline-block; font-family:var(--f-display); font-weight:700; font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; padding:2px 8px; border-radius:6px; border:1.5px solid currentColor; white-space:nowrap}
+.lvl.l1{color:var(--teal)} .lvl.l5{color:var(--blue)} .lvl.l7{color:var(--red)}
+.tag{display:inline-block; font-size:.8rem; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:1px 9px; white-space:nowrap}
+
+/* review of the real quiz */
+.qgrid{display:grid; gap:12px}
+.qrow{display:grid; grid-template-columns:3.2rem 1fr; gap:14px; align-items:start; background:var(--card); border:1.5px solid var(--line); border-radius:12px; padding:14px}
+.qrow .num{font-family:var(--f-display); font-weight:800; font-size:1.6rem; line-height:1; text-align:center; display:grid; gap:4px}
+.qrow .mark{font-family:var(--f-hand); font-size:1.9rem; line-height:1}
+.qrow .body{display:grid; gap:6px; min-width:0}
+.qrow.ok .mark{color:var(--good)} .qrow.fix .mark{color:var(--red)}
+.compare{display:flex; flex-wrap:wrap; gap:8px 18px; font-size:.95rem}
+.compare span b{font-family:var(--f-display); font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-right:6px}
+.habits{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.habit{background:var(--card); border:1.5px solid var(--line); border-radius:12px; padding:14px; display:grid; gap:6px; align-content:start}
+.habit .hn{font-family:var(--f-hand); color:var(--red); font-size:2rem; line-height:.9}
+.habit h3{font-size:1.05rem}
+
+/* tiles (lesson visuals) */
+.tiles{display:flex; flex-wrap:wrap; gap:6px; align-items:center}
+.t{width:2.3rem; height:2.3rem; display:inline-grid; place-items:center; border-radius:8px; border:2px solid var(--blue); background:var(--blue-soft); color:var(--blue); font-family:var(--f-var); font-style:italic; font-size:1.25rem; font-weight:700; position:relative; flex:none}
+.t.alt{border-color:var(--teal); background:var(--teal-soft); color:var(--teal)}
+.t.x{opacity:.8}
+.t.x::after{content:""; position:absolute; inset:-5px; background:linear-gradient(to top right,transparent calc(50% - 1.5px),var(--red) calc(50% - 1.5px),var(--red) calc(50% + 1.5px),transparent calc(50% + 1.5px))}
+.op{font-size:1.35rem; color:var(--muted); padding:0 4px; font-family:var(--f-var)}
+.grp{display:inline-flex; gap:4px; padding:5px; border:2px dashed var(--muted); border-radius:10px}
+.tfrac{display:inline-grid; justify-items:center; gap:8px}
+.tfrac .bar{height:3px; background:var(--ink); justify-self:stretch; border-radius:2px}
+.visual{background:var(--paper); border:1.5px solid var(--line); border-radius:12px; padding:16px; display:grid; gap:12px; justify-items:center; overflow-x:auto}
+.caption{font-size:.9rem; color:var(--muted); text-align:center}
+.stepper{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center}
+.stepper button{width:2.4rem; height:2.4rem; border-radius:50%; border:2px solid var(--blue); background:var(--card); color:var(--blue); font-size:1.3rem; font-weight:700; cursor:pointer}
+.big{font-family:var(--f-display); font-weight:800; font-size:1.6rem; font-variant-numeric:tabular-nums}
+
+/* halving staircase */
+.stairs{width:100%; max-width:560px; display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; align-items:end}
+.stairs .col{display:grid; grid-template-rows:auto 170px auto; justify-items:center; gap:4px; min-width:0}
+.stairs .val{font-weight:700; font-variant-numeric:tabular-nums; font-size:.9rem}
+.stairs .slot{align-self:end; width:72%; height:100%; display:flex; align-items:flex-end}
+.stairs .bar{width:100%; background:var(--blue); border-radius:5px 5px 0 0; min-height:2px}
+.stairs .col.neg .bar{background:var(--teal)}
+.stairs .col.zero .bar{background:var(--ink)}
+.stairs .pw{font-family:var(--f-var); font-size:1.05rem}
+.stairs .col.neg .val,.stairs .col.neg .pw{color:var(--teal)}
+.stairs .base{grid-column:1/-1; height:2px; background:var(--ink)}
+
+/* elevator rule */
+.elev{display:flex; gap:14px; align-items:center; justify-content:center}
+.elev .arrow{font-size:1.8rem; color:var(--red); font-weight:700}
+.lift{display:inline-grid; justify-items:center; gap:6px; font-family:var(--f-var); font-size:1.5rem}
+.lift .bar{height:3px; background:var(--ink); justify-self:stretch; min-width:5rem}
+.chip{display:inline-block; padding:1px 8px; border-radius:7px; border:2px solid var(--teal); background:var(--teal-soft); color:var(--teal); font-style:italic}
+.ghostchip{display:inline-block; padding:1px 8px; border-radius:7px; border:2px dashed var(--line); color:var(--muted); font-style:italic}
+
+/* lesson pager */
+.lnav{display:flex; gap:6px; flex-wrap:wrap}
+.lnav button{font-family:var(--f-display); font-weight:700; border:2px solid var(--line); background:var(--card); color:var(--ink); border-radius:9px; padding:5px 10px; cursor:pointer; font-size:.85rem}
+.lnav button[aria-current="true"]{border-color:var(--blue); color:var(--blue); background:var(--blue-soft)}
+.lhead{display:grid; gap:4px}
+.lfoot{display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap}
+
+/* powers table */
+.ptable{display:grid; gap:8px}
+.prow{display:flex; flex-wrap:wrap; gap:6px; align-items:center}
+.prow .lab{font-family:var(--f-display); font-weight:800; width:4.5rem; color:var(--muted); font-size:.85rem}
+.pchip{border:1.5px solid var(--line); border-radius:8px; padding:3px 8px; background:var(--card); font-variant-numeric:tabular-nums; display:grid; justify-items:center; line-height:1.1; min-width:3rem}
+.pchip small{color:var(--muted); font-size:.75rem}
+
+/* scientific notation */
+.sci{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center}
+.sci input{font-size:1.1rem; padding:8px 10px; border:2px solid var(--line); border-radius:9px; background:var(--card); color:var(--ink); width:11rem}
+.sci-out{font-size:1.4rem; font-weight:700; font-variant-numeric:tabular-nums}
+
+/* plant diagram */
+.plant{display:grid; grid-template-columns:auto auto; gap:16px; align-items:center; justify-content:center}
+.plant svg{width:120px; height:auto; display:block}
+.plant .labels{display:grid; gap:44px; font-size:1rem}
+
+/* quiz */
+.progress{height:8px; background:var(--line); border-radius:99px; overflow:hidden}
+.progress > i{display:block; height:100%; background:var(--blue); transition:width .3s}
+.qhead{display:flex; gap:8px 10px; align-items:center; flex-wrap:wrap}
+.qhead .count{font-family:var(--f-display); font-weight:800; margin-right:auto}
+.qprompt{font-size:1.05rem}
+.qmath{font-size:1.4rem; text-align:center; padding-block:10px; overflow-x:auto; overflow-y:hidden}
+.ans{display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:2px 4px; font-size:1.6rem; font-family:var(--f-var); padding-block:14px 4px}
+.ans .lv{font-style:italic}
+.ans .times{padding:0 6px}
+.ans input{font-family:var(--f-body); font-size:1.1rem; width:4.4rem; padding:6px 6px; border:2px solid var(--line); border-radius:8px; background:var(--card); color:var(--ink); text-align:center; font-variant-numeric:tabular-nums}
+.ans input.sup{width:3.3rem; font-size:.95rem; position:relative; top:-.85em}
+.ans input.wide{width:9rem}
+.ans input.ok{border-color:var(--good); background:var(--good-soft)}
+.ans input.no{border-color:var(--red); background:var(--red-soft)}
+.fieldnote{text-align:center; font-size:.85rem; color:var(--muted)}
+.choices{display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
+.choice{display:flex; align-items:center; gap:10px; border:2px solid var(--line); border-radius:10px; padding:10px 12px; cursor:pointer; background:var(--card); min-width:0}
+.choice input{accent-color:var(--blue); width:1.1rem; height:1.1rem; flex:none}
+.choice:has(input:checked){border-color:var(--blue); background:var(--blue-soft)}
+.choice.right{border-color:var(--good); background:var(--good-soft)}
+.choice.wrong{border-color:var(--red); background:var(--red-soft)}
+.workline{display:grid; grid-template-columns:4.2rem 1fr; gap:10px; align-items:center; padding:6px 0; border-bottom:1px dashed var(--line)}
+.workline .ln{font-family:var(--f-display); font-weight:700; color:var(--muted); font-size:.85rem}
+.workline .m{overflow-x:auto; overflow-y:hidden; min-width:0; color:var(--blue)}
+.hintbox{border:2px dashed var(--teal); background:var(--teal-soft); border-radius:12px; padding:12px 14px}
+.hintbox b{color:var(--teal); font-family:var(--f-display)}
+.verdict{border-radius:12px; padding:14px 16px; display:grid; gap:8px}
+.verdict.ok{background:var(--good-soft); border:2px solid var(--good)}
+.verdict.no{background:var(--red-soft); border:2px solid var(--red)}
+.verdict h3{font-size:1.25rem}
+.verdict.ok h3{color:var(--good)} .verdict.no h3{color:var(--red)}
+.explain{display:grid; gap:14px}
+.explain h4{margin:0; font-family:var(--f-display); font-size:.8rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+.steps{list-style:none; padding:0; margin:0; display:grid; gap:14px; counter-reset:s}
+.steps li{display:grid; grid-template-columns:2rem minmax(0,1fr); gap:10px; align-items:start}
+.steps li::before{counter-increment:s; content:counter(s); width:1.9rem; height:1.9rem; border-radius:50%; background:var(--blue-soft); color:var(--blue); display:grid; place-items:center; font-weight:800; font-family:var(--f-display)}
+.steps .m{overflow-x:auto; overflow-y:hidden; font-size:1.12rem; padding-block:2px}
+.steps .why{color:var(--muted); font-size:.95rem}
+.keyidea{font-family:var(--f-hand); color:var(--red); font-size:1.55rem; line-height:1.15; font-weight:600}
+.lessonlink{font-size:.95rem}
+
+/* results */
+.score{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap}
+.score .big{font-size:3rem}
+.skill{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 12px; align-items:center}
+.skill .meter{grid-column:1/-1; height:10px; background:var(--line); border-radius:99px; overflow:hidden}
+.skill .meter i{display:block; height:100%; background:var(--good)}
+.skill.weak .meter i{background:var(--red)}
+.skill .frac{font-variant-numeric:tabular-nums; font-weight:700}
+.qlist{display:flex; flex-wrap:wrap; gap:6px}
+.qlist button{font-family:var(--f-display); font-weight:700; width:2.6rem; height:2.6rem; border-radius:9px; border:2px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer}
+.qlist button.ok{border-color:var(--good); color:var(--good); background:var(--good-soft)}
+.qlist button.no{border-color:var(--red); color:var(--red); background:var(--red-soft)}
+
+.cheat{display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))}
+.cheat > div{background:var(--card); border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; display:grid; gap:2px; min-width:0}
+.cheat b{font-family:var(--f-display); font-size:.78rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.cheat .m{font-size:1.1rem; overflow-x:auto; overflow-y:hidden}
+
+
+/* v2: intro, quiz setup, quiz code */
+.howto{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr))}
+.howto > div{background:var(--card); border:1.5px solid var(--line); border-radius:12px; padding:14px; display:grid; gap:6px; align-content:start; min-width:0}
+.howto .hn{font-family:var(--f-display); font-weight:800; color:var(--blue); font-size:1.6rem; line-height:1}
+.quote{display:grid; gap:4px; padding-block:6px}
+.quote .who{font-family:var(--f-hand); color:var(--red); font-size:1.3rem}
+.slip{display:grid; gap:10px}
+.slip .two{gap:10px}
+.seg{display:flex; flex-wrap:wrap; gap:6px}
+.seg label{display:inline-flex; align-items:center; gap:6px; border:2px solid var(--line); border-radius:10px; padding:7px 12px; cursor:pointer; background:var(--card); font-weight:700}
+.seg input{accent-color:var(--blue)}
+.seg label:has(input:checked){border-color:var(--blue); background:var(--blue-soft); color:var(--blue)}
+.field{display:grid; gap:6px}
+.field > span{font-family:var(--f-display); font-weight:700; font-size:.8rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.codebar{display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; font-size:.9rem; color:var(--muted)}
+.codebar code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-weight:700; color:var(--ink); background:var(--card); border:1.5px solid var(--line); border-radius:7px; padding:2px 8px; letter-spacing:.06em}
+.codebar .btn{padding:5px 12px; font-size:.85rem}
+.codein{display:flex; gap:8px; flex-wrap:wrap}
+.codein input{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-size:1rem; text-transform:uppercase; padding:8px 10px; border:2px solid var(--line); border-radius:9px; background:var(--card); color:var(--ink); width:12rem; max-width:100%}
+.foot{margin-top:40px; padding-top:16px; border-top:2px solid var(--line); font-size:.85rem; color:var(--muted)}
+
+
+/* battle */
+.banner{border:2px dashed var(--teal); background:var(--teal-soft); border-radius:12px; padding:10px 14px; font-size:.92rem}
+.center{text-align:center; justify-items:center}
+.timer{display:flex; align-items:center; gap:12px}
+.tbar{flex:1; height:12px; background:var(--line); border-radius:99px; overflow:hidden}
+.tbar i{display:block; height:100%; background:var(--blue); transition:width .2s linear}
+.tbar.low i{background:var(--red)}
+.tnum{font-family:var(--f-display); font-weight:800; font-size:1.7rem; min-width:2.6ch; text-align:right; font-variant-numeric:tabular-nums}
+.joinbox{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:20px; align-items:center}
+.roomcode{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-weight:800; font-size:clamp(2.6rem,11vw,4.4rem); letter-spacing:.14em; color:var(--blue); line-height:1}
+.qr{background:#ffffff; padding:10px; border-radius:12px; width:max-content; justify-self:center}
+.qr img,.qr canvas{display:block; width:180px; height:180px}
+.chips{display:flex; flex-wrap:wrap; gap:6px; justify-content:inherit}
+.center .chips{justify-content:center}
+.pchip2{border:1.5px solid var(--line); background:var(--card); border-radius:999px; padding:4px 12px; font-weight:700}
+.pchip2.me{border-color:var(--blue); color:var(--blue); background:var(--blue-soft)}
+.bigq{font-size:1.9rem}
+.answered{font-family:var(--f-display); font-weight:800; font-size:1.3rem}
+.verdict.wait{background:var(--blue-soft); border:2px solid var(--blue)}
+.verdict.wait h3{color:var(--blue)}
+.meterbar{height:10px; background:var(--card); border-radius:99px; overflow:hidden}
+.meterbar i{display:block; height:100%; background:var(--good)}
+.myrank{font-family:var(--f-display); font-weight:800; font-size:1.15rem}
+.lb{list-style:none; margin:0; padding:0; display:grid; gap:6px; align-content:start}
+.two > .stack{align-content:start}
+.lb li{display:grid; grid-template-columns:2rem minmax(0,1fr) auto auto; gap:10px; align-items:center; background:var(--card); border:1.5px solid var(--line); border-radius:10px; padding:8px 12px}
+.lb .rk{font-family:var(--f-display); font-weight:800; color:var(--muted)}
+.lb .nm{font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.lb .sc{font-weight:800; font-variant-numeric:tabular-nums}
+.lb .dl{color:var(--good); font-size:.85rem; font-variant-numeric:tabular-nums}
+.podium{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:end; gap:8px; width:100%; max-width:460px; margin-inline:auto}
+.pcol{display:grid; justify-items:center; gap:4px; min-width:0}
+.pcol .pname{font-weight:700; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.pcol .pscore{font-size:.85rem; color:var(--muted); font-variant-numeric:tabular-nums}
+.pcol .block{width:100%; display:grid; place-items:center; border-radius:10px 10px 0 0; font-family:var(--f-display); font-weight:800; font-size:2rem; border:2px solid var(--blue); background:var(--blue-soft); color:var(--blue)}
+.pcol.p1 .block{height:140px; border-color:var(--red); background:var(--red-soft); color:var(--red)}
+.pcol.p2 .block{height:100px}
+.pcol.p3 .block{height:70px; border-color:var(--teal); background:var(--teal-soft); color:var(--teal)}
+
+@media (max-width:520px){
+  .joinbox{grid-template-columns:1fr}
+  .bigq{font-size:1.4rem}
+  body{font-size:16px}
+  .qrow{grid-template-columns:2.4rem 1fr; padding:12px}
+  .t{width:2rem; height:2rem; font-size:1.1rem}
+  .stairs .col{grid-template-rows:auto 130px auto}
+  .stairs .val{font-size:.75rem}
+  .tab{padding:6px 9px; font-size:.82rem}
+  .tabs{gap:5px}
+  .lift{font-size:1.25rem}
+  .lift .bar{min-width:3.5rem}
+}
+@media (prefers-reduced-motion:reduce){ *{transition:none!important; animation:none!important} }
+</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+
+<div class="wrap">
+<header class="masthead">
+  <div class="eyebrow">IB MYP Year 10 · Mathematics · Exponent laws</div>
+  <h1>Exponent<sup>Lab</sup></h1>
+  <p class="lede">Learn the exponent laws with pictures, then practise with a new random quiz every time. Every answer comes with a full step-by-step explanation.</p>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Sections">
+  <button class="tab" role="tab" id="tab-start" data-panel="start" aria-selected="true"><span class="n">1</span>Start here</button>
+  <button class="tab" role="tab" id="tab-learn" data-panel="learn" aria-selected="false"><span class="n">2</span>Learn</button>
+  <button class="tab" role="tab" id="tab-practice" data-panel="practice" aria-selected="false"><span class="n">3</span>Practice</button>
+  <button class="tab" role="tab" id="tab-battle" data-panel="battle" aria-selected="false"><span class="n">4</span>Battle</button>
+</nav>
+
+<!-- ============ PANEL 1: START HERE ============ -->
+<section class="panel stack-lg" id="panel-start" role="tabpanel" aria-labelledby="tab-start">
+  <div class="quote">
+    <p class="pen">"Keep exponents in the expression for as long as possible. Working with exponents is easier than fractions."</p>
+    <span class="who">Mr. P</span>
+  </div>
+
+  <div class="stack">
+    <h2>How the lab works</h2>
+    <div class="howto">
+      <div><span class="hn">1</span><h3>Learn</h3><p class="small">Eight short lessons that show <i>why</i> each law works, with tiles, charts and worked examples.</p></div>
+      <div><span class="hn">2</span><h3>Practise</h3><p class="small">Pick a length and a level. The questions and numbers are random, so every quiz is new. Work on paper, then type your answer.</p></div>
+      <div><span class="hn">3</span><h3>Check</h3><p class="small">After each answer you see the full solution, and if you slipped, the most likely reason why.</p></div>
+      <div><span class="hn">4</span><h3>Battle</h3><p class="small">Play live against your class. Everyone gets the same timed question; fast, correct answers score the most points.</p></div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <h2>Five habits that win marks</h2>
+    <div class="habits">
+      <div class="habit"><span class="hn">1</span><h3>Finish the job</h3><p class="small">Multiply the numbers. Put the same letters together. Anything to the power 0 is 1.</p></div>
+      <div class="habit"><span class="hn">2</span><h3>Root first</h3><p class="small">\(a^{\frac{m}{n}}\): take the \(n\)-th root first, then the power. Small numbers, fewer slips.</p></div>
+      <div class="habit"><span class="hn">3</span><h3>Flip only when crossing</h3><p class="small">A negative exponent turns positive only if that factor moves to the other side of the fraction line.</p></div>
+      <div class="habit"><span class="hn">4</span><h3>Stay in exponent form</h3><p class="small">Turn \(\sqrt{x}\) into \(x^{\frac12}\) first. Add and subtract exponents instead of building fractions.</p></div>
+      <div class="habit"><span class="hn">5</span><h3>Same base</h3><p class="small">Write \(8\) as \(2^3\), \(27\) as \(3^3\), \(16\) as \(2^4\). Then the laws can do the work.</p></div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <h2>Four classic slips</h2>
+    <p class="muted">These are the mistakes that cost the most marks in exponent tests. Each one has a quick fix.</p>
+
+    <div class="sheet slip">
+      <h3>1. Stopping halfway</h3>
+      <div class="two">
+        <div class="warn"><span class="name">Slip</span><div class="display">\(5t^4g^{-2}\times2tg^2=5t^4\tfrac{1}{g^2}\cdot2tg^2\)</div></div>
+        <div class="rule"><span class="name">Fix</span><div class="display">\(=10\,t^{4+1}g^{-2+2}=10t^5\)</div></div>
+      </div>
+      <p class="small">Numbers multiply, exponents of the same letter add, and \(g^0=1\). The answer is not finished until each letter appears once.</p>
+    </div>
+
+    <div class="sheet slip">
+      <h3>2. Power before root</h3>
+      <div class="two">
+        <div class="warn"><span class="name">Slip</span><div class="display">\(36^{\frac32}=\sqrt{36^3}=\sqrt{46\,656}\)</div></div>
+        <div class="rule"><span class="name">Fix</span><div class="display">\(36^{\frac32}=\left(\sqrt{36}\right)^3=6^3=216\)</div></div>
+      </div>
+      <p class="small">Both orders are correct maths, but cubing first gives a huge number that is hard to square-root without a calculator.</p>
+    </div>
+
+    <div class="sheet slip">
+      <h3>3. Flipping a sign without moving</h3>
+      <div class="two">
+        <div class="warn"><span class="name">Slip</span><div class="display">\(\dfrac{9y^{-4}}{x^{-2}}=\dfrac{9y^{4}}{x^{2}}\)</div></div>
+        <div class="rule"><span class="name">Fix</span><div class="display">\(\dfrac{9y^{-4}}{x^{-2}}=\dfrac{9x^{2}}{y^{4}}\)</div></div>
+      </div>
+      <p class="small">A negative exponent only becomes positive when its factor crosses the fraction line. No move, no flip.</p>
+    </div>
+
+    <div class="sheet slip">
+      <h3>4. Big numbers instead of the same base</h3>
+      <div class="two">
+        <div class="warn"><span class="name">Slow</span><div class="display">\(\left(\dfrac{2^8}{8^2}\right)^{-\frac12}=\left(\dfrac{256}{64}\right)^{-\frac12}=4^{-\frac12}\)</div></div>
+        <div class="rule"><span class="name">Fast</span><div class="display">\(\left(\dfrac{2^8}{2^6}\right)^{-\frac12}=\left(2^2\right)^{-\frac12}=2^{-1}=\tfrac12\)</div></div>
+      </div>
+      <p class="small">Writing \(8^2\) as \(2^6\) keeps the numbers small. Level 7–8 questions expect this route.</p>
+    </div>
+  </div>
+
+  <div class="btnrow">
+    <button class="btn" type="button" data-go="learn">Start the lessons</button>
+    <button class="btn ghost" type="button" data-go="practice">Go straight to practice</button>
+    <button class="btn ghost" type="button" data-go="battle">Start or join a battle</button>
+  </div>
+</section>
+
+<!-- ============ PANEL 2: LEARN ============ -->
+<section class="panel stack" id="panel-learn" role="tabpanel" aria-labelledby="tab-learn" hidden>
+  <nav class="lnav" aria-label="Lessons" id="lnav"></nav>
+
+  <!-- Lesson 1 -->
+  <article class="sheet lesson" data-title="Powers">
+    <div class="lhead"><span class="eyebrow">Lesson 1 of 8</span><h2>A power is repeated multiplication</h2></div>
+    <p>The <b>base</b> is the number being multiplied. The <b>exponent</b> counts how many copies of it you multiply together.</p>
+    <div class="visual">
+      <div class="stepper">
+        <button type="button" id="pw-minus" aria-label="One copy fewer">−</button>
+        <span class="big" id="pw-label">2<sup>5</sup></span>
+        <button type="button" id="pw-plus" aria-label="One copy more">+</button>
+      </div>
+      <div class="tiles" id="pw-tiles" aria-hidden="true"></div>
+      <div class="big" id="pw-val">= 32</div>
+      <p class="caption">Press + and − to change the exponent. Each extra copy doubles the value.</p>
+    </div>
+
+    <h3>Multiplying powers: just count the tiles</h3>
+    <div class="visual">
+      <div class="tiles">
+        <span class="grp"><span class="t">a</span><span class="t">a</span><span class="t">a</span></span>
+        <span class="op">×</span>
+        <span class="grp"><span class="t alt">a</span><span class="t alt">a</span></span>
+        <span class="op">=</span>
+        <span class="t">a</span><span class="t">a</span><span class="t">a</span><span class="t alt">a</span><span class="t alt">a</span>
+      </div>
+      <p class="caption">\(a^3\times a^2\): 3 copies and 2 more copies make 5 copies, so \(a^5\).</p>
+    </div>
+    <div class="rule">
+      <span class="name">Product law</span>
+      <div class="law">\(a^m\times a^n=a^{m+n}\)</div>
+      <p class="small">Same base, multiplying: <b>add</b> the exponents. The base does not change: \(2^3\times2^4=2^7\), not \(4^7\).</p>
+    </div>
+    <div class="warn">
+      <span class="name">Two quiet traps</span>
+      <p class="small">A letter on its own has exponent 1: \(t=t^1\). So \(t^4\times t=t^5\).<br>
+      Different bases do not combine: \(x^3\times y^2\) stays as \(x^3y^2\).</p>
+    </div>
+  </article>
+
+  <!-- Lesson 2 -->
+  <article class="sheet lesson" data-title="Dividing" hidden>
+    <div class="lhead"><span class="eyebrow">Lesson 2 of 8</span><h2>Dividing is cancelling</h2></div>
+    <p>A copy on top and a copy underneath cancel each other out, because \(\frac{a}{a}=1\).</p>
+    <div class="visual">
+      <div class="tiles">
+        <span class="tfrac">
+          <span class="tiles"><span class="t x">a</span><span class="t x">a</span><span class="t">a</span><span class="t">a</span><span class="t">a</span></span>
+          <span class="bar"></span>
+          <span class="tiles"><span class="t alt x">a</span><span class="t alt x">a</span></span>
+        </span>
+        <span class="op">=</span>
+        <span class="t">a</span><span class="t">a</span><span class="t">a</span>
+      </div>
+      <p class="caption">\(\dfrac{a^5}{a^2}\): two pairs cancel, three copies are left, so \(a^3\).</p>
+    </div>
+    <div class="rule">
+      <span class="name">Quotient law</span>
+      <div class="law">\(\dfrac{a^m}{a^n}=a^{m-n}\)</div>
+      <p class="small">Same base, dividing: <b>subtract</b> the exponents (top minus bottom). Numbers in front are divided as normal numbers: \(\frac{8}{2}=4\).</p>
+    </div>
+
+    <h3>Why anything to the power 0 is 1</h3>
+    <div class="visual">
+      <div class="tiles">
+        <span class="tfrac">
+          <span class="tiles"><span class="t x">a</span><span class="t x">a</span><span class="t x">a</span></span>
+          <span class="bar"></span>
+          <span class="tiles"><span class="t alt x">a</span><span class="t alt x">a</span><span class="t alt x">a</span></span>
+        </span>
+        <span class="op">=</span><span class="big">1</span>
+      </div>
+      <p class="caption">Everything cancels, so the answer is 1. The law says \(a^{3-3}=a^0\). Both must be true, so \(a^0=1\).</p>
+    </div>
+
+    <h3>Finish the job</h3>
+    <p>Sort the expression into piles: numbers with numbers, and each letter with its own kind.</p>
+    <div class="display math-scroll">\(5t^4g^{-2}\times 2tg^2\)</div>
+    <div class="three">
+      <div class="rule"><span class="name">Numbers</span><div class="law">\(5\times2=10\)</div></div>
+      <div class="rule"><span class="name">t pile</span><div class="law">\(t^4\times t^1=t^5\)</div></div>
+      <div class="rule"><span class="name">g pile</span><div class="law">\(g^{-2}\times g^{2}=g^{0}=1\)</div></div>
+    </div>
+    <div class="display">\(=10t^5\)</div>
+    <div class="warn">
+      <span class="name">Before you box your answer</span>
+      <p class="small">Is there only one number in front? Does each letter appear only once? Are all exponents natural numbers (no 0, no negatives)? If not, keep going.</p>
+    </div>
+  </article>
+
+  <!-- Lesson 3 -->
+  <article class="sheet lesson" data-title="Brackets" hidden>
+    <div class="lhead"><span class="eyebrow">Lesson 3 of 8</span><h2>A power of a power multiplies</h2></div>
+    <div class="visual">
+      <div class="tiles">
+        <span class="grp"><span class="t">a</span><span class="t">a</span></span>
+        <span class="grp"><span class="t alt">a</span><span class="t alt">a</span></span>
+        <span class="grp"><span class="t">a</span><span class="t">a</span></span>
+        <span class="op">=</span>
+        <span class="t">a</span><span class="t">a</span><span class="t alt">a</span><span class="t alt">a</span><span class="t">a</span><span class="t">a</span>
+      </div>
+      <p class="caption">\((a^2)^3\) means \(a^2\times a^2\times a^2\): 3 groups of 2 copies, so \(2\times3=6\) copies, \(a^6\).</p>
+    </div>
+    <div class="rule">
+      <span class="name">Power of a power</span>
+      <div class="law">\((a^m)^n=a^{m\times n}\)</div>
+      <p class="small">A bracket with a power outside: <b>multiply</b> the exponents. For example \((x^5)^2=x^{10}\).</p>
+    </div>
+
+    <h3>Everything inside the bracket gets the power</h3>
+    <div class="visual">
+      <div class="display math-scroll">\((2x^3)^2=(2x^3)(2x^3)=2^2x^{6}=4x^6\)</div>
+      <div class="display math-scroll">\((x^{-2}y^{5})^{-3}=x^{(-2)(-3)}\,y^{(5)(-3)}=x^{6}y^{-15}\)</div>
+      <p class="caption">The number in front is powered too. Signs follow normal multiplication: negative times negative is positive.</p>
+    </div>
+    <div class="warn">
+      <span class="name">Common mix-ups</span>
+      <p class="small">\((x^4)^3=x^{12}\), not \(x^{7}\). Adding is only for \(x^4\times x^3\).<br>
+      \((3x)^2=9x^2\), not \(3x^2\). The 3 is inside the bracket, so it is squared as well.</p>
+    </div>
+  </article>
+
+  <!-- Lesson 4 -->
+  <article class="sheet lesson" data-title="Negatives" hidden>
+    <div class="lhead"><span class="eyebrow">Lesson 4 of 8</span><h2>Negative exponents make fractions, not negative numbers</h2></div>
+    <p>Walk down the powers of 2. Every step to the right divides by 2. There is no reason to stop at 1.</p>
+    <div class="visual">
+      <div class="stairs" role="img" aria-label="Bar chart: 2 to the 3 is 8, 2 squared is 4, 2 to the 1 is 2, 2 to the 0 is 1, 2 to the minus 1 is one half, 2 to the minus 2 is one quarter, 2 to the minus 3 is one eighth.">
+        <div class="col"><span class="val">8</span><span class="slot"><span class="bar" style="height:100%"></span></span><span class="pw">2<sup>3</sup></span></div>
+        <div class="col"><span class="val">4</span><span class="slot"><span class="bar" style="height:50%"></span></span><span class="pw">2<sup>2</sup></span></div>
+        <div class="col"><span class="val">2</span><span class="slot"><span class="bar" style="height:25%"></span></span><span class="pw">2<sup>1</sup></span></div>
+        <div class="col zero"><span class="val">1</span><span class="slot"><span class="bar" style="height:12.5%"></span></span><span class="pw">2<sup>0</sup></span></div>
+        <div class="col neg"><span class="val">1/2</span><span class="slot"><span class="bar" style="height:6.25%"></span></span><span class="pw">2<sup>−1</sup></span></div>
+        <div class="col neg"><span class="val">1/4</span><span class="slot"><span class="bar" style="height:3.125%"></span></span><span class="pw">2<sup>−2</sup></span></div>
+        <div class="col neg"><span class="val">1/8</span><span class="slot"><span class="bar" style="height:1.5625%"></span></span><span class="pw">2<sup>−3</sup></span></div>
+      </div>
+      <p class="caption">Drawn to scale. Each bar is half the one before. \(2^{-3}\) is small (\(\frac18\)) but still positive.</p>
+    </div>
+    <div class="rule">
+      <span class="name">Negative exponent</span>
+      <div class="law">\(a^{-n}=\dfrac{1}{a^n}\qquad\left(\dfrac{a}{b}\right)^{-n}=\left(\dfrac{b}{a}\right)^{n}\)</div>
+      <p class="small">The minus sign means "take the reciprocal". \(4^{-2}=\frac{1}{16}\), never \(-16\). For a fraction, flip it and make the power positive: \(\left(\frac23\right)^{-2}=\left(\frac32\right)^{2}=\frac94\).</p>
+    </div>
+
+    <h3>The lift rule: flip the sign only when you cross the line</h3>
+    <div class="visual">
+      <div class="elev">
+        <span class="lift"><span><span class="chip">y<sup>−4</sup></span></span><span class="bar"></span><span><span class="chip">x<sup>−2</sup></span></span></span>
+        <span class="arrow" aria-hidden="true">→</span>
+        <span class="lift"><span><span class="chip">x<sup>2</sup></span></span><span class="bar"></span><span><span class="chip">y<sup>4</sup></span></span></span>
+      </div>
+      <p class="pen">Each factor took the lift to the other floor, so its sign flipped.</p>
+    </div>
+    <div class="warn">
+      <span class="name">The most common slip</span>
+      <p class="small">Writing \(9y^{-4}\) as \(9y^{4}\) while it stays on top is wrong: <b>no move, no flip</b>. If it stays on top it must be written \(\frac{1}{y^4}\) or kept as \(y^{-4}\).</p>
+    </div>
+    <div class="rule">
+      <span class="name">Even easier: don't move anything</span>
+      <p class="small">Keep the negative exponents and use the quotient law. Watch the double minus:</p>
+      <div class="law">\(\dfrac{y^{-4}}{y^{-20}}=y^{-4-(-20)}=y^{-4+20}=y^{16}\)</div>
+    </div>
+  </article>
+
+  <!-- Lesson 5 -->
+  <article class="sheet lesson" data-title="Fractions" hidden>
+    <div class="lhead"><span class="eyebrow">Lesson 5 of 8</span><h2>Fractional exponents are roots in disguise</h2></div>
+    <p>Why is \(a^{\frac12}\) the same as \(\sqrt{a}\)? Use the product law:</p>
+    <div class="display math-scroll">\(a^{\frac12}\times a^{\frac12}=a^{\frac12+\frac12}=a^{1}=a\)</div>
+    <p>So \(a^{\frac12}\) is the number that gives \(a\) when you multiply it by itself. That is exactly what \(\sqrt{a}\) means. In the same way, \(a^{\frac13}=\sqrt[3]{a}\) because three copies multiply to \(a\).</p>
+
+    <h3>Flower on top, roots underground</h3>
+    <div class="visual">
+      <svg viewBox="0 0 340 200" role="img" aria-label="A plant: the flower above ground stands for the top number, 3, which is the power. The roots underground stand for the bottom number, 2, which is the root." style="width:100%;max-width:440px;height:auto">
+        <line x1="10" y1="104" x2="330" y2="104" style="stroke:var(--muted);stroke-width:3"/>
+        <line x1="58" y1="104" x2="58" y2="46" style="stroke:var(--good);stroke-width:4"/>
+        <ellipse cx="46" cy="78" rx="12" ry="5" transform="rotate(-30 46 78)" style="fill:var(--good)"/>
+        <ellipse cx="70" cy="70" rx="12" ry="5" transform="rotate(30 70 70)" style="fill:var(--good)"/>
+        <circle cx="58" cy="22" r="9" style="fill:var(--red)"/>
+        <circle cx="45" cy="33" r="9" style="fill:var(--red)"/>
+        <circle cx="71" cy="33" r="9" style="fill:var(--red)"/>
+        <circle cx="50" cy="47" r="9" style="fill:var(--red)"/>
+        <circle cx="66" cy="47" r="9" style="fill:var(--red)"/>
+        <circle cx="58" cy="35" r="8" style="fill:var(--hi);stroke:var(--ink);stroke-width:1"/>
+        <path d="M58 104 C57 125 48 138 36 160 M58 104 C60 128 70 140 82 165 M58 104 C58 130 58 150 56 180 M47 140 C40 146 30 148 24 150 M72 145 C80 150 88 150 96 148" style="fill:none;stroke:var(--muted);stroke-width:3;stroke-linecap:round"/>
+        <text x="104" y="122" style="fill:var(--ink);font:italic 700 46px 'Times New Roman',Georgia,serif">36</text>
+        <text x="166" y="88" style="fill:var(--red);font:700 40px 'Times New Roman',Georgia,serif">3</text>
+        <text x="166" y="150" style="fill:var(--teal);font:700 40px 'Times New Roman',Georgia,serif">2</text>
+        <text x="200" y="70" style="fill:var(--red);font:700 15px 'Atkinson Hyperlegible',system-ui,sans-serif">3 = power</text>
+        <text x="200" y="89" style="fill:var(--muted);font:400 13px 'Atkinson Hyperlegible',system-ui,sans-serif">flower, above ground</text>
+        <text x="200" y="134" style="fill:var(--teal);font:700 15px 'Atkinson Hyperlegible',system-ui,sans-serif">2 = root</text>
+        <text x="200" y="153" style="fill:var(--muted);font:400 13px 'Atkinson Hyperlegible',system-ui,sans-serif">roots, underground</text>
+      </svg>
+      <p class="caption">The fraction line is the ground. The top number is the power; the bottom number is the root.</p>
+    </div>
+    <div class="rule">
+      <span class="name">Fractional exponent</span>
+      <div class="law">\(a^{\frac{m}{n}}=\left(\sqrt[n]{a}\right)^{m}\)</div>
+      <p class="small">Both orders give the same answer, but <b>root first</b> keeps the numbers small.</p>
+    </div>
+
+    <h3>Root first vs power first</h3>
+    <div class="two">
+      <div class="warn">
+        <span class="name">Power first</span>
+        <div class="display math-scroll">\(36^3=46\,656\)</div>
+        <div class="display math-scroll">\(\sqrt{46\,656}=\;?\)</div>
+        <p class="small">Huge numbers, long multiplication, easy to slip, and the square root is very hard without a calculator.</p>
+      </div>
+      <div class="rule">
+        <span class="name">Root first</span>
+        <div class="display math-scroll">\(\sqrt{36}=6\)</div>
+        <div class="display math-scroll">\(6^3=216\)</div>
+        <p class="small">Small numbers you can do in your head. Same answer.</p>
+      </div>
+    </div>
+
+    <h3>Turn roots into exponents before anything else</h3>
+    <div class="three">
+      <div class="rule"><div class="law">\(\sqrt{x}=x^{\frac12}\)</div></div>
+      <div class="rule"><div class="law">\(\sqrt[3]{x}=x^{\frac13}\)</div></div>
+      <div class="rule"><div class="law">\(\sqrt{x^3}=x^{\frac32}\)</div></div>
+    </div>
+    <p>Then a messy bracket becomes easy:</p>
+    <div class="display math-scroll">\(\left(x^{-2}\times\sqrt{x}\right)^{-4}=\left(x^{-2}\times x^{\frac12}\right)^{-4}\)</div>
+    <div class="display math-scroll">\(=\left(x^{-\frac32}\right)^{-4}=x^{6}\)</div>
+    <p class="pen">−2 + ½ = −1½, then −1½ × −4 = 6</p>
+  </article>
+
+  <!-- Lesson 6 -->
+  <article class="sheet lesson" data-title="Same base" hidden>
+    <div class="lhead"><span class="eyebrow">Lesson 6 of 8</span><h2>Make the bases match</h2></div>
+    <p>The laws only work when the bases are the same. So when you see 8 next to 2, or 27 next to 3, rewrite the bigger number as a power of the smaller one. Learn these by heart:</p>
+    <div class="visual">
+      <div class="ptable">
+        <div class="prow"><span class="lab">Base 2</span>
+          <span class="pchip">2<small>2¹</small></span><span class="pchip">4<small>2²</small></span><span class="pchip">8<small>2³</small></span><span class="pchip">16<small>2⁴</small></span><span class="pchip">32<small>2⁵</small></span><span class="pchip">64<small>2⁶</small></span><span class="pchip">128<small>2⁷</small></span><span class="pchip">256<small>2⁸</small></span></div>
+        <div class="prow"><span class="lab">Base 3</span>
+          <span class="pchip">3<small>3¹</small></span><span class="pchip">9<small>3²</small></span><span class="pchip">27<small>3³</small></span><span class="pchip">81<small>3⁴</small></span><span class="pchip">243<small>3⁵</small></span></div>
+        <div class="prow"><span class="lab">Base 5</span>
+          <span class="pchip">5<small>5¹</small></span><span class="pchip">25<small>5²</small></span><span class="pchip">125<small>5³</small></span><span class="pchip">625<small>5⁴</small></span></div>
+      </div>
+    </div>
+
+    <h3>Example: the Level 7 way</h3>
+    <ol class="steps">
+      <li><div><div class="m">\(\left(\dfrac{2^8}{8^2}\right)^{-\frac12}=\left(\dfrac{2^8}{(2^3)^2}\right)^{-\frac12}\)</div><p class="why">Write 8 as \(2^3\). Now everything is base 2.</p></div></li>
+      <li><div><div class="m">\(=\left(\dfrac{2^8}{2^6}\right)^{-\frac12}=\left(2^{2}\right)^{-\frac12}\)</div><p class="why">Power of a power, then the quotient law. No big numbers.</p></div></li>
+      <li><div><div class="m">\(=2^{2\times(-\frac12)}=2^{-1}=\dfrac12\)</div><p class="why">Multiply the exponents. A negative exponent means reciprocal.</p></div></li>
+    </ol>
+
+    <h3>Letters in the exponent? Same trick</h3>
+    <div class="display math-scroll">\(4^{n+1}=\left(2^2\right)^{n+1}=2^{2(n+1)}=2^{2n+2}\)</div>
+    <p class="small">Multiply the <b>whole</b> bracket by 2, not just the \(n\).</p>
+    <div class="rule">
+      <span class="name">Equations with powers</span>
+      <p class="small">If both sides have the same base, the exponents must be equal:</p>
+      <div class="law">\(3^{2x}=3^{x+4}\ \Rightarrow\ 2x=x+4\ \Rightarrow\ x=4\)</div>
+    </div>
+  </article>
+
+  <!-- Lesson 7 -->
+  <article class="sheet lesson" data-title="Sci. notation" hidden>
+    <div class="lhead"><span class="eyebrow">Lesson 7 of 8</span><h2>Scientific notation keeps the number between 1 and 10</h2></div>
+    <div class="rule">
+      <span class="name">The form</span>
+      <div class="law">\(a\times10^{n}\quad\text{with}\quad 1\le a\lt 10\)</div>
+      <p class="small">Exactly one non-zero digit before the decimal point.</p>
+    </div>
+    <h3>The see-saw</h3>
+    <p>If the number in front gets 10 times smaller, the power of 10 must get one bigger, so the value stays the same:</p>
+    <div class="display math-scroll">\(78.352\times10^{1}=7.8352\times10^{2}\)</div>
+    <div class="visual">
+      <div class="sci">
+        <label for="sci-in" class="small">Type any number</label>
+        <input id="sci-in" type="text" inputmode="decimal" value="0.000452" autocomplete="off">
+      </div>
+      <div class="sci-out" id="sci-out" aria-live="polite"></div>
+      <p class="caption" id="sci-why"></p>
+    </div>
+    <h3>Multiplying in scientific notation</h3>
+    <ol class="steps">
+      <li><div><div class="m">\((4\times10^{5})\times(6\times10^{-2})=(4\times6)\times10^{5+(-2)}\)</div><p class="why">Numbers together, powers of 10 together (product law).</p></div></li>
+      <li><div><div class="m">\(=24\times10^{3}\)</div><p class="why">Not finished: 24 is bigger than 10.</p></div></li>
+      <li><div><div class="m">\(=2.4\times10^{1}\times10^{3}=2.4\times10^{4}\)</div><p class="why">Fix the front number, then add 1 to the exponent.</p></div></li>
+    </ol>
+  </article>
+
+  <!-- Lesson 8 -->
+  <article class="sheet lesson" data-title="Cheat sheet" hidden>
+    <div class="lhead"><span class="eyebrow">Lesson 8 of 8</span><h2>All the laws on one page</h2></div>
+    <div class="cheat">
+      <div><b>Product</b><span class="m">\(a^m\times a^n=a^{m+n}\)</span></div>
+      <div><b>Quotient</b><span class="m">\(\dfrac{a^m}{a^n}=a^{m-n}\)</span></div>
+      <div><b>Power of a power</b><span class="m">\((a^m)^n=a^{mn}\)</span></div>
+      <div><b>Power of a product</b><span class="m">\((ab)^n=a^nb^n\)</span></div>
+      <div><b>Zero</b><span class="m">\(a^0=1\)</span></div>
+      <div><b>Negative</b><span class="m">\(a^{-n}=\dfrac{1}{a^n}\)</span></div>
+      <div><b>Flip a fraction</b><span class="m">\(\left(\dfrac{a}{b}\right)^{-n}=\left(\dfrac{b}{a}\right)^{n}\)</span></div>
+      <div><b>Fractional</b><span class="m">\(a^{\frac{m}{n}}=\left(\sqrt[n]{a}\right)^m\)</span></div>
+      <div><b>Same base</b><span class="m">\(a^x=a^y\Rightarrow x=y\)</span></div>
+    </div>
+    <h3>A good order of attack for big questions</h3>
+    <ol class="steps">
+      <li><div><p>Turn every root into a fractional exponent. Rewrite numbers with a common base (8 → 2³).</p></div></li>
+      <li><div><p>Get rid of brackets: multiply exponents, and power the numbers inside too.</p></div></li>
+      <li><div><p>Deal with each pile separately: numbers, then each letter. Add exponents for top × top, subtract bottom from top.</p></div></li>
+      <li><div><p>Only at the very end: turn any negative exponent into a positive one by moving it across the fraction line.</p></div></li>
+    </ol>
+    <div class="btnrow"><button class="btn" type="button" data-go="practice">Start the practice quiz</button></div>
+  </article>
+
+  <div class="lfoot">
+    <button class="btn quiet" type="button" id="lprev">Previous</button>
+    <button class="btn" type="button" id="lnext">Next lesson</button>
+  </div>
+</section>
+
+<!-- ============ PANEL 3: PRACTICE ============ -->
+<section class="panel stack" id="panel-practice" role="tabpanel" aria-labelledby="tab-practice" hidden>
+  <div class="sheet" id="p-setup">
+    <h2>Practice quiz</h2>
+    <p class="muted">Every quiz is new: the questions come from 24 kinds of exponent problem, each with random numbers. Work on paper, type your answer, then read the full solution.</p>
+    <div class="field"><span>Number of questions</span>
+      <div class="seg" role="radiogroup" aria-label="Number of questions">
+        <label><input type="radio" name="p-len" value="10">10</label>
+        <label><input type="radio" name="p-len" value="15" checked>15</label>
+        <label><input type="radio" name="p-len" value="20">20</label>
+      </div></div>
+    <div class="field"><span>Level</span>
+      <div class="seg" role="radiogroup" aria-label="Level">
+        <label><input type="radio" name="p-lvl" value="M" checked>Mixed</label>
+        <label><input type="radio" name="p-lvl" value="A">Level 1–4</label>
+        <label><input type="radio" name="p-lvl" value="B">Level 5–6</label>
+        <label><input type="radio" name="p-lvl" value="C">Level 7–8</label>
+      </div></div>
+    <div class="btnrow">
+      <button class="btn" type="button" id="p-start">Start a new quiz</button>
+      <button class="btn ghost" type="button" id="p-continue" hidden>Continue</button>
+    </div>
+    <h3>Got a quiz code from a friend?</h3>
+    <p class="small muted">Type it here to get exactly the same questions, then compare scores.</p>
+    <div class="codein">
+      <input id="p-code-in" placeholder="7GK2QX-15M" autocomplete="off" aria-label="Quiz code">
+      <button class="btn quiet" type="button" id="p-code-load">Load quiz</button>
+    </div>
+    <p class="small redtxt" id="p-code-err" role="alert" hidden></p>
+  </div>
+
+  <div class="stack" id="p-quiz" hidden>
+    <div class="codebar"><span>Quiz code</span><code id="p-code"></code>
+      <button class="btn quiet" type="button" id="p-copy">Copy</button>
+      <button class="btn quiet" type="button" id="p-new">New quiz</button></div>
+    <div class="progress" aria-hidden="true"><i id="qbar" style="width:0%"></i></div>
+    <article class="sheet" id="qcard" aria-live="polite"></article>
+  </div>
+
+  <div class="sheet" id="p-results" hidden></div>
+</section>
+
+<!-- ============ PANEL 4: BATTLE ============ -->
+<section class="panel stack" id="panel-battle" role="tabpanel" aria-labelledby="tab-battle" hidden>
+  <div class="stack-lg" id="battle-root"></div>
+</section>
+
+<footer class="foot">
+  <p>Exponent Lab: practice for IB MYP Year 10 Mathematics. Questions are generated in your browser. Practice answers stay on your device; battle mode shares only nicknames and scores with the other players in the room.</p>
+</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/questions.js"></script>
+<script src="js/quizui.js"></script>
+<script src="js/app.js"></script>
+<script src="js/battle-net.js"></script>
+<script src="js/battle-ui.js"></script>
+</body>
+</html>
