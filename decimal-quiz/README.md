@@ -15,6 +15,16 @@ Open `index.html` in a browser.
 
 Two of the twelve questions in each round are word problems (money, distance, area, sharing). Numbers are generated fresh every round with exact decimal arithmetic, so a retake is new practice rather than memory.
 
+A difficulty slider sets the level before each round. It locks once the first question is answered and unlocks on the results screen for the next round. New visitors start on Stretch.
+
+| Level | What changes |
+|-------|--------------|
+| Warm-up | One or two decimal places and small numbers |
+| Core | The Year 8 standard: up to three decimal places |
+| Stretch | Three decimal places, bigger numbers, borrowing across zeros (500.05 − 237.9), dividing by decimals (3.015 ÷ 0.67) |
+| Challenge | Four decimal places, four-number sums, tiny decimals (0.04 × 0.03), two-step word problems |
+| Expert | Negative decimals (−0.5 vs −0.45, 2.8 − 4.25), comparing whole calculations (0.4 × 0.5 vs 0.4 ÷ 0.5), three-factor products |
+
 - A wrong first answer gets a targeted nudge instead of the answer (for example "the digits are right, but the decimal point is in the wrong place"), and one more try.
 - After each question the explanation shows the working: column layouts with the decimal points in a highlighted stripe and filled-in zeros in blue, or the multiply/divide steps with an estimate or check.
 - The results screen breaks the score down by topic, offers a practice round on the missed topics, and can copy a text summary to send to someone.
