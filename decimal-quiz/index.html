@@ -1,0 +1,1490 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Practice quiz for IB MYP Year 8 on comparing, ordering, adding, subtracting, multiplying and dividing decimals, with worked explanations after every answer.">
+<title>Decimal Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;700&display=swap">
+<style>
+/* Layout: one exercise-book column on squared paper. The decimal point is the hero:
+   pen-blue in every number, a highlighter stripe through every column of working. */
+:root {
+  --paper: #F3F6F9;
+  --sheet: #FFFFFF;
+  --grid: #E2E9F0;
+  --line: #CAD5E1;
+  --ink: #15233B;
+  --ink-soft: #55647A;
+  --pen: #2944C2;
+  --pen-soft: #E6EBFB;
+  --on-pen: #FFFFFF;
+  --mark: #FFE173;
+  --mark-ink: #15233B;
+  --sun: #EDB200;
+  --good: #0E7A52;
+  --good-soft: #E0F2E9;
+  --bad: #B93A27;
+  --bad-soft: #FBE7E2;
+  --half: #9A600C;
+  --half-soft: #FBEFD6;
+  --shadow: rgba(21, 35, 59, .14);
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-num: "Atkinson Hyperlegible Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --r: 14px;
+  --spring: cubic-bezier(.3, 1.6, .5, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0C1321; --sheet: #131C2D; --grid: #18223A; --line: #2A3852;
+    --ink: #E8EDF5; --ink-soft: #9DAABD;
+    --pen: #93A8FF; --pen-soft: #1E2950; --on-pen: #0C1321;
+    --mark: #4B3F10; --mark-ink: #FFE07A; --sun: #FFD84D;
+    --good: #4FC798; --good-soft: #10291F;
+    --bad: #F4826E; --bad-soft: #351A16;
+    --half: #E8B456; --half-soft: #30250E;
+    --shadow: rgba(0, 0, 0, .45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0C1321; --sheet: #131C2D; --grid: #18223A; --line: #2A3852;
+  --ink: #E8EDF5; --ink-soft: #9DAABD;
+  --pen: #93A8FF; --pen-soft: #1E2950; --on-pen: #0C1321;
+  --mark: #4B3F10; --mark-ink: #FFE07A; --sun: #FFD84D;
+  --good: #4FC798; --good-soft: #10291F;
+  --bad: #F4826E; --bad-soft: #351A16;
+  --half: #E8B456; --half-soft: #30250E;
+  --shadow: rgba(0, 0, 0, .45);
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+}
+.wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding-block: 36px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+:focus-visible { outline: 3px solid var(--pen); outline-offset: 2px; border-radius: 6px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* numbers everywhere */
+.num { font-family: var(--font-num); font-weight: 700; white-space: nowrap; }
+.num .pt { color: var(--pen); }
+
+/* header */
+.top { display: flex; flex-direction: column; gap: 10px; }
+.top-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.eyebrow {
+  margin: 0; font-size: .78rem; font-weight: 700; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--ink-soft);
+}
+.snd {
+  font: inherit; font-size: .88rem; font-weight: 700; color: var(--ink-soft); cursor: pointer; flex: none;
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 99px;
+  border: 1px solid var(--line); background: var(--sheet);
+}
+.snd:hover { color: var(--pen); border-color: var(--pen); }
+.snd[aria-pressed="true"] { color: var(--pen); }
+h1 {
+  margin: 0; font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(2.2rem, 7vw, 3.4rem); line-height: 1.02; letter-spacing: -.02em;
+  text-wrap: balance;
+}
+h1 .dot { color: var(--pen); display: inline-block; }
+.lede { margin: 0; max-width: 62ch; font-size: 1.06rem; color: var(--ink-soft); }
+.note {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  margin: 4px 0 0; font-size: 1rem;
+}
+.note .k {
+  font-size: .74rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--pen); background: var(--pen-soft); padding: 2px 8px; border-radius: 99px;
+}
+.note q { font-family: var(--font-display); font-weight: 600; font-size: 1.08rem; }
+
+/* tips */
+.tips {
+  background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r);
+}
+.tips > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 14px 20px; font-family: var(--font-display); font-weight: 600; font-size: 1.1rem;
+}
+.tips > summary::-webkit-details-marker { display: none; }
+.tips > summary .sh { font-family: var(--font-body); font-size: .88rem; font-weight: 700; color: var(--pen); }
+.tips[open] > summary .sh::after { content: "Hide"; }
+.tips:not([open]) > summary .sh::after { content: "Show"; }
+.tip-grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+}
+.tip { padding: 14px 20px 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; border-bottom: 1px solid var(--grid); }
+.tip:not(:nth-child(3n)) { border-right: 1px solid var(--grid); }
+.tip .k { font-size: .74rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--pen); }
+.tip p { margin: 0; font-size: .95rem; }
+.tip .ex { font-family: var(--font-num); font-size: .92rem; color: var(--ink-soft); overflow-wrap: anywhere; }
+.tip .ex .add { color: var(--pen); }
+.tip-foot { margin: 0; padding: 12px 20px 16px; font-size: .95rem; color: var(--ink-soft); }
+.tip-foot strong { color: var(--ink); }
+@media (max-width: 680px) {
+  .tip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tip:not(:nth-child(3n)) { border-right: 0; }
+  .tip:nth-child(odd) { border-right: 1px solid var(--grid); }
+}
+@media (max-width: 440px) {
+  .tip-grid { grid-template-columns: 1fr; }
+  .tip:nth-child(odd) { border-right: 0; }
+}
+
+/* progress */
+.quiz { display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 16px; }
+.progress { display: flex; gap: 4px; align-items: center; }
+.seg { flex: 1; height: 8px; border-radius: 4px; background: var(--line); }
+.seg.gap { margin-left: 6px; }
+.seg.now { background: var(--pen); }
+.seg.first { background: var(--good); }
+.seg.second { background: var(--half); }
+.seg.miss { background: var(--bad); }
+
+/* card */
+.card {
+  position: relative; overflow: hidden;
+  background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r);
+  padding: clamp(18px, 4.5vw, 32px);
+  box-shadow: 0 18px 40px -28px var(--shadow);
+  display: flex; flex-direction: column; gap: 18px;
+}
+.q-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tag {
+  font-size: .76rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--pen); background: var(--pen-soft); padding: 4px 10px; border-radius: 99px;
+}
+.count { font-size: .9rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.prompt { font-size: 1.12rem; max-width: 60ch; }
+.prompt.word { font-size: 1.2rem; line-height: 1.6; }
+.expr {
+  font-family: var(--font-num); font-weight: 700; font-size: clamp(1.9rem, 8vw, 2.8rem);
+  line-height: 1.2; display: flex; flex-wrap: wrap; align-items: center; gap: .1em .35em;
+}
+.expr .num { font-weight: 700; }
+.expr .pt { background: var(--mark); color: var(--mark-ink); border-radius: 4px; padding: 0 .02em; }
+.expr .op { color: var(--ink-soft); font-weight: 400; }
+.box {
+  display: inline-grid; place-items: center; width: 1.25em; height: 1.25em;
+  border: 3px dashed var(--line); border-radius: 10px; color: var(--pen);
+}
+.box.filled { border-style: solid; border-color: var(--pen); background: var(--pen-soft); }
+
+/* answer controls */
+.answer { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
+.field {
+  display: flex; align-items: center; gap: 4px; padding: 0 14px;
+  border: 2px solid var(--line); border-radius: 12px; background: var(--sheet);
+}
+.field:focus-within { border-color: var(--pen); }
+.field.locked { background: var(--paper); }
+.field input {
+  font-family: var(--font-num); font-weight: 700; font-size: 1.6rem; color: var(--ink);
+  width: 7.5ch; min-width: 0; border: 0; background: transparent; padding: 10px 0; outline: none;
+}
+.field input::placeholder { color: var(--line); }
+.field .pre, .field .suf { font-size: 1.15rem; color: var(--ink-soft); font-weight: 700; }
+.btn {
+  font: inherit; font-weight: 700; font-size: 1.02rem; cursor: pointer;
+  border-radius: 12px; padding: 12px 22px; border: 2px solid transparent;
+  transition: transform .12s ease, filter .12s ease;
+}
+.btn:active { transform: translateY(1px) scale(.98); }
+.btn.primary { background: var(--pen); color: var(--on-pen); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.quiet { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.quiet:hover { border-color: var(--pen); }
+.link {
+  font: inherit; font-weight: 700; color: var(--pen); background: none; border: 0; padding: 4px 0;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 3px; align-self: flex-start;
+}
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+.choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.choice {
+  font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 12px 8px; border-radius: 12px; border: 2px solid var(--line); background: var(--sheet); color: var(--ink);
+  transition: transform .12s ease, border-color .12s ease;
+}
+.choice .sign { font-family: var(--font-num); font-weight: 700; font-size: 1.9rem; line-height: 1.1; }
+.choice .lbl { font-size: .85rem; color: var(--ink-soft); }
+.choice:hover:not(:disabled) { border-color: var(--pen); transform: translateY(-2px); }
+.choice[aria-pressed="true"] { border-color: var(--pen); background: var(--pen-soft); }
+.choice:disabled { cursor: default; opacity: .7; }
+
+.order-area { display: flex; flex-direction: column; gap: 10px; }
+.axis { display: flex; align-items: center; gap: 10px; font-size: .82rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+.axis .arrow { flex: 1; height: 2px; background: var(--line); position: relative; }
+.axis .arrow::after {
+  content: ""; position: absolute; right: -1px; top: -4px; border: 5px solid transparent; border-left: 8px solid var(--line); border-right: 0;
+}
+.slot-row, .pool { display: flex; flex-wrap: wrap; gap: 8px; min-height: 52px; }
+.pool { padding-top: 6px; border-top: 1px dashed var(--line); }
+.chip {
+  font: inherit; cursor: pointer; font-size: 1.3rem; padding: 8px 14px; min-width: 4.5ch;
+  border-radius: 10px; border: 2px solid var(--line); background: var(--sheet); color: var(--ink);
+  transition: transform .12s ease, border-color .12s ease;
+}
+.chip:hover:not(:disabled) { border-color: var(--pen); transform: translateY(-2px); }
+.chip.placed { border-color: var(--pen); background: var(--pen-soft); }
+.chip:disabled { cursor: default; }
+.slot { width: 5.2em; height: 48px; border: 2px dashed var(--line); border-radius: 10px; }
+.pool-empty { color: var(--ink-soft); font-size: .92rem; align-self: center; }
+
+.err { margin: 0; color: var(--bad); font-weight: 700; }
+.hint { background: var(--pen-soft); border-radius: 12px; padding: 12px 16px; }
+.hint .k { font-weight: 700; color: var(--pen); margin-right: 6px; }
+
+/* feedback + worked explanation */
+.fb { border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; border: 2px solid transparent; }
+.fb p { margin: 0; }
+.fb.retry { background: var(--half-soft); border-color: var(--half); }
+.fb.first, .fb.second { background: var(--good-soft); border-color: var(--good); }
+.fb.miss { background: var(--bad-soft); border-color: var(--bad); }
+.fb-title { font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.yours { color: var(--ink-soft); }
+.work {
+  background: var(--sheet); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;
+  min-width: 0;
+}
+.work-k { font-size: .76rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--pen); }
+.work p { max-width: 62ch; }
+.col-wrap { overflow-x: auto; padding: 4px 0; }
+.col { display: inline-flex; flex-direction: column; font-family: var(--font-num); font-size: 1.4rem; line-height: 1.55; font-weight: 700; }
+.col .row { display: grid; grid-template-columns: var(--cols); }
+.col .c { text-align: center; }
+.col .c.sg { color: var(--ink-soft); }
+.col .c.pt { background: var(--mark); color: var(--mark-ink); }
+.col .c.add { color: var(--pen); font-weight: 400; }
+.col .c.hl { background: var(--pen-soft); color: var(--pen); box-shadow: inset 0 -3px 0 var(--pen); }
+.col .row.res { border-top: 2px solid var(--ink); }
+.legend { font-size: .88rem; color: var(--ink-soft); }
+.legend .sw { font-family: var(--font-num); color: var(--pen); }
+.legend .st { display: inline-block; width: .7em; height: 1em; vertical-align: -2px; background: var(--mark); border-radius: 2px; }
+
+.mk {
+  display: inline-grid; place-items: center; flex: none; width: 1.7rem; height: 1.7rem; border-radius: 50%;
+  font-family: var(--font-body); font-weight: 700; font-size: .9rem;
+}
+.mk-first { background: var(--good-soft); color: var(--good); border: 2px solid var(--good); }
+.mk-second { background: var(--half-soft); color: var(--half); border: 2px solid var(--half); }
+.mk-miss { background: var(--bad-soft); color: var(--bad); border: 2px solid var(--bad); }
+.mk.sm { width: 1.25rem; height: 1.25rem; font-size: .68rem; border-width: 1.5px; }
+
+/* results */
+.results { display: flex; flex-direction: column; gap: 22px; }
+.results h3 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; }
+.score { display: flex; align-items: baseline; gap: 8px; font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+.score .big { font-size: clamp(3.6rem, 14vw, 5rem); font-weight: 800; line-height: .9; }
+.score .of { font-size: 1.6rem; color: var(--ink-soft); font-weight: 600; }
+.score-sub { margin: 4px 0 0; color: var(--ink-soft); }
+.verdict { margin: 0; font-size: 1.1rem; }
+.saved { margin: 0; font-size: .95rem; color: var(--ink-soft); display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.saved.ok { color: var(--good); font-weight: 700; }
+.saved.warn { color: var(--bad); }
+.topics { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.topics li { display: grid; grid-template-columns: 9.5rem auto 1fr; gap: 6px 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.topics .tn { font-weight: 700; }
+.topics .marks { display: flex; gap: 4px; flex-wrap: wrap; }
+.topics .rule { font-size: .93rem; color: var(--ink-soft); min-width: 0; }
+.topics .rule.weak { color: var(--ink); }
+.topics .rule.weak::before { content: "Practise: "; font-weight: 700; color: var(--half); }
+@media (max-width: 560px) {
+  .topics li { grid-template-columns: 1fr auto; }
+  .topics .rule { grid-column: 1 / -1; }
+}
+.key { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .88rem; color: var(--ink-soft); }
+.key span { display: inline-flex; align-items: center; gap: 6px; }
+.key .mk { width: 1.3rem; height: 1.3rem; font-size: .72rem; }
+.review summary { cursor: pointer; font-weight: 700; color: var(--pen); }
+.review ol { margin: 12px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.review li { display: grid; grid-template-columns: 2rem 1.9rem 1fr; gap: 8px; align-items: start; font-size: .97rem; }
+.review .qn { color: var(--ink-soft); font-variant-numeric: tabular-nums; padding-top: 2px; }
+.review .rv { min-width: 0; overflow-wrap: anywhere; padding-top: 2px; }
+.review .rv small { display: block; color: var(--ink-soft); font-size: .88rem; }
+.copybox { width: 100%; min-height: 9em; font-family: var(--font-num); font-size: .85rem; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+
+.below { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; font-size: .95rem; color: var(--ink-soft); }
+.below .link { font-weight: 400; color: var(--ink-soft); }
+.below .confirm { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.save-state { font-size: .88rem; color: var(--ink-soft); }
+.save-state.ok { color: var(--good); }
+.save-state.warn { color: var(--bad); }
+
+/* results log */
+.log {
+  background: var(--sheet); border: 1px solid var(--line); border-radius: var(--r);
+  padding: clamp(18px, 4.5vw, 28px); display: flex; flex-direction: column; gap: 18px; scroll-margin-top: 16px;
+}
+.log-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.log h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 1.6rem; }
+.log h3 { margin: 0 0 8px; font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; }
+.log-sub { margin: -8px 0 0; color: var(--ink-soft); max-width: 62ch; }
+.chip-state {
+  display: inline-flex; align-items: center; gap: 7px; font-size: .8rem; font-weight: 700; letter-spacing: .04em;
+  padding: 4px 10px; border-radius: 99px; background: var(--paper); color: var(--ink-soft); border: 1px solid var(--line);
+}
+.chip-state .led { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-soft); }
+.chip-state.live { color: var(--good); border-color: var(--good); background: var(--good-soft); }
+.chip-state.live .led { background: var(--good); }
+.log-empty { margin: 0; padding: 16px; border: 2px dashed var(--line); border-radius: 12px; color: var(--ink-soft); }
+.log-empty strong { color: var(--ink); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.stat { padding: 12px 14px; border-radius: 12px; background: var(--paper); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stat .v { font-family: var(--font-display); font-weight: 800; font-size: 1.6rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat .l { font-size: .85rem; color: var(--ink-soft); }
+.meters { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.meters li { display: grid; grid-template-columns: 8.5rem 1fr 6.5rem; gap: 12px; align-items: center; }
+.meters .tn { font-weight: 700; font-size: .95rem; }
+#logBody { display: flex; flex-direction: column; gap: 24px; }
+.meters .track { display: block; height: 10px; border-radius: 5px; background: var(--grid); overflow: hidden; }
+.meters .fill { display: block; height: 100%; border-radius: 5px; background: var(--pen); width: var(--w); }
+.meters .val { font-size: .9rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; text-align: right; }
+.meters .val b { color: var(--ink); }
+@media (max-width: 480px) {
+  .meters li { grid-template-columns: 1fr auto; }
+  .meters .track { grid-column: 1 / -1; grid-row: 2; }
+}
+.meter-note { margin: 8px 0 0; font-size: .85rem; color: var(--ink-soft); }
+.rounds { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.round { border-bottom: 1px solid var(--line); }
+.round > summary {
+  list-style: none; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; padding: 12px 4px; align-items: center;
+}
+.round > summary::-webkit-details-marker { display: none; }
+.round > summary:hover .when { color: var(--pen); }
+.round .when { font-weight: 700; }
+.round .meta { font-size: .88rem; color: var(--ink-soft); }
+.round .sc { font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; font-variant-numeric: tabular-nums; text-align: right; }
+.round .sc small { font-size: .9rem; color: var(--ink-soft); font-weight: 600; }
+.round .dots { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 3px; }
+.pill { font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; background: var(--pen-soft); color: var(--pen); margin-left: 6px; vertical-align: 2px; }
+.pill.wait { background: var(--half-soft); color: var(--half); }
+.round-body { padding: 4px 4px 16px; display: flex; flex-direction: column; gap: 8px; }
+.ritem { display: grid; grid-template-columns: 1.5rem 1fr; gap: 10px; align-items: start; font-size: .95rem; }
+.ritem .mk { margin-top: 2px; }
+.ritem .rq { min-width: 0; overflow-wrap: anywhere; }
+.ritem .rq small { display: block; color: var(--ink-soft); font-size: .86rem; }
+.ritem .tp { font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); margin-right: 6px; }
+.round-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding-top: 6px; font-size: .9rem; color: var(--ink-soft); }
+.local-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-variant-numeric: tabular-nums; }
+.local-list li { display: flex; gap: 12px; flex-wrap: wrap; }
+.local-list b { min-width: 4.5ch; }
+
+/* confetti made of decimal points */
+.confetti { position: absolute; left: 50%; top: 110px; width: 0; height: 0; pointer-events: none; z-index: 2; }
+.confetti i {
+  position: absolute; left: 0; top: 0; width: var(--s); height: var(--s); border-radius: 50%;
+  background: var(--c); opacity: 0;
+}
+
+/* motion: only for people who have not asked for less */
+@media (prefers-reduced-motion: no-preference) {
+  .card.in > * { animation: fadeUp .4s cubic-bezier(.2, .7, .2, 1) both; }
+  .card.in > *:nth-child(2) { animation-delay: .05s; }
+  .card.in > *:nth-child(3) { animation-delay: .1s; }
+  .card.in > *:nth-child(4) { animation-delay: .15s; }
+  .card.in > *:nth-child(n+5) { animation-delay: .2s; }
+  .card.good { animation: glow 1s ease-out; }
+  .fb.pop { animation: rise .32s ease-out both; }
+  .fb.pop .fb-title .mk { animation: pop .5s var(--spring) .1s both; }
+  .fb.pop .col .row { animation: rowIn .34s ease-out both; animation-delay: calc(.2s + var(--i, 0) * .1s); }
+  .shake { animation: shake .42s ease-in-out; }
+  .box.pop { animation: pop .32s var(--spring); }
+  .chip.new { animation: pop .3s var(--spring); }
+  .seg.fill { animation: segFill .5s cubic-bezier(.2, .7, .2, 1) both; transform-origin: left center; }
+  .results.in .topics .mk { animation: pop .38s var(--spring) both; animation-delay: calc(.35s + var(--i, 0) * .05s); }
+  .results.in .score .big { animation: pop .5s var(--spring) both; }
+  .confetti i { animation: fly var(--d) cubic-bezier(.15, .7, .3, 1) var(--dl) forwards; }
+  h1 .dot { animation: bob 2.8s ease-in-out 1s 2; }
+  .chip-state.live .led { animation: pulse 2s ease-in-out infinite; }
+  .meters .fill { animation: grow .8s cubic-bezier(.2, .7, .2, 1) both; transform-origin: left center; }
+}
+@keyframes fadeUp { from { opacity: .2; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes rise { from { opacity: .3; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes rowIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+@keyframes pop { 0% { transform: scale(.4); } 70% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@keyframes glow { 0% { box-shadow: 0 0 0 0 var(--good), 0 18px 40px -28px var(--shadow); } 100% { box-shadow: 0 0 0 14px transparent, 0 18px 40px -28px var(--shadow); } }
+@keyframes shake { 0%, 100% { transform: none; } 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+@keyframes segFill { from { transform: scaleX(.15); } to { transform: none; } }
+@keyframes grow { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes bob { 0%, 100% { transform: none; } 30% { transform: translateY(-7px); } 55% { transform: translateY(0); } 70% { transform: translateY(-2px); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes fly {
+  0% { opacity: 1; transform: translate(0, 0) scale(.5); }
+  35% { opacity: 1; transform: translate(calc(var(--x) * .7), var(--y)) scale(1); }
+  100% { opacity: 0; transform: translate(var(--x), calc(var(--y) + 240px)) scale(.8); }
+}
+</style>
+<style>
+html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); -webkit-text-size-adjust: 100%; }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="top-row">
+      <p class="eyebrow">MYP Year 8 · Mathematics · Decimal operations</p>
+      <button class="snd" id="sound" type="button" aria-pressed="true"></button>
+    </div>
+    <h1>Decimal Quiz<span class="dot" aria-hidden="true">.</span></h1>
+    <p class="lede">Twelve questions on comparing, ordering, adding, subtracting, multiplying and dividing decimals. Each one hides a small detail that is easy to miss. After every answer you see how it works, step by step.</p>
+  </header>
+
+  <details class="tips" id="tips" open>
+    <summary>The six details to watch <span class="sh"></span></summary>
+    <div class="tip-grid" id="tipGrid"></div>
+    <p class="tip-foot">And every time: <strong>estimate first, check at the end.</strong> If 4.7 + 2.35 comes out as 2.82, the estimate (about 7) tells you a detail slipped.</p>
+  </details>
+
+  <section class="quiz" id="quiz" aria-label="Quiz">
+    <div class="progress" id="progress" role="img"></div>
+    <div class="card" id="card"></div>
+    <div class="below" id="below"></div>
+  </section>
+
+  <section class="log" id="log" aria-labelledby="logTitle">
+    <div class="log-head">
+      <h2 id="logTitle">Results log</h2>
+      <span class="chip-state" id="logState"><span class="led"></span>Connecting</span>
+    </div>
+    <p class="log-sub" id="logSub">Finished rounds are listed here.</p>
+    <div id="logBody"><p class="log-empty">Looking for saved rounds…</p></div>
+  </section>
+</div>
+
+<script>
+/* Quiz engine: question generators with exact decimal arithmetic (scaled integers). No DOM. */
+const Q = (() => {
+  const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const P10 = n => Math.pow(10, n);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // A decimal is {v, d}: the integer v divided by 10^d. 2.35 = {v: 235, d: 2}.
+  const X = (v, d = 0) => ({ v, d });
+  function fmt(v, d) {
+    let s = String(Math.abs(v));
+    if (d > 0) { s = s.padStart(d + 1, '0'); s = s.slice(0, -d) + '.' + s.slice(-d); }
+    return (v < 0 ? '-' : '') + s;
+  }
+  const norm = x => { let { v, d } = x; while (d > 0 && v % 10 === 0) { v /= 10; d--; } return { v, d }; };
+  const S = x => fmt(x.v, x.d);          // keeps every place, 2.70 stays 2.70
+  const SN = x => S(norm(x));            // drops trailing zeros
+  const V = x => x.v / P10(x.d);
+  const padTo = (x, D) => ({ v: x.v * P10(D - x.d), d: D });
+  const addX = (a, b) => { const d = Math.max(a.d, b.d); return { v: padTo(a, d).v + padTo(b, d).v, d }; };
+  const subX = (a, b) => { const d = Math.max(a.d, b.d); return { v: padTo(a, d).v - padTo(b, d).v, d }; };
+  const mulX = (a, b) => ({ v: a.v * b.v, d: a.d + b.d });
+  const same = (p, q) => Math.abs(p - q) < 1e-9 * Math.max(1, Math.abs(q));
+  function rdec(min, max, d) {
+    const lo = Math.round(min * P10(d)), hi = Math.round(max * P10(d));
+    let v; do { v = rnd(lo, hi); } while (d > 0 && v % 10 === 0);
+    return { v, d };
+  }
+  const priceX = (lo, hi) => X(rnd(lo * 10, hi * 10 - 1) * 10 + pick([5, 9]), 2);
+  const money = x => S(padTo(norm(x), 2));
+  const pl = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  const N = s => `<span class="num">${esc(s).replace('.', '<span class="pt">.</span>')}</span>`;
+  const NX = x => N(S(x));
+  const NS = s => esc(s).replace(/\d*\.\d+|\d+/g, m => `<span class="num">${m.replace('.', '<span class="pt">.</span>')}</span>`);
+  const exprHTML = (nums, op) => nums.map(n => typeof n === 'string' ? N(n) : NX(n)).join(` <span class="op">${op}</span> `);
+
+  // Column working: decimal points in one highlighted column, filled-in zeros in pen blue.
+  function column(rows, D, hl) {
+    const sp = rows.map(r => { const [i, f = ''] = S(r.x).split('.'); return { i, f, pt: r.x.d > 0 }; });
+    const W = Math.max(...sp.map(p => p.i.length));
+    const hasSign = rows.some(r => r.sign);
+    const widths = [];
+    if (hasSign) widths.push('1.1em');
+    for (let k = 0; k < W; k++) widths.push('0.95em');
+    widths.push('0.55em');
+    for (let k = 0; k < D; k++) widths.push('0.95em');
+    let h = `<div class="col-wrap"><div class="col" style="--cols:${widths.join(' ')}" aria-hidden="true">`;
+    rows.forEach((r, ri) => {
+      const p = sp[ri], ip = p.i.padStart(W, ' ');
+      let c = hasSign ? `<span class="c sg">${r.sign || ''}</span>` : '';
+      for (let k = 0; k < W; k++) c += `<span class="c${hl === k ? ' hl' : ''}">${ip[k] === ' ' ? '' : ip[k]}</span>`;
+      c += `<span class="c pt${p.pt ? '' : ' add'}">.</span>`;
+      for (let k = 0; k < D; k++) {
+        const real = k < p.f.length;
+        c += `<span class="c${real ? '' : ' add'}${hl === W + k ? ' hl' : ''}">${real ? p.f[k] : '0'}</span>`;
+      }
+      h += `<div class="row${r.cls ? ' ' + r.cls : ''}" style="--i:${ri}">${c}</div>`;
+    });
+    return h + '</div></div>';
+  }
+  const legend = (nums, D) => nums.some(n => n.d < D)
+    ? '<p class="legend"><span class="sw">0</span> Blue zeros are the ones you write in. <span class="st"></span> The yellow stripe keeps the decimal points lined up.</p>'
+    : '<p class="legend"><span class="st"></span> The yellow stripe keeps the decimal points lined up.</p>';
+  const PLACE = ['tenths', 'hundredths', 'thousandths'];
+
+  const T = {
+    compare: { name: 'Comparing', rule: 'Give both numbers the same number of decimal places, then compare from the left.' },
+    order: { name: 'Ordering', rule: 'Pad every number to the same number of places, then compare place by place.' },
+    add: { name: 'Adding', rule: 'Line up the decimal points, not the last digits.' },
+    sub: { name: 'Subtracting', rule: 'Fill empty places with zeros, then borrow when the top digit is smaller.' },
+    mul: { name: 'Multiplying', rule: 'Multiply without the points, then count the decimal places in the question.' },
+    div: { name: 'Dividing', rule: 'Make the divisor a whole number by moving both decimal points the same way.' },
+  };
+  const SHIFT = {
+    addsub: 'The digits are right, but the decimal point is in the wrong place. Line up the points in a column and bring the point straight down into the answer.',
+    mul: 'The digits are right, but the decimal point is in the wrong place. Count the decimal places in the question again. The answer needs that many.',
+    div: 'The digits are right, but the decimal point is in the wrong place. When you move the point in one number, move it the same way in the other.',
+    pow: 'The digits are right, but they moved the wrong number of places. Count the zeros: 10 moves 1 place, 100 moves 2 places, 1000 moves 3 places.',
+  };
+
+  /* ---------- Comparing ---------- */
+  function qCompare(sub) {
+    let a, b, msg;
+    if (sub === 'len') {
+      const x = rnd(0, 9), d = rnd(3, 9), e = rnd(1, d - 1), f = rnd(1, 9);
+      a = X(x * 10 + d, 1); b = X(x * 100 + e * 10 + f, 2);
+      msg = 'More digits does not mean bigger. Give both numbers the same number of decimal places, then compare again.';
+    } else if (sub === 'zero') {
+      const x = rnd(0, 12), g = rnd(1, 9), f = rnd(1, 9);
+      a = X(x * 100 + f, 2); b = X(x * 10 + g, 1);
+      msg = 'Look at the tenths digit first. Write both numbers with two decimal places, then compare again.';
+    } else if (sub === 'eq') {
+      const x = rnd(0, 9), d = rnd(1, 9);
+      if (Math.random() < .5) { a = X(x * 10 + d, 1); b = X((x * 10 + d) * 10, 2); }
+      else { const e = rnd(1, 9); a = X(x * 100 + d * 10 + e, 2); b = X((x * 100 + d * 10 + e) * 10, 3); }
+      msg = 'Zeros at the end of a decimal do not change its value. Is any digit actually different?';
+    } else {
+      const x = rnd(0, 5), y = rnd(1, 8), z = rnd(1, 9), w = rnd(1, 9);
+      a = X(x * 1000 + y * 100 + z, 3); b = X(x * 100 + y * 10 + w, 2);
+      msg = 'Write both numbers with three decimal places, then compare one place at a time from the left.';
+    }
+    if (Math.random() < .5) [a, b] = [b, a];
+    const ans = same(V(a), V(b)) ? '=' : V(a) < V(b) ? '<' : '>';
+    const D = Math.max(a.d, b.d);
+    const [ai, af = ''] = S(a).split('.'), [bi, bf = ''] = S(b).split('.');
+    const W = Math.max(ai.length, bi.length);
+    const da = ai.padStart(W, '0') + af.padEnd(D, '0'), db = bi.padStart(W, '0') + bf.padEnd(D, '0');
+    let idx = -1; for (let k = 0; k < da.length; k++) if (da[k] !== db[k]) { idx = k; break; }
+    let txt;
+    if (idx < 0) txt = `Every digit matches, so ${NX(a)} = ${NX(b)}. Zeros at the end never change a number.`;
+    else {
+      const place = idx < W ? (W - 1 - idx === 0 ? 'ones' : 'tens') : PLACE[idx - W];
+      txt = `Compare from the left. The first digits that are different are in the <strong>${place}</strong> place: ${N(da[idx])} ${esc(da[idx] > db[idx] ? '>' : '<')} ${N(db[idx])}. So ${NX(a)} ${esc(ans)} ${NX(b)}.`;
+    }
+    const work = `<p>Write both numbers with ${pl(D, 'decimal place')}:</p>` + column([{ x: a }, { x: b }], D, idx < 0 ? -1 : idx) + legend([a, b], D) + `<p>${txt}</p>`;
+    return {
+      topic: 'compare', kind: 'cmp', a: S(a), b: S(b), ans, cmpMsg: msg, work,
+      text: 'Which sign goes in the box?',
+      hint: 'Give both numbers the same number of decimal places first. For example, 0.5 becomes 0.50.',
+      answerText: `${S(a)} ${ans} ${S(b)}`,
+    };
+  }
+
+  /* ---------- Ordering ---------- */
+  function qOrder(sub) {
+    let xs, dir = 'asc';
+    if (sub === 'small') {
+      const t = rnd(2, 9);
+      xs = [X(t, 1), X(t, 2), X(t * 100 + t, 3), X(t * 11, 2)];
+    } else {
+      const x = rnd(1, 9), t = rnd(2, 8), u = rnd(5, 9), v = rnd(1, 9);
+      xs = [X(x * 100 + t, 2), X(x * 100 + (t - 1) * 10 + u, 2), X(x * 10 + t, 1), X(x * 1000 + t * 100 + v, 3), X(x * 100 + t * 10 + 5, 2)];
+      if (Math.random() < .5) dir = 'desc';
+    }
+    const sorted = xs.slice().sort((p, q) => dir === 'asc' ? V(p) - V(q) : V(q) - V(p));
+    let items; do { items = shuffle(xs); } while (items.every((x, i) => x === sorted[i]));
+    const correct = sorted.map(x => items.indexOf(x));
+    const sym = dir === 'asc' ? '<' : '>';
+    const work = `<p>Write every number with 3 decimal places. Then compare from the left: ones first, then tenths, then hundredths, then thousandths.</p>`
+      + column(sorted.map(x => ({ x })), 3) + legend(sorted, 3)
+      + `<p>${sorted.map(NX).join(` ${esc(sym)} `)}</p>`;
+    const [w1, w2] = dir === 'asc' ? ['smallest', 'largest'] : ['largest', 'smallest'];
+    return {
+      topic: 'order', kind: 'order', dir, items: items.map(S), correct, work,
+      text: `Put these numbers in order from <strong>${w1}</strong> to <strong>${w2}</strong>. Tap them in order.`,
+      hint: 'Write every number with 3 decimal places in your head. For example, 0.6 becomes 0.600.',
+      answerText: sorted.map(S).join(` ${sym} `),
+    };
+  }
+
+  /* ---------- Adding ---------- */
+  function qAdd(sub) {
+    let nums, text = '', unit = {}, word = false;
+    if (sub === 'mix') nums = [rdec(1.1, 9.9, 1), rdec(1.01, 9.99, 2)];
+    else if (sub === 'whole') nums = [X(rnd(4, 30)), rdec(1.01, 9.99, 2)];
+    else if (sub === 'three') nums = [rdec(0.1, 0.9, 1), rdec(1.01, 4.99, 2), rdec(0.101, 0.999, 3)];
+    else if (sub === 'run') {
+      nums = [rdec(1.5, 5.9, 1), rdec(1.05, 4.95, 2)]; word = true; unit = { suf: 'km' };
+      text = `Sam runs ${NX(nums[0])} km on Monday and ${NX(nums[1])} km on Tuesday. How far does Sam run altogether?`;
+    } else {
+      nums = [rdec(10.1, 24.9, 1), rdec(0.15, 1.95, 2)]; word = true; unit = { suf: 'cm' };
+      text = `A sunflower is ${NX(nums[0])} cm tall. In one week it grows ${NX(nums[1])} cm. How tall is it now?`;
+    }
+    if (!word) nums = shuffle(nums);
+    const res = nums.reduce(addX), D = res.d;
+    const calc = exprHTML(nums, '+');
+    const traps = [];
+    const mis = X(nums.reduce((s, n) => s + n.v, 0), D);
+    if (!same(V(mis), V(res))) {
+      const whole = nums.find(n => n.d === 0);
+      traps.push({ val: V(mis), msg: whole
+        ? `A whole number has its decimal point at the end, so ${NX(whole)} = ${N(S(padTo(whole, D)))}. Line up the decimal points, then add again.`
+        : 'It looks like the last digits were lined up instead of the decimal points. Line up the points, fill the gaps with zeros, then add again.' });
+    }
+    const est = nums.map(n => Math.round(V(n)));
+    const estTxt = `about ${est.join(' + ')} = ${est.reduce((s, n) => s + n, 0)}`;
+    const rows = nums.map((n, i) => ({ x: n, sign: i ? '+' : '' })).concat([{ x: res, cls: 'res' }]);
+    const work = (word ? `<p>The calculation is ${calc}.</p>` : '')
+      + '<p>Line up the decimal points and fill the gaps with zeros. Then add each column from the right.</p>'
+      + column(rows, D) + legend(nums, D)
+      + `<p>${calc} = ${N(S(res))}${S(res) !== SN(res) ? ` = ${N(SN(res))}` : ''}</p>`
+      + `<p>Estimate: ${estTxt}, so the answer makes sense ✓</p>`;
+    return {
+      topic: 'add', kind: 'num', word, text: word ? text : 'Work out', expr: word ? '' : calc,
+      short: nums.map(S).join(' + '), val: V(res), answer: SN(res), unit, traps, shiftMsg: SHIFT.addsub,
+      hint: `Line up the decimal points. Estimate first: ${estTxt}.`, work,
+    };
+  }
+
+  /* ---------- Subtracting ---------- */
+  function noBorrow(a, b) {
+    const d = Math.max(a.d, b.d); let A = padTo(a, d).v, B = padTo(b, d).v, r = 0, m = 1;
+    while (A > 0 || B > 0) { r += Math.abs(A % 10 - B % 10) * m; A = Math.floor(A / 10); B = Math.floor(B / 10); m *= 10; }
+    return X(r, d);
+  }
+  function qSub(sub) {
+    let a, b, text = '', unit = {}, word = false, isMoney = false;
+    if (sub === 'whole') { const w = rnd(3, 20); a = X(w); b = rdec(1.01, w - 0.51, 2); }
+    else if (sub === 'mix') { a = rdec(5.1, 15.9, 1); b = rdec(1.01, V(a) - 1, 2); }
+    else if (sub === 'thou') { a = rdec(2.1, 9.9, 1); b = rdec(0.101, V(a) - 0.6, 3); }
+    else if (sub === 'change') {
+      const w = pick([10, 20, 50]); a = X(w); b = priceX(Math.ceil(w * 0.3), w - 1);
+      word = true; isMoney = true; unit = { pre: '€' };
+      text = `Sam has ${N('€' + w)} and buys a book for ${N('€' + S(b))}. How much change does Sam get?`;
+    } else {
+      a = rdec(1.1, 2.9, 1); b = rdec(0.15, V(a) - 0.3, 2); word = true; unit = { suf: 'litres' };
+      text = `A water bottle holds ${NX(a)} litres. Sam drinks ${NX(b)} litres. How much water is left?`;
+    }
+    const res = subX(a, b), D = res.d;
+    const traps = [];
+    if (a.d === 0) {
+      const bw = Math.floor(b.v / P10(b.d)), bf = b.v % P10(b.d);
+      const kf = X((a.v - bw) * P10(b.d) + bf, b.d);
+      if (!same(V(kf), V(res))) traps.push({ val: V(kf), msg: `${NX(a)} has no digits after the point, but the places are still there. Write it as ${N(S(padTo(a, D)))}, then subtract every column.` });
+    }
+    const nb = noBorrow(a, b);
+    if (!same(V(nb), V(res))) traps.push({ val: V(nb), msg: 'In at least one column the smaller digit was taken away from the bigger one. When the top digit is smaller, borrow 1 from the column to its left.' });
+    if (a.v - b.v > 0) { const m = X(a.v - b.v, D); if (!same(V(m), V(res))) traps.push({ val: V(m), msg: 'Line up the decimal points, not the last digits. Then fill the gaps with zeros and subtract again.' }); }
+    const calc = exprHTML([a, b], '−');
+    const ea = Math.round(V(a)), eb = Math.round(V(b));
+    const ansStr = isMoney ? money(res) : SN(res);
+    const work = (word ? `<p>The calculation is ${calc}.</p>` : '')
+      + '<p>Line up the decimal points and fill the gaps with zeros. Subtract from the right, and borrow when the top digit is smaller.</p>'
+      + column([{ x: a }, { x: b, sign: '−' }, { x: res, cls: 'res' }], D) + legend([a, b], D)
+      + `<p>${calc} = ${N(S(res))}${!isMoney && S(res) !== SN(res) ? ` = ${N(SN(res))}` : ''}</p>`
+      + `<p>Check by adding back: ${N(ansStr)} + ${NX(b)} = ${NX(a)} ✓</p>`;
+    return {
+      topic: 'sub', kind: 'num', word, text: word ? text : 'Work out', expr: word ? '' : calc,
+      short: `${S(a)} − ${S(b)}`, val: V(res), answer: ansStr, unit, traps, shiftMsg: SHIFT.addsub,
+      hint: (a.d < D ? `Write ${NX(a)} as ${N(S(padTo(a, D)))} first. ` : '') + `Estimate: about ${ea} − ${eb} = ${ea - eb}.`,
+      work,
+    };
+  }
+
+  /* ---------- Multiplying ---------- */
+  function qMul(sub) {
+    let a, b, text = '', unit = {}, word = false, isMoney = false, pow = 0;
+    if (sub === 'small') { a = X(rnd(2, 9), 1); b = X(rnd(2, 9), 1); }
+    else if (sub === 'byWhole') { a = rdec(1.05, 9.95, 2); b = X(rnd(3, 9)); }
+    else if (sub === 'oneOne') { a = rdec(1.1, 9.9, 1); b = X(rnd(2, 9), 1); }
+    else if (sub === 'pow') { pow = pick([1, 2, 3]); a = rdec(0.01, 9.99, pick([2, 3])); b = X(P10(pow)); }
+    else if (sub === 'shop') {
+      a = priceX(1, 4); b = X(rnd(3, 6)); word = true; isMoney = true; unit = { pre: '€' };
+      text = `A notebook costs ${N('€' + S(a))}. Sam buys ${b.v} of them. How much does Sam pay?`;
+    } else {
+      a = rdec(1.2, 4.8, 1); b = X(rnd(3, 9), 1); word = true; unit = { suf: 'm²' };
+      text = `A vegetable bed is a rectangle ${NX(a)} m long and ${NX(b)} m wide. What is its area?`;
+    }
+    const res = mulX(a, b);
+    const ansStr = isMoney ? money(res) : SN(res);
+    const calc = exprHTML([a, b], '×');
+    let work = word ? `<p>The calculation is ${calc}.</p>` : '';
+    let hint;
+    if (pow) {
+      work += `<p>× ${P10(pow)} makes the number ${P10(pow)} times bigger, so every digit moves <strong>${pl(pow, 'place')} to the left</strong>.</p>`
+        + `<p>${calc} = ${N(ansStr)}</p>`
+        + (a.d < pow ? `<p>There are not enough digits after the point, so write ${pl(pow - a.d, 'zero')} at the end.</p>` : '');
+      hint = `${P10(pow)} has ${pl(pow, 'zero')}, so the digits move ${pl(pow, 'place')}. Bigger or smaller?`;
+    } else {
+      const prod = a.v * b.v;
+      const places = [a, b].filter(n => n.d > 0).map(n => `${NX(n)} has ${pl(n.d, 'decimal place')}`).join(' and ');
+      work += `<p>Ignore the decimal points and multiply: ${N(String(a.v))} × ${N(String(b.v))} = ${N(String(prod))}</p>`
+        + `<p>Count the decimal places in the question: ${places}. That makes <strong>${res.d}</strong>.</p>`
+        + `<p>Give the answer ${pl(res.d, 'decimal place')}: ${N(String(prod))} becomes ${N(S(res))}.`
+        + (String(prod).length <= res.d ? ' When you run out of digits, write zeros in front.' : '')
+        + (S(res) !== SN(res) && !isMoney ? ` The zero at the end can go: ${N(SN(res))}.` : '') + '</p>'
+        + (b.d > 0
+          ? `<p>Sense check: multiplying by ${NX(b)}, which is less than 1, makes the answer smaller than ${NX(a)} ✓</p>`
+          : `<p>Estimate: about ${Math.round(V(a))} × ${b.v} = ${Math.round(V(a)) * b.v}, so ${N(ansStr)} makes sense ✓</p>`);
+      hint = `Work out ${N(String(a.v))} × ${N(String(b.v))} without the points. Then count the decimal places in the question.`;
+    }
+    return {
+      topic: 'mul', kind: 'num', word, text: word ? text : 'Work out', expr: word ? '' : calc,
+      short: `${S(a)} × ${S(b)}`, val: V(res), answer: ansStr, unit, traps: [], shiftMsg: pow ? SHIFT.pow : SHIFT.mul,
+      hint, work,
+    };
+  }
+
+  /* ---------- Dividing ---------- */
+  function qDiv(sub) {
+    let a, b, q, text = '', unit = {}, word = false, isMoney = false, pow = 0, work = '', hint = '';
+    if (sub === 'byWhole' || sub === 'share') {
+      if (sub === 'share') {
+        const k = rnd(3, 5); q = priceX(2, 8); b = X(k); a = mulX(q, b);
+        word = true; isMoney = true; unit = { pre: '€' };
+        text = `Sam and ${k - 1} friends share a pizza bill of ${N('€' + money(a))} equally. How much does each person pay?`;
+        work = `<p>The calculation is ${N(money(a))} ÷ ${N(String(k))}.</p>`
+          + `<p>Work in cents so there is no point to worry about: ${N(String(a.v))} ÷ ${k} = ${N(String(q.v))} cents.</p>`
+          + `<p>${N(String(q.v))} cents is ${N('€' + money(q))}.</p>`
+          + `<p>Check: ${N(money(q))} × ${k} = ${N(money(a))} ✓</p>`;
+        hint = `Divide ${N(money(a))} by ${k}. It may help to think in cents.`;
+      } else {
+        for (let i = 0; i < 80; i++) {
+          q = Math.random() < .6 ? rdec(1.1, 9.9, 1) : rdec(0.11, 2.99, 2);
+          b = X(rnd(2, 9)); a = mulX(q, b);
+          if (norm(a).d === q.d) break;
+        }
+        a = norm(a);
+        work = '<p>The divisor is a whole number, so divide as normal and keep the decimal point in the same place.</p>'
+          + `<p>${N(String(a.v))} ÷ ${b.v} = ${N(String(q.v))}, so ${NX(a)} ÷ ${b.v} = ${NX(q)}</p>`
+          + `<p>Check: ${NX(q)} × ${b.v} = ${NX(a)} ✓</p>`;
+        hint = 'The divisor is already a whole number. Divide as normal and keep the decimal point in the same place.';
+      }
+    } else if (sub === 'byDec' || sub === 'ribbon') {
+      if (sub === 'ribbon') {
+        b = X(pick([15, 25, 35, 45, 55, 65, 75, 85]), 2); q = X(rnd(4, 12)); a = norm(mulX(q, b));
+        word = true; unit = { suf: 'pieces' };
+        text = `A ribbon is ${NX(a)} m long. Sam cuts it into pieces that are each ${NX(b)} m long. How many pieces does Sam get?`;
+      } else {
+        b = X(rnd(2, 9), pick([1, 2]));
+        q = X(rnd(2, 12) * (b.d === 2 && Math.random() < .5 ? 10 : 1));
+        a = norm(mulX(q, b));
+      }
+      const m = P10(b.d);
+      const as = a.d >= b.d ? X(a.v, a.d - b.d) : X(a.v * P10(b.d - a.d), 0);
+      work = (word ? `<p>The calculation is ${NX(a)} ÷ ${NX(b)}.</p>` : '')
+        + `<p>${NX(b)} is a decimal, so make it whole first: ${NX(b)} × ${m} = ${N(String(b.v))}</p>`
+        + `<p>Multiply the other number by ${m} too, so the answer stays the same: ${NX(a)} × ${m} = ${N(SN(as))}</p>`
+        + `<p>Now divide: ${N(SN(as))} ÷ ${b.v} = ${N(SN(q))}</p>`
+        + `<p>Check: ${N(SN(q))} × ${NX(b)} = ${NX(a)} ✓ Dividing by a number less than 1 gives a bigger answer.</p>`;
+      hint = `Multiply both numbers by ${m} so that you divide by a whole number.`;
+    } else {
+      pow = pick([1, 2, 3]); a = rdec(1, 999, pick([0, 1])); b = X(P10(pow)); q = norm(X(a.v, a.d + pow));
+      work = `<p>÷ ${P10(pow)} makes the number ${P10(pow)} times smaller, so every digit moves <strong>${pl(pow, 'place')} to the right</strong>.</p>`
+        + (a.d === 0 ? `<p>${NX(a)} is a whole number, so its decimal point is at the end: ${NX(a)} = ${N(S(a) + '.0')}</p>` : '')
+        + `<p>${NX(a)} ÷ ${P10(pow)} = ${N(SN(q))}</p>`
+        + (String(a.v).length <= a.d + pow ? '<p>When the digits run out, write a zero in front of the decimal point.</p>' : '');
+      hint = `${P10(pow)} has ${pl(pow, 'zero')}, so the digits move ${pl(pow, 'place')}. Bigger or smaller?`;
+    }
+    const aStr = isMoney ? money(a) : S(a);
+    const bStr = S(b);
+    const ansStr = isMoney ? money(q) : SN(q);
+    const calc = exprHTML([aStr, bStr], '÷');
+    return {
+      topic: 'div', kind: 'num', word, text: word ? text : 'Work out', expr: word ? '' : calc,
+      short: `${aStr} ÷ ${bStr}`, val: V(q), answer: ansStr, unit, traps: [], shiftMsg: pow ? SHIFT.pow : SHIFT.div,
+      hint, work,
+    };
+  }
+
+  const GEN = {
+    compare: { f: qCompare, pure: ['len', 'zero', 'eq', 'thou'], word: [] },
+    order: { f: qOrder, pure: ['small', 'mixed'], word: [] },
+    add: { f: qAdd, pure: ['mix', 'whole', 'three'], word: ['run', 'plant'] },
+    sub: { f: qSub, pure: ['whole', 'mix', 'thou'], word: ['change', 'bottle'] },
+    mul: { f: qMul, pure: ['small', 'byWhole', 'oneOne', 'pow'], word: ['shop', 'area'] },
+    div: { f: qDiv, pure: ['byWhole', 'byDec', 'pow'], word: ['ribbon', 'share'] },
+  };
+  const ORDER = ['compare', 'order', 'add', 'sub', 'mul', 'div'];
+
+  function buildFull() {
+    const qs = [];
+    const cs = shuffle(GEN.compare.pure);
+    qs.push(qCompare(cs[0]), qCompare(cs[1]), qOrder('small'), qOrder('mixed'));
+    const wordOps = shuffle(['add', 'sub', 'mul', 'div']).slice(0, 2);
+    for (const t of ['add', 'sub', 'mul', 'div']) {
+      const g = GEN[t], p = shuffle(g.pure);
+      qs.push(g.f(p[0]));
+      qs.push(wordOps.includes(t) ? g.f(pick(g.word)) : g.f(p[1]));
+    }
+    return qs;
+  }
+  function buildPractice(topics) {
+    const per = topics.length <= 4 ? 3 : 2, qs = [];
+    for (const t of ORDER) if (topics.includes(t)) {
+      const g = GEN[t];
+      let subs = shuffle(g.pure.concat(g.word));
+      while (subs.length < per) subs = subs.concat(shuffle(g.pure));
+      subs.slice(0, per).forEach(s => qs.push(g.f(s)));
+    }
+    return qs;
+  }
+
+  function parseAns(raw) {
+    let s = String(raw).trim().replace(/\s+/g, '').replace(/[€$£]/g, '')
+      .replace(/(km|cm|mm|m²|m2|m|litres|litre|liters|liter|l|pieces|piece)$/i, '');
+    if (s.includes(',') && s.includes('.')) s = s.replace(/,/g, ''); else s = s.replace(',', '.');
+    if (!/^-?(\d+\.?\d*|\.\d+)$/.test(s)) return null;
+    return Number(s);
+  }
+  function isRight(q, n) { return same(n, q.val); }
+  function diagnoseNum(q, n) {
+    for (const t of q.traps) if (same(n, t.val)) return t.msg;
+    if (n !== 0 && q.val !== 0) for (const k of [-3, -2, -1, 1, 2, 3]) if (same(n, q.val * P10(k))) return q.shiftMsg;
+    return `Not quite. Hint: ${q.hint}`;
+  }
+  function diagnoseOrder(q, ord) {
+    if (ord.slice().reverse().every((v, k) => v === q.correct[k]))
+      return `You put them in the opposite order. Read the instruction again: <strong>${q.dir === 'asc' ? 'smallest' : 'largest'}</strong> first.`;
+    const vals = ord.map(k => q.items[k]);
+    const fk = s => { const [i, f = '0'] = s.split('.'); return [Number(i), Number(f)]; };
+    const lk = s => [s.length, 0];
+    const cmp = (p, r) => p[0] - r[0] || p[1] - r[1];
+    const mono = key => vals.every((s, i) => i === 0 || (q.dir === 'asc' ? cmp(key(vals[i - 1]), key(s)) <= 0 : cmp(key(vals[i - 1]), key(s)) >= 0));
+    if (mono(fk)) return 'It looks like the digits after the point were compared as whole numbers, as if 606 beats 66. Pad every number to 3 decimal places first, then compare.';
+    if (mono(lk)) return 'It looks like the numbers were ordered by how many digits they have. Length does not decide size. Pad every number to 3 decimal places, then compare.';
+    return 'Not quite. Pad every number to 3 decimal places (0.6 becomes 0.600), then compare place by place from the left.';
+  }
+
+  return { T, ORDER, buildFull, buildPractice, parseAns, isRight, diagnoseNum, diagnoseOrder, N, NS, esc, GEN };
+})();
+</script>
+
+<script>
+/* Page UI */
+(() => {
+  const { T, ORDER, buildFull, buildPractice, parseAns, isRight, diagnoseNum, diagnoseOrder, N, NS, esc } = Q;
+  const $ = s => document.querySelector(s);
+  const card = $('#card'), prog = $('#progress'), below = $('#below'), logBody = $('#logBody'), logState = $('#logState');
+  const HKEY = 'decimal-quiz-history', TKEY = 'decimal-quiz-tips', SKEY = 'decimal-quiz-sound';
+  const GLYPH = { first: '✓', second: '↺', miss: '✕' };
+  const STATUS_LABEL = { first: 'right first try', second: 'right on second try', miss: 'missed' };
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } },
+  };
+  let st = null, wantFocus = false, confirmRestart = false;
+  let fx = { cardIn: false, fbPop: false, good: false, shake: false, segFill: -1, boxPop: false, chipNew: -1, results: false };
+
+  /* ---------- gentle sounds, synthesised in the browser ---------- */
+  const Sound = (() => {
+    let ctx = null, master = null, on = store.get(SKEY, true) !== false;
+    function ac() {
+      if (!ctx) {
+        const C = window.AudioContext || window.webkitAudioContext; if (!C) return null;
+        ctx = new C();
+        const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3200;
+        master = ctx.createGain(); master.gain.value = 0.9;
+        master.connect(lp).connect(ctx.destination);
+      }
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    }
+    function tone(freq, start, dur, o = {}) {
+      const c = ac(); if (!c) return;
+      const t = c.currentTime + start, osc = c.createOscillator(), g = c.createGain();
+      osc.type = o.type || 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      if (o.slideTo) osc.frequency.exponentialRampToValueAtTime(o.slideTo, t + dur * .8);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(o.gain || 0.06, t + (o.attack || 0.012));
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(g).connect(master);
+      osc.start(t); osc.stop(t + dur + 0.05);
+    }
+    const bell = (f, s, d = 0.7, g = 0.06) => { tone(f, s, d, { gain: g }); tone(f * 2, s, d * .5, { gain: g * .22 }); tone(f * 3, s, d * .25, { gain: g * .08 }); };
+    const lib = {
+      tap() { tone(740, 0, 0.06, { type: 'triangle', gain: 0.03 }); },
+      place() { tone(560 + Math.random() * 90, 0, 0.09, { type: 'triangle', gain: 0.035 }); },
+      unplace() { tone(440, 0, 0.08, { type: 'triangle', gain: 0.028 }); },
+      hint() { bell(1046.5, 0, 0.35, 0.025); },
+      correct() { bell(783.99, 0, 0.6); bell(1174.66, 0.1, 0.8); },
+      fixed() { bell(698.46, 0, 0.55, 0.05); bell(880, 0.1, 0.7, 0.05); },
+      nudge() { tone(349.23, 0, 0.28, { gain: 0.05, slideTo: 293.66, attack: 0.02 }); },
+      miss() { tone(329.63, 0, 0.3, { gain: 0.045, attack: 0.02 }); tone(261.63, 0.14, 0.42, { gain: 0.04, attack: 0.02 }); },
+      next() { tone(523.25, 0, 0.09, { type: 'triangle', gain: 0.025 }); tone(659.25, 0.05, 0.1, { type: 'triangle', gain: 0.022 }); },
+      finish() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => bell(f, i * 0.12, 0.9, 0.05)); bell(1318.5, 0.5, 1.2, 0.035); },
+    };
+    return {
+      play(name) { if (!on) return; try { lib[name] && lib[name](); } catch (e) { } },
+      get on() { return on; },
+      toggle() { on = !on; store.set(SKEY, on); if (on) lib.tap(); return on; },
+    };
+  })();
+  const SND_ON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+  const SND_OFF = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6M21 9l-5 6"/></svg>';
+  function renderSound() {
+    const b = $('#sound');
+    b.setAttribute('aria-pressed', String(Sound.on));
+    b.innerHTML = (Sound.on ? SND_ON : SND_OFF) + `<span>${Sound.on ? 'Sound on' : 'Sound off'}</span>`;
+  }
+  renderSound();
+
+  /* ---------- tips ---------- */
+  const TIPS = [
+    ['compare', 'Give both numbers the same number of decimal places.', '0.5 → 0.5<span class="add">0</span> &gt; 0.45'],
+    ['order', 'Pad them all, then compare place by place from the left.', '0.06 &lt; 0.6 &lt; 0.606 &lt; 0.66'],
+    ['add', 'Line up the decimal points, not the last digits.', '4.7<span class="add">0</span> + 2.35 = 7.05'],
+    ['sub', 'Fill empty places with zeros before you subtract.', '5<span class="add">.00</span> − 2.37 = 2.63'],
+    ['mul', 'Multiply without the points, then count the places.', '3 × 2 = 6 → 0.3 × 0.2 = 0.06'],
+    ['div', 'Make the divisor whole by moving both points.', '4.8 ÷ 0.06 → 480 ÷ 6 = 80'],
+  ];
+  $('#tipGrid').innerHTML = TIPS.map(([t, rule, ex]) =>
+    `<div class="tip"><span class="k">${T[t].name}</span><p>${rule}</p><span class="ex">${ex}</span></div>`).join('');
+  const tips = $('#tips');
+  if (store.get(TKEY, true) === false) tips.open = false;
+  tips.addEventListener('toggle', () => store.set(TKEY, tips.open));
+
+  /* ---------- quiz state ---------- */
+  const newId = () => 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  function newQuiz(mode, topics) {
+    const quiz = mode === 'practice' ? buildPractice(topics) : buildFull();
+    st = {
+      mode, quiz, i: 0, phase: 'ask', sel: null, ord: [], input: '', diag: '', err: '', saved: false,
+      roundId: newId(), startedAt: null, finishedAt: null,
+      res: quiz.map(() => ({ status: null, tries: 0, hint: false, last: '' })),
+    };
+    confirmRestart = false; copyOpen = false;
+  }
+  const cnt = s => st.res.filter(r => r.status === s).length;
+  const missedTopics = () => ORDER.filter(t => st.quiz.some((q, k) => q.topic === t && st.res[k].status !== 'first'));
+  const answerHTML = q => q.kind === 'num'
+    ? `${q.unit.pre ? esc(q.unit.pre) : ''}${N(q.answer)}${q.unit.suf ? ' ' + esc(q.unit.suf) : ''}`
+    : NS(q.answerText);
+  const plain = html => { const d = document.createElement('div'); d.innerHTML = html; return d.textContent; };
+  const qLine = q => q.kind === 'num' ? q.short
+    : q.kind === 'cmp' ? `${q.a} ? ${q.b}`
+    : `Order ${q.dir === 'asc' ? 'smallest first' : 'largest first'}: ${q.items.join(', ')}`;
+  const ansLine = q => q.kind === 'num' ? `${q.unit.pre || ''}${q.answer}${q.unit.suf ? ' ' + q.unit.suf : ''}` : q.answerText;
+
+  /* ---------- render ---------- */
+  function render() {
+    renderProgress();
+    if (st.phase === 'results') renderResults(); else renderQuestion();
+    renderBelow();
+    applyFx();
+    if (wantFocus) { wantFocus = false; focusMain(); }
+  }
+  function applyFx() {
+    card.classList.remove('in', 'good');
+    if (fx.cardIn || fx.good) void card.offsetWidth;
+    if (fx.cardIn) card.classList.add('in');
+    if (fx.good) card.classList.add('good');
+    if (fx.shake) {
+      const el = card.querySelector('.field, .choices, .slot-row');
+      if (el) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+    }
+    if (fx.results && !reduceMotion) { countUp(); confetti(); }
+    fx = { cardIn: false, fbPop: false, good: false, shake: false, segFill: -1, boxPop: false, chipNew: -1, results: false };
+  }
+  function renderProgress() {
+    prog.innerHTML = st.quiz.map((q, k) => {
+      const r = st.res[k];
+      const cls = r.status || (k === st.i && st.phase !== 'results' ? 'now' : '');
+      const gap = k > 0 && st.quiz[k - 1].topic !== q.topic ? ' gap' : '';
+      return `<span class="seg ${cls}${gap}${fx.segFill === k ? ' fill' : ''}"></span>`;
+    }).join('');
+    const done = st.res.filter(r => r.status).length;
+    prog.setAttribute('aria-label', `${done} of ${st.quiz.length} questions answered`);
+  }
+  function renderQuestion() {
+    const q = st.quiz[st.i], r = st.res[st.i], done = st.phase === 'answered';
+    let h = `<div class="q-head"><span class="tag">${T[q.topic].name}</span><span class="count">${st.mode === 'practice' ? 'Practice · ' : ''}Question ${st.i + 1} of ${st.quiz.length}</span></div>`;
+    h += `<div class="prompt${q.word ? ' word' : ''}">${q.text}</div>`;
+
+    if (q.kind === 'num') {
+      if (q.expr) h += `<div class="expr">${q.expr}</div>`;
+      h += `<form class="answer" id="form" novalidate>
+        <label class="sr" for="ans">Your answer</label>
+        <div class="field${done ? ' locked' : ''}">${q.unit.pre ? `<span class="pre">${esc(q.unit.pre)}</span>` : ''}<input id="ans" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="?" value="${esc(st.input)}"${done ? ' disabled' : ''}>${q.unit.suf ? `<span class="suf">${esc(q.unit.suf)}</span>` : ''}</div>
+        ${done ? '' : '<button class="btn primary" type="submit">Check</button>'}
+      </form>`;
+    } else if (q.kind === 'cmp') {
+      h += `<div class="expr">${N(q.a)} <span class="box${st.sel ? ' filled' : ''}${fx.boxPop ? ' pop' : ''}">${st.sel ? esc(st.sel) : '<span class="sr">empty box</span>'}</span> ${N(q.b)}</div>`;
+      h += '<div class="choices" role="group" aria-label="Choose a sign">'
+        + [['<', 'is less than'], ['=', 'is equal to'], ['>', 'is greater than']].map(([s, l]) =>
+          `<button type="button" class="choice" data-sign="${esc(s)}" aria-pressed="${st.sel === s}"${done ? ' disabled' : ''}><span class="sign">${esc(s)}</span><span class="lbl">${l}</span></button>`).join('')
+        + '</div>';
+      if (!done) h += '<div class="actions"><button class="btn primary" id="check" type="button">Check</button></div>';
+    } else {
+      const [e1, e2] = q.dir === 'asc' ? ['smallest', 'largest'] : ['largest', 'smallest'];
+      h += `<div class="order-area">
+        <div class="axis" aria-hidden="true"><span>${e1}</span><span class="arrow"></span><span>${e2}</span></div>
+        <div class="slot-row" aria-label="Your order">${q.items.map((_, k) => st.ord[k] != null
+          ? `<button type="button" class="chip placed${fx.chipNew === k ? ' new' : ''}" data-slot="${k}"${done ? ' disabled' : ''} aria-label="Place ${k + 1}: ${esc(q.items[st.ord[k]])}${done ? '' : ', tap to remove'}">${N(q.items[st.ord[k]])}</button>`
+          : '<span class="slot" aria-hidden="true"></span>').join('')}</div>`;
+      if (!done) {
+        const left = q.items.map((s, k) => st.ord.includes(k) ? '' : `<button type="button" class="chip" data-item="${k}">${N(s)}</button>`).join('');
+        h += `<div class="pool" aria-label="Numbers to place">${left || '<span class="pool-empty">All placed. Tap a number above to take it back.</span>'}</div>`;
+      }
+      h += '</div>';
+      if (!done) h += `<div class="actions"><button class="btn primary" id="check" type="button">Check</button>${st.ord.length ? '<button class="btn quiet" id="clearOrd" type="button">Clear</button>' : ''}</div>`;
+    }
+
+    if (st.err) h += `<p class="err" role="alert">${st.err}</p>`;
+    if (!done) h += r.hint ? `<div class="hint"><span class="k">Hint</span>${q.hint}</div>` : '<button type="button" class="link" id="hintBtn">Show a hint</button>';
+    if (st.phase === 'retry') {
+      h += `<div class="fb retry${fx.fbPop ? ' pop' : ''}" role="status"><p class="fb-title">Not yet. Have another look.</p><p>${st.diag}</p><button type="button" class="link" id="reveal">Show me the answer and explanation</button></div>`;
+    }
+    if (done) {
+      const title = r.status === 'first' ? 'Correct!' : r.status === 'second' ? 'Correct on the second try.' : `The answer is ${answerHTML(q)}`;
+      const yours = r.status === 'miss' && r.last ? `<p class="yours">Your answer: ${NS(r.last)}</p>` : '';
+      h += `<div class="fb ${r.status}${fx.fbPop ? ' pop' : ''}" role="status">
+        <p class="fb-title"><span class="mk mk-${r.status}" aria-hidden="true">${GLYPH[r.status]}</span>${title}</p>${yours}
+        <div class="work"><p class="work-k">How it works</p>${q.work}</div>
+      </div>
+      <div class="actions"><button class="btn primary" id="next" type="button">${st.i + 1 < st.quiz.length ? 'Next question' : 'See my results'}</button></div>`;
+    }
+    card.innerHTML = h;
+  }
+
+  function renderResults() {
+    const n = st.quiz.length, first = cnt('first'), second = cnt('second');
+    const pct = first / n;
+    const verdict = pct === 1 ? 'Every detail right on the first try. Excellent work.'
+      : pct >= 0.8 ? 'Strong work. Only a few details slipped.'
+      : pct >= 0.5 ? 'Good progress. The topics marked below are worth another round.'
+      : 'Keep going. Each topic marked below is one habit to practise.';
+    const topics = ORDER.filter(t => st.quiz.some(q => q.topic === t));
+    const missed = missedTopics();
+    let mi = 0;
+    let h = `<div class="results${fx.results ? ' in' : ''}">
+      <div>
+        <p class="eyebrow">${st.mode === 'practice' ? 'Practice round' : 'Quiz'} complete</p>
+        <div class="score"><span class="big" id="scoreBig" data-to="${first}">${first}</span><span class="of">/ ${n}</span></div>
+        <p class="score-sub">right on the first try${second ? ` · ${second} more fixed on the second try` : ''}</p>
+      </div>
+      <p class="verdict">${verdict}</p>
+      <div id="saveNote">${saveNoteHTML()}</div>
+      <div>
+        <h3>By topic</h3>
+        <ul class="topics">${topics.map(t => {
+          const idx = st.quiz.map((q, k) => q.topic === t ? k : -1).filter(k => k >= 0);
+          const weak = idx.some(k => st.res[k].status !== 'first');
+          return `<li><span class="tn">${T[t].name}</span><span class="marks">${idx.map(k => `<span class="mk mk-${st.res[k].status}" style="--i:${mi++}" title="Question ${k + 1}: ${STATUS_LABEL[st.res[k].status]}">${GLYPH[st.res[k].status]}</span>`).join('')}</span><span class="rule${weak ? ' weak' : ''}">${weak ? T[t].rule : 'All right first time.'}</span></li>`;
+        }).join('')}</ul>
+      </div>
+      <div class="key" aria-hidden="true"><span><span class="mk mk-first">✓</span>first try</span><span><span class="mk mk-second">↺</span>second try</span><span><span class="mk mk-miss">✕</span>missed</span></div>
+      <div class="actions">
+        ${missed.length ? `<button class="btn primary" id="practice" type="button">Practise ${missed.length === 1 ? T[missed[0]].name.toLowerCase() : 'the marked topics'}</button><button class="btn quiet" id="newQuiz" type="button">New quiz with fresh numbers</button>`
+          : '<button class="btn primary" id="newQuiz" type="button">New quiz with fresh numbers</button>'}
+      </div>
+      <details class="review"><summary>Review every question</summary><ol>${st.quiz.map((q, k) => {
+        const r = st.res[k];
+        const line = q.kind === 'num' ? `${q.short} = ${ansLine(q)}` : q.answerText;
+        return `<li><span class="qn">${k + 1}.</span><span class="mk mk-${r.status}" aria-label="${STATUS_LABEL[r.status]}">${GLYPH[r.status]}</span><span class="rv">${NS(line)}${r.status !== 'first' && r.last ? `<small>Your answer: ${NS(r.last)}</small>` : ''}</span></li>`;
+      }).join('')}</ol></details>
+    </div>`;
+    card.innerHTML = h;
+  }
+
+  function renderBelow() {
+    if (st.phase === 'results') { below.innerHTML = ''; return; }
+    const left = confirmRestart
+      ? '<span class="confirm"><span>Start over? Your answers so far will be cleared.</span><button class="btn quiet" id="restartYes" type="button">Start over</button><button class="link" id="restartNo" type="button">Keep going</button></span>'
+      : '<button class="link" id="restart" type="button">Start over with fresh numbers</button>';
+    below.innerHTML = left + `<span class="save-state ${saveCls()}" id="saveState" aria-live="polite">${saveShort()}</span>`;
+  }
+
+  function focusMain() {
+    let el;
+    if (st.phase === 'results') el = card.querySelector('.btn');
+    else if (st.phase === 'answered') el = $('#next');
+    else el = $('#ans') || card.querySelector('.choice[aria-pressed="true"]') || card.querySelector('.choice') || card.querySelector('.pool .chip') || $('#check');
+    if (el) { el.focus({ preventScroll: true }); if (el.select && st.phase === 'retry') el.select(); }
+    const top = $('#quiz').getBoundingClientRect().top;
+    if (top < 0) $('#quiz').scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
+
+  function countUp() {
+    const el = $('#scoreBig'); if (!el) return;
+    const to = +el.dataset.to; if (!to) return;
+    const t0 = performance.now(), dur = 650;
+    const step = now => {
+      const p = Math.min(1, (now - t0) / dur);
+      el.textContent = String(Math.round(to * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    el.textContent = '0';
+    requestAnimationFrame(step);
+  }
+  function confetti() {
+    const first = cnt('first'), n = st.quiz.length;
+    const count = 14 + Math.round(26 * first / n);
+    const box = document.createElement('div');
+    box.className = 'confetti'; box.setAttribute('aria-hidden', 'true');
+    const colors = ['var(--sun)', 'var(--sun)', 'var(--pen)', 'var(--good)'];
+    let h = '';
+    for (let k = 0; k < count; k++) {
+      const a = Math.random() * Math.PI - Math.PI, sp = 90 + Math.random() * 180;
+      h += `<i style="--x:${Math.round(Math.cos(a) * sp * 1.6)}px;--y:${Math.round(Math.sin(a) * sp)}px;--s:${6 + Math.round(Math.random() * 7)}px;--c:${colors[k % colors.length]};--d:${(1.3 + Math.random() * .9).toFixed(2)}s;--dl:${(Math.random() * .25).toFixed(2)}s"></i>`;
+    }
+    box.innerHTML = h;
+    card.appendChild(box);
+    setTimeout(() => box.remove(), 2800);
+  }
+
+  /* ---------- actions ---------- */
+  function check() {
+    const q = st.quiz[st.i], r = st.res[st.i];
+    let ok, diag = '';
+    if (q.kind === 'num') {
+      const raw = ($('#ans') || {}).value || '';
+      st.input = raw;
+      const n = parseAns(raw);
+      if (n === null) { st.err = raw.trim() ? 'That is not a number yet. Type something like 3.75.' : 'Type your answer first.'; fx.shake = true; render(); $('#ans').focus(); return; }
+      ok = isRight(q, n); if (!ok) diag = diagnoseNum(q, n);
+      r.last = raw.trim();
+    } else if (q.kind === 'cmp') {
+      if (!st.sel) { st.err = 'Choose &lt;, = or &gt; first.'; fx.shake = true; render(); return; }
+      ok = st.sel === q.ans; if (!ok) diag = q.cmpMsg;
+      r.last = `${q.a} ${st.sel} ${q.b}`;
+    } else {
+      if (st.ord.length < q.items.length) { st.err = 'Place all the numbers first.'; fx.shake = true; render(); return; }
+      ok = st.ord.every((v, k) => v === q.correct[k]); if (!ok) diag = diagnoseOrder(q, st.ord);
+      r.last = st.ord.map(k => q.items[k]).join(', ');
+    }
+    if (!st.startedAt) st.startedAt = Date.now();
+    st.err = '';
+    r.tries++;
+    fx.fbPop = true;
+    if (ok) {
+      r.status = r.tries === 1 ? 'first' : 'second'; st.phase = 'answered';
+      fx.good = true; fx.segFill = st.i;
+      Sound.play(r.tries === 1 ? 'correct' : 'fixed');
+    } else if (r.tries === 1) {
+      st.phase = 'retry'; st.diag = diag; fx.shake = true;
+      Sound.play('nudge');
+    } else {
+      r.status = 'miss'; st.phase = 'answered'; fx.segFill = st.i;
+      Sound.play('miss');
+    }
+    wantFocus = true;
+    render();
+    if (r.status) queueSave();
+  }
+  function reveal() {
+    const r = st.res[st.i];
+    if (!st.startedAt) st.startedAt = Date.now();
+    r.status = 'miss'; st.phase = 'answered';
+    fx.fbPop = true; fx.segFill = st.i; wantFocus = true;
+    Sound.play('miss');
+    render();
+    queueSave();
+  }
+  function next() {
+    st.i++; st.sel = null; st.ord = []; st.input = ''; st.diag = ''; st.err = '';
+    if (st.i >= st.quiz.length) {
+      st.phase = 'results'; st.finishedAt = Date.now(); saveLocal();
+      fx.results = true; Sound.play('finish');
+    } else { st.phase = 'ask'; fx.cardIn = true; Sound.play('next'); }
+    wantFocus = true; render();
+    if (st.phase === 'results') queueSave();
+  }
+  function saveLocal() {
+    if (st.saved) return; st.saved = true;
+    const h = store.get(HKEY, []);
+    h.unshift({ t: Date.now(), s: cnt('first'), n: st.quiz.length, m: st.mode });
+    store.set(HKEY, h.slice(0, 12));
+    if (logMode === 'local') renderLog();
+  }
+  function startNew(mode, topics) {
+    newQuiz(mode, topics); fx.cardIn = true; wantFocus = true; Sound.play('next'); render();
+  }
+
+  /* ---------- results log: shared db, saved after every answer ---------- */
+  let db = null, logMode = 'pending', logDocs = [], logError = '';
+  let saveState = 'idle', saveMsg = '', copyOpen = false;
+  const openRounds = new Set();
+  const pendingSaves = new Map();
+  let writing = false;
+
+  function roundBody() {
+    const items = st.quiz.map((q, k) => ({ q, r: st.res[k] })).filter(x => x.r.status).map(({ q, r }) => ({
+      t: q.topic, q: qLine(q), p: q.word ? plain(q.text) : '', a: ansLine(q), y: r.last || '', s: r.status, h: !!r.hint,
+    }));
+    return {
+      startedAt: st.startedAt || Date.now(), updatedAt: Date.now(), finishedAt: st.finishedAt || null,
+      mode: st.mode, n: st.quiz.length, answered: items.length,
+      first: cnt('first'), second: cnt('second'), miss: cnt('miss'), items,
+    };
+  }
+  function queueSave() {
+    if (!db || saveState === 'readonly' || !st.startedAt) return;
+    pendingSaves.set(st.roundId, roundBody());
+    flush();
+  }
+  async function flush() {
+    if (writing) return;
+    const it = pendingSaves.entries().next(); if (it.done) return;
+    const [id, body] = it.value; pendingSaves.delete(id);
+    writing = true; setSave('saving');
+    let ok = false;
+    for (let attempt = 0; attempt < 2 && !ok; attempt++) {
+      try { await db.doc('rounds/' + id).set(body); ok = true; }
+      catch (e) {
+        const code = e && e.code;
+        if (code === 'unavailable' && attempt === 0) { await new Promise(r => setTimeout(r, 400 + Math.random() * 600)); continue; }
+        if (code === 'invalid_argument' || code === 'not_granted' || code === 'revoked') setSave('readonly');
+        else if (code === 'quota_exceeded') setSave('error', 'The results log is full. Remove a few old rounds to make room.');
+        else setSave('error', 'This answer could not be saved to the results log just now.');
+        break;
+      }
+    }
+    if (ok) setSave('saved');
+    writing = false;
+    flush();
+  }
+  function setSave(s, msg = '') {
+    if (saveState === 'readonly' && s !== 'readonly') return;
+    saveState = s; saveMsg = msg;
+    const el = $('#saveState'); if (el) { el.className = 'save-state ' + saveCls(); el.innerHTML = saveShort(); }
+    const note = $('#saveNote'); if (note) note.innerHTML = saveNoteHTML();
+  }
+  const saveCls = () => saveState === 'saved' ? 'ok' : saveState === 'error' ? 'warn' : '';
+  function saveShort() {
+    if (logMode === 'pending' || !st.startedAt) return '';
+    return { saving: 'Saving…', saved: '✓ Saved to the results log', error: 'Not saved', readonly: 'Not saved: this view cannot add to the log', off: '', idle: '' }[saveState] || '';
+  }
+  function saveNoteHTML() {
+    if (logMode === 'live' && saveState === 'saved') return '<p class="saved ok">✓ Saved to the results log below.</p>';
+    if (logMode === 'live' && saveState === 'saving') return '<p class="saved">Saving to the results log…</p>';
+    if (logMode === 'live' && saveState === 'error') return `<p class="saved warn">${esc(saveMsg)} <button class="link" id="retrySave" type="button">Try saving again</button></p>`;
+    if (logMode === 'pending') return '<p class="saved">Connecting to the results log…</p>';
+    const why = saveState === 'readonly'
+      ? 'This view can read the results log but cannot add to it.'
+      : 'This round is kept in this browser only.';
+    return `<p class="saved">${why} <button class="link" id="copyRes" type="button">Copy results to send</button></p>${copyOpen ? `<textarea class="copybox" id="copyBox" readonly>${esc(resultsText())}</textarea>` : ''}`;
+  }
+  function resultsText() {
+    const d = new Date();
+    const lines = [`Decimal Quiz, ${d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })} ${d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`,
+      `${st.mode === 'practice' ? 'Practice round' : 'Full quiz'}: ${cnt('first')}/${st.quiz.length} right first try, ${cnt('second')} fixed on second try, ${cnt('miss')} missed`];
+    ORDER.forEach(t => {
+      const idx = st.quiz.map((q, k) => q.topic === t ? k : -1).filter(k => k >= 0);
+      if (idx.length) lines.push(`${T[t].name}: ${idx.map(k => GLYPH[st.res[k].status] || '-').join(' ')}`);
+    });
+    const wrong = st.quiz.map((q, k) => ({ q, r: st.res[k] })).filter(x => x.r.status !== 'first');
+    if (wrong.length) {
+      lines.push('', 'To look at again:');
+      wrong.forEach(({ q, r }) => lines.push(`- ${qLine(q)} → ${ansLine(q)}${r.last ? ` (answer given: ${r.last})` : ''}`));
+    }
+    return lines.join('\n');
+  }
+
+  function renderLogState() {
+    const map = {
+      pending: ['', 'Connecting'],
+      live: ['live', 'Live'],
+      local: ['', 'This browser'],
+    };
+    const [cls, label] = map[logMode];
+    logState.className = 'chip-state ' + cls;
+    logState.innerHTML = `<span class="led"></span>${label}`;
+    const sub = $('#logSub');
+    if (sub) sub.textContent = logMode === 'live'
+      ? 'Every round is saved here after each answer, so a parent can check in from any device.'
+      : 'Finished rounds are kept in this browser on this device. To share a result, use “Copy results to send” on the results screen.';
+  }
+  function when(t) {
+    const d = new Date(t), now = new Date(), y = new Date(now); y.setDate(now.getDate() - 1);
+    const time = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (d.toDateString() === now.toDateString()) return 'Today, ' + time;
+    if (d.toDateString() === y.toDateString()) return 'Yesterday, ' + time;
+    return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) + ', ' + time;
+  }
+  const S_OK = { first: 1, second: 1, miss: 1 };
+  function cleanRound(id, d) {
+    if (!d || typeof d !== 'object') return null;
+    const items = Array.isArray(d.items) ? d.items.filter(x => x && S_OK[x.s] && T[x.t]).map(x => ({
+      t: x.t, s: x.s, h: !!x.h, q: String(x.q || ''), p: String(x.p || ''), a: String(x.a || ''), y: String(x.y || ''),
+    })) : [];
+    return {
+      id, items, startedAt: Number(d.startedAt) || 0, updatedAt: Number(d.updatedAt) || 0, finishedAt: Number(d.finishedAt) || 0,
+      mode: d.mode === 'practice' ? 'practice' : 'full', n: Math.max(items.length, Number(d.n) || 0),
+      first: items.filter(x => x.s === 'first').length, second: items.filter(x => x.s === 'second').length,
+    };
+  }
+  function renderLog() {
+    renderLogState();
+    if (logMode === 'pending') { logBody.innerHTML = '<p class="log-empty">Looking for saved rounds…</p>'; return; }
+    if (logMode === 'local') {
+      const hist = store.get(HKEY, []);
+      logBody.innerHTML = hist.length
+        ? `<div><h3>Finished rounds</h3><ul class="local-list">${hist.slice(0, 10).map(e => `<li><b>${Number(e.s)} / ${Number(e.n)}</b><span>${esc(when(e.t))}</span><span>${e.m === 'practice' ? 'practice' : 'full quiz'}</span></li>`).join('')}</ul></div>`
+        : '<p class="log-empty"><strong>No finished rounds yet.</strong> They appear here when a round reaches the results screen.</p>';
+      return;
+    }
+    const rounds = logDocs.map(x => cleanRound(x.id, x.data)).filter(r => r && r.items.length);
+    if (!rounds.length) {
+      logBody.innerHTML = logError
+        ? `<p class="log-empty"><strong>The results log stopped updating.</strong> Reload the page to reconnect.</p>`
+        : '<p class="log-empty"><strong>No rounds yet.</strong> As soon as the first question is answered, the round appears here and updates after every answer.</p>';
+      return;
+    }
+    const finished = rounds.filter(r => r.finishedAt);
+    const allItems = rounds.flatMap(r => r.items);
+    const firstAll = allItems.filter(x => x.s === 'first').length;
+    const last = rounds.reduce((m, r) => Math.max(m, r.updatedAt), 0);
+    let h = `<div class="stats">
+      <div class="stat"><span class="v">${finished.length}</span><span class="l">${finished.length === 1 ? 'round' : 'rounds'} finished</span></div>
+      <div class="stat"><span class="v">${allItems.length}</span><span class="l">questions answered</span></div>
+      <div class="stat"><span class="v">${Math.round(100 * firstAll / allItems.length)}%</span><span class="l">right on the first try</span></div>
+      <div class="stat"><span class="v" style="font-size:1.1rem;line-height:1.5">${esc(when(last))}</span><span class="l">last answer</span></div>
+    </div>`;
+    h += `<div><h3>Right first try, by topic</h3><ul class="meters">${ORDER.map(t => {
+      const its = allItems.filter(x => x.t === t), f = its.filter(x => x.s === 'first').length;
+      const w = its.length ? Math.round(100 * f / its.length) : 0;
+      return `<li title="${T[t].name}: ${f} of ${its.length} right first try"><span class="tn">${T[t].name}</span><span class="track"><span class="fill" style="--w:${w}%"></span></span><span class="val">${its.length ? `<b>${f}</b> of ${its.length}` : 'not yet'}</span></li>`;
+    }).join('')}</ul><p class="meter-note">Across every saved round. The shortest bar is the detail to practise next.</p></div>`;
+    h += `<div><h3>Rounds</h3><div class="rounds">${rounds.map(r => {
+      const mins = Math.round((r.updatedAt - r.startedAt) / 60000);
+      const dur = r.startedAt && r.updatedAt ? (mins < 1 ? 'under 1 min' : `${mins} min`) : '';
+      const active = !r.finishedAt && Date.now() - r.updatedAt < 20 * 60000;
+      const status = r.finishedAt ? '' : `<span class="pill wait">${active ? `In progress · ${r.items.length} of ${r.n}` : `Stopped at ${r.items.length} of ${r.n}`}</span>`;
+      const hints = r.items.filter(x => x.h).length;
+      const safeId = /^[A-Za-z0-9_\-.~:@+]+$/.test(r.id) ? r.id : '';
+      return `<details class="round" data-id="${esc(safeId)}"${openRounds.has(r.id) ? ' open' : ''}>
+        <summary>
+          <span><span class="when">${esc(when(r.startedAt || r.updatedAt))}</span>${r.mode === 'practice' ? '<span class="pill">Practice</span>' : ''}${status}<br><span class="meta">${[dur, `${r.second} fixed on second try`, hints ? `${hints} ${hints === 1 ? 'hint' : 'hints'} used` : ''].filter(Boolean).join(' · ')}</span></span>
+          <span class="sc">${r.first}<small> / ${r.finishedAt ? r.n : r.items.length}</small></span>
+          <span class="dots" aria-hidden="true">${r.items.map(x => `<span class="mk sm mk-${x.s}">${GLYPH[x.s]}</span>`).join('')}</span>
+        </summary>
+        <div class="round-body">${r.items.map((x, k) => `<div class="ritem"><span class="mk sm mk-${x.s}" aria-label="${STATUS_LABEL[x.s]}">${GLYPH[x.s]}</span><span class="rq"><span class="tp">${k + 1} · ${T[x.t].name}</span>${NS(x.q)}${x.p ? `<small>${esc(x.p)}</small>` : ''}<small>Answer: ${NS(x.a)}${x.s !== 'first' && x.y ? ` · Answer given: ${NS(x.y)}` : ''}${x.h ? ' · hint used' : ''}</small></span></div>`).join('')}
+        </div>
+      </details>`;
+    }).join('')}</div></div>`;
+    logBody.innerHTML = h;
+  }
+  logBody.addEventListener('toggle', e => {
+    const d = e.target; if (!d.matches || !d.matches('details.round')) return;
+    if (d.open) openRounds.add(d.dataset.id); else openRounds.delete(d.dataset.id);
+  }, true);
+
+  async function initData() {
+    const cl = window.claude;
+    if (!cl || typeof cl.use !== 'function') { logMode = 'local'; saveState = 'off'; renderLog(); refreshSaveBits(); return; }
+    let dbNs = null, userNs = null;
+    try { [dbNs, userNs] = await Promise.all([cl.use('db'), cl.use('user')]); } catch (e) { }
+    if (!dbNs) { logMode = 'local'; saveState = 'off'; renderLog(); refreshSaveBits(); return; }
+    db = dbNs;
+    if (userNs) {
+      try { if (await userNs.can('data.write') === false) saveState = 'readonly'; } catch (e) { }
+    }
+    logMode = 'live';
+    try {
+      db.collection('rounds').orderBy('startedAt', 'desc').limit(100).onSnapshot(snap => {
+        logDocs = snap.docs.filter(d => d.exists).map(d => ({ id: d.id, data: d.data() }));
+        logError = '';
+        renderLog();
+      }, err => { logError = (err && err.code) || 'unavailable'; renderLog(); });
+    } catch (e) { logMode = 'local'; saveState = 'off'; }
+    renderLog(); refreshSaveBits();
+    if (st && st.startedAt && st.res.some(r => r.status)) queueSave();
+  }
+  function refreshSaveBits() { setSave(saveState, saveMsg); renderBelow(); }
+
+  /* ---------- events ---------- */
+  card.addEventListener('submit', e => { e.preventDefault(); check(); });
+  card.addEventListener('input', e => {
+    if (e.target.id !== 'ans') return;
+    st.input = e.target.value;
+    if (st.err) { st.err = ''; const el = card.querySelector('.err'); if (el) el.remove(); }
+  });
+  document.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b || b.disabled) return;
+    if (b.dataset.sign) {
+      st.sel = b.dataset.sign; st.err = ''; fx.boxPop = true; Sound.play('tap'); render();
+      const again = [...card.querySelectorAll('.choice')].find(c => c.dataset.sign === st.sel); if (again) again.focus();
+      return;
+    }
+    if (b.dataset.item != null) {
+      st.ord.push(+b.dataset.item); st.err = ''; fx.chipNew = st.ord.length - 1; Sound.play('place'); render();
+      const nxt = card.querySelector('.pool .chip') || $('#check'); if (nxt) nxt.focus();
+      return;
+    }
+    if (b.dataset.slot != null) { st.ord.splice(+b.dataset.slot, 1); Sound.play('unplace'); render(); const p = card.querySelector('.pool .chip'); if (p) p.focus(); return; }
+    switch (b.id) {
+      case 'sound': Sound.toggle(); renderSound(); break;
+      case 'check': check(); break;
+      case 'hintBtn': st.res[st.i].hint = true; Sound.play('hint'); render(); break;
+      case 'reveal': reveal(); break;
+      case 'next': next(); break;
+      case 'clearOrd': st.ord = []; Sound.play('unplace'); render(); break;
+      case 'newQuiz': startNew('full'); break;
+      case 'practice': startNew('practice', missedTopics()); break;
+      case 'restart': confirmRestart = true; renderBelow(); $('#restartYes').focus(); break;
+      case 'restartNo': confirmRestart = false; renderBelow(); break;
+      case 'restartYes': startNew('full'); break;
+      case 'retrySave': setSave('idle'); queueSave(); break;
+      case 'copyRes': {
+        const text = resultsText();
+        copyOpen = true; setSave(saveState, saveMsg);
+        const box = $('#copyBox');
+        const done = () => { const btn = $('#copyRes'); if (btn) btn.textContent = 'Copied. Paste it into a message.'; };
+        const fallback = () => { if (box) { box.focus(); box.select(); } const btn = $('#copyRes'); if (btn) btn.textContent = 'Select the text below and copy it'; };
+        try { navigator.clipboard.writeText(text).then(done, fallback); } catch (err) { fallback(); }
+        break;
+      }
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (!st || st.phase === 'results' || st.phase === 'answered') return;
+    const q = st.quiz[st.i];
+    if (q.kind === 'cmp' && ['<', '>', '='].includes(e.key) && !e.target.matches('input, textarea')) {
+      st.sel = e.key; st.err = ''; fx.boxPop = true; Sound.play('tap'); render(); e.preventDefault();
+    }
+  });
+
+  /* ---------- boot, keeping progress across page updates ---------- */
+  function start(data) {
+    if (data && data.st && Array.isArray(data.st.quiz) && data.st.quiz.length && data.st.roundId) st = data.st;
+    else newQuiz('full');
+    render();
+    initData();
+  }
+  try { if (window.claude && window.claude.hot && typeof window.claude.hot.snapshot === 'function') window.claude.hot.snapshot(() => ({ st })); } catch (e) { }
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+</body>
+</html>
