@@ -1,7 +1,7 @@
 /* ===== App shell: topic picker, tabs, lessons, solo practice ===== */
 (function(){
 const KEY = "mahoot-v1";
-const PANELS = ["start","learn","practice","battle"];
+const PANELS = ["start","learn","practice","games","battle"];
 const TIMER_OPTS = [[0,"Off"],[30,"30 s"],[60,"60 s"],[90,"90 s"],[120,"120 s"]];
 let state = { tab:"start", topic:"exponents", lessons:{}, settings:{}, quiz:null, idx:0, answers:{}, view:"setup" };
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && typeof s === "object") state = Object.assign(state, s); } catch(e) {}
@@ -32,6 +32,7 @@ function showTab(name, opts){
   });
   if (name === "practice") renderPractice();
   if (name === "battle" && window.Battle) window.Battle.onShow();
+  if (name === "games" && window.Games) window.Games.onShow();
   if (!(opts && opts.noScroll)) scrollToTabs();
 }
 $$(".tab").forEach(b => b.addEventListener("click", () => showTab(b.dataset.panel)));
@@ -91,6 +92,7 @@ function applyTopic(){
   renderPicker();
   if (state.tab === "practice") renderPractice();
   if (window.Battle && window.Battle.topicChanged) window.Battle.topicChanged(t.id);
+  if (window.Games && window.Games.topicChanged) window.Games.topicChanged(t.id);
   const mjBox = $(".lessons[data-topic='" + t.id + "']"); if (mjBox) typeset(mjBox);
 }
 $("#pk-practice").addEventListener("click", () => { const s = settings(); startQuiz(state.topic, newSeed(), s.len, s.lvl, s.secs); showTab("practice", { noScroll:true }); });
@@ -320,7 +322,7 @@ function renderResults(){
 }
 
 /* ---------- boot ---------- */
-window.ExpLab = { showTab, openLesson, setTopic, currentTopic: () => state.topic, refreshPicker: renderPicker };
+window.ExpLab = { showTab, openLesson, setTopic, currentTopic: () => state.topic, refreshPicker: renderPicker, settingsFor: id => settings(TOPICS[id]) };
 loadQuiz();
 applyTopic();
 let start = state.tab;

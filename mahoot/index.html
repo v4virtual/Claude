@@ -386,7 +386,37 @@ a{color:var(--blue)}
 .legend .sw{font-family:var(--f-num); color:var(--blue)}
 .legend .st{display:inline-block; width:.7em; height:1em; vertical-align:-2px; background:var(--hi); border-radius:2px}
 
+
+/* games */
+.gamecard{gap:14px}
+.gamehead{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap}
+.tdthumb canvas,.tdwrap canvas{display:block; width:100%; border-radius:12px; border:1.5px solid var(--line); touch-action:manipulation}
+.tdwrap canvas{cursor:crosshair}
+.tdbar{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap}
+.hud{display:flex; flex-wrap:wrap; gap:8px}
+.hchip{display:grid; gap:2px; background:var(--card); border:1.5px solid var(--line); border-radius:10px; padding:6px 12px; min-width:6.5rem}
+.hchip span{font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-family:var(--f-display); font-weight:700}
+.hchip b{font-family:var(--f-display); font-size:1.25rem; font-variant-numeric:tabular-nums}
+.hbar{display:block; height:6px; background:var(--line); border-radius:99px; overflow:hidden}
+.hbar i{display:block; height:100%; background:var(--good)}
+.shop{display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
+.tbuy{display:grid; grid-template-columns:auto 1fr auto; grid-template-rows:auto auto; gap:2px 10px; align-items:center; text-align:left; font:inherit; color:var(--ink); background:var(--card); border:2px solid var(--line); border-radius:12px; padding:8px 12px; cursor:pointer}
+.tbuy .ticon{grid-row:1 / span 2; width:1.6rem; height:1.6rem; border-radius:50%; border:3px solid var(--blue); background:var(--paper)}
+.tbuy.t-rapid .ticon{border-color:var(--teal)}
+.tbuy.t-cannon .ticon{border-color:var(--red); border-radius:6px}
+.tbuy .cost{font-family:var(--f-display); font-weight:800; color:var(--good)}
+.tbuy .small{grid-column:2 / span 2}
+.tbuy[aria-pressed="true"]{border-color:var(--blue); background:var(--blue-soft)}
+.tbuy:disabled{opacity:.5; cursor:not-allowed}
+.picked{display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; background:var(--card); border:1.5px dashed var(--line); border-radius:10px; padding:8px 12px}
+.roundend h3{color:var(--good)}
+
 @media (max-width:520px){
+  .hud{flex-wrap:nowrap; gap:6px}
+  .hchip{min-width:0; flex:1 1 0; padding:5px 8px}
+  .hchip span{font-size:.6rem; letter-spacing:.04em}
+  .hchip b{font-size:1rem}
+  .tbuy{padding:6px 8px}
   .topicpill{display:none}
   .joinbox{grid-template-columns:1fr}
   .bigq{font-size:1.4rem}
@@ -417,7 +447,8 @@ a{color:var(--blue)}
   <button class="tab" role="tab" id="tab-start" data-panel="start" aria-selected="true"><span class="n">1</span>Start</button>
   <button class="tab" role="tab" id="tab-learn" data-panel="learn" aria-selected="false"><span class="n">2</span>Learn</button>
   <button class="tab" role="tab" id="tab-practice" data-panel="practice" aria-selected="false"><span class="n">3</span>Practice</button>
-  <button class="tab" role="tab" id="tab-battle" data-panel="battle" aria-selected="false"><span class="n">4</span>Battle</button>
+  <button class="tab" role="tab" id="tab-games" data-panel="games" aria-selected="false"><span class="n">4</span>Games</button>
+  <button class="tab" role="tab" id="tab-battle" data-panel="battle" aria-selected="false"><span class="n">5</span>Battle</button>
   <button class="topicpill" type="button" id="topicpill" data-go="start" title="Change topic"></button>
 </nav>
 
@@ -430,6 +461,7 @@ a{color:var(--blue)}
     <div class="field"><span>Topic</span><div class="topics" id="pk-topic" role="radiogroup" aria-label="Topic"></div></div>
     <div class="btnrow">
       <button class="btn" type="button" id="pk-practice">Quick practice</button>
+      <button class="btn" type="button" data-go="games">Play a game</button>
       <button class="btn" type="button" id="pk-host">Host a battle</button>
       <button class="btn ghost" type="button" data-go="battle">Join a battle</button>
       <button class="btn ghost" type="button" data-go="learn">Learn first</button>
@@ -444,7 +476,8 @@ a{color:var(--blue)}
       <div><span class="hn">1</span><h3>Learn</h3><p class="small">Short visual lessons that show <i>why</i> each rule works, with worked examples.</p></div>
       <div><span class="hn">2</span><h3>Practice</h3><p class="small">A new random quiz every time. Pick the difficulty, the number of questions and, if you like, a timer.</p></div>
       <div><span class="hn">3</span><h3>Check</h3><p class="small">After each answer you see the full solution, and if you slipped, the most likely reason why.</p></div>
-      <div><span class="hn">4</span><h3>Battle</h3><p class="small">Play live against your class. Everyone gets the same timed question; fast, correct answers score the most.</p></div>
+      <div><span class="hn">4</span><h3>Play</h3><p class="small">Games like Tower Defense: build turrets, stop the blocks, and answer questions between rounds to earn more money.</p></div>
+      <div><span class="hn">5</span><h3>Battle</h3><p class="small">Play live against your class. Everyone gets the same timed question; fast, correct answers score the most.</p></div>
     </div>
   </div>
 
@@ -894,7 +927,12 @@ a{color:var(--blue)}
   <div class="sheet" id="p-results" hidden></div>
 </section>
 
-<!-- ============ PANEL 4: BATTLE ============ -->
+<!-- ============ PANEL 4: GAMES ============ -->
+<section class="panel stack" id="panel-games" role="tabpanel" aria-labelledby="tab-games" hidden>
+  <div class="stack-lg" id="games-root"></div>
+</section>
+
+<!-- ============ PANEL 5: BATTLE ============ -->
 <section class="panel stack" id="panel-battle" role="tabpanel" aria-labelledby="tab-battle" hidden>
   <div class="stack-lg" id="battle-root"></div>
 </section>
@@ -922,5 +960,7 @@ a{color:var(--blue)}
 <script src="js/app.js"></script>
 <script src="js/battle-net.js"></script>
 <script src="js/battle-ui.js"></script>
+<script src="js/game-td.js"></script>
+<script src="js/games.js"></script>
 </body>
 </html>

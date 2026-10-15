@@ -25,6 +25,14 @@ On the start page students pick **Year → Subject → Topic**. Each topic has:
 
 Science, Math and Spanish verb questions are generated with random numbers or words; English, I&S and vocabulary use large banks of original items with shuffled answers. Levels for the new topics: Mixed (default), Core, Stretch, Challenge. Typed Spanish answers accept missing accents with a reminder, and there are buttons for á é í ó ú ñ.
 
+## Games
+
+The **Games** tab plays with the selected topic's questions (difficulty comes from the topic's practice settings).
+
+- **Tower Defense**: colored blocks follow a fixed path (three maps: Zigzag, Snake, Spiral). Start with $150 and buy turrets: Blaster ($50, all-rounder), Rapid ($80, very fast weak shots) and Cannon ($120, slow, hits a group). Tap a turret to upgrade it (up to level 3) or sell it. Each round sends more and tougher blocks (strength 1–5, about 10% tougher every round). A block that reaches the end costs health equal to its strength; at 0 health the game is over. After every round the player must answer 3 questions; each correct answer adds $25, and every answer shows its explanation. The best round per topic is saved in the browser.
+
+More game modes can be added as new files next to `js/game-td.js` and a card in `js/games.js`.
+
 ### Adding a topic
 
 Each topic is one self-contained file in `js/topics/` that calls `registerTopic({...})` with its year, subject, levels, defaults, lessons, intro and question generators, using the helpers in `js/topic-kit.js`. Add its `<script>` line to `index.html` (after `js/topic-kit.js`, before `js/app.js`). A new year or subject appears in the picker automatically. See [`TOPIC_GUIDE.md`](TOPIC_GUIDE.md) for the question shapes, CSS classes and content rules.
@@ -103,6 +111,7 @@ Then open <http://localhost:8000>. To try a battle without Firebase, open the si
 | `js/topics.js` | Topic registry (year, subject, levels, defaults) and quiz codes. |
 | `js/topic-kit.js` | Helpers for writing topics (multiple choice, typed answers, ordering, boxes, seeded quiz builder). |
 | `js/topics/*.js` | One file per topic added since: stoichiometry, polynomials, genetics, business, heros-journey, scifi, spanish-present, spanish-adolescence. |
+| `js/game-td.js`, `js/games.js` | Tower Defense game logic, and the Games tab (drawing, shop, question breaks). |
 | `TOPIC_GUIDE.md` | How to write a new topic. |
 | `tools/validate-topics.js` | Checks every topic: `node tools/validate-topics.js`. Not loaded by the site. |
 | `js/quizui.js` | Shows a question, checks the answer and writes the feedback. Shared by every topic, practice and battle. |
