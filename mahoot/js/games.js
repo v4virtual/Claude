@@ -10,12 +10,12 @@ const curTopic = () => TOPICS[window.ExpLab ? window.ExpLab.currentTopic() : "ex
 
 /* ---------- home: pick a game ---------- */
 function renderHome(){
-  stopLoop(); setPlaying(false);
+  stopLoop(); setPlaying(false); stopQTimer();
   const t = curTopic(), b = best()[t.id];
   root().innerHTML =
     '<div class="stack"><h2>Games</h2><p class="muted">Play, and answer quick questions between rounds to earn more money. Pick Quick math, or easy questions from <b>' + esc(topicLabel(t)) + '</b> (change the topic on the Start tab).</p></div>' +
     '<div class="sheet gamecard"><div class="gamehead"><div><span class="eyebrow">Game mode</span><h3>Tower Defense</h3></div>' + (b ? '<span class="tag">Your best: round ' + b + "</span>" : "") + "</div>" +
-      '<p>Colored blocks march along a path. Spend your money on turrets to stop them. Every block that gets through costs you health. After each round, answer a question (from round ' + (TD.EASY_ROUNDS + 1) + " on, " + TD.QUESTIONS_PER_BREAK + " questions): each correct answer earns $" + TD.QUESTION_BONUS + " for more turrets.</p>" +
+      '<p>Colored blocks march along a path. Spend your money on turrets to stop them. Every block that gets through costs you health. After each round, answer a question (from round ' + (TD.EASY_ROUNDS + 1) + " on, " + TD.QUESTIONS_PER_BREAK + " questions) before the timer runs out. A correct answer earns $" + TD.BONUS_MIN + " to $" + TD.BONUS_MAX + " for more turrets: the faster you answer, the more you get.</p>" +
       '<div class="field"><span>Questions</span><div class="seg" id="td-src">' +
         '<label><input type="radio" name="td-src" value="quick"' + (qSource === "quick" ? " checked" : "") + '>Quick math</label>' +
         '<label><input type="radio" name="td-src" value="topic"' + (qSource === "topic" ? " checked" : "") + ">Easy " + esc(t.name) + "</label></div>" +
@@ -321,15 +321,17 @@ function showQuestion(){
   const g = TD.game(), q = g.qSet[g.qStep], panel = $("#td-panel");
   const head = '<div class="verdict ok roundend"><h3>Round ' + g.round + " complete</h3><p>" +
     (g.roundLeak ? "Blocks that got through cost you " + g.roundLeak + " health. " : "No block got through. ") +
-    "You earned $" + g.roundEarned + ". " + (g.qSet.length === 1 ? "Answer 1 question" : "Answer " + g.qSet.length + " questions") + " to unlock round " + (g.round + 1) + (g.qSet.length === 1 ? ": a correct answer adds $" : ": each correct answer adds $") + TD.QUESTION_BONUS + "." +
+    "You earned $" + g.roundEarned + ". " + (g.qSet.length === 1 ? "Answer 1 question" : "Answer " + g.qSet.length + " questions") + " to unlock round " + (g.round + 1) + (g.qSet.length === 1 ? ": a correct answer adds $" : ": each correct answer adds $") + TD.BONUS_MIN + " to $" + TD.BONUS_MAX + ", more the faster you answer." +
     (g.round === TD.EASY_ROUNDS ? " From now on the rounds get tougher, and you answer " + TD.QUESTIONS_PER_BREAK + " questions after each one." : "") + "</p></div>";
   clearMath(panel);
   panel.innerHTML = (g.qStep === 0 ? head : "") +
     '<article class="sheet" id="td-q">' + qHeadHtml(q, g.qSet.length === 1 ? "Question" : "Question " + (g.qStep + 1) + " of " + g.qSet.length) + questionHtml(q, "g") +
+    '<div class="timer" id="td-timer"><div class="tbar"><i id="td-tbar"></i></div><span class="tnum" id="td-tnum"></span></div>' +
     '<p class="small redtxt" id="td-qerr" role="alert" hidden></p>' +
     '<div class="btnrow" id="td-qact"><button class="btn" type="button" id="td-check">Check answer</button></div>' +
     '<div id="td-qfb" class="stack"></div></article>';
   const card = $("#td-q");
+  startQTimer(q);
   bindQuestion(q, card, "g");
   $("#td-check").addEventListener("click", () => checkQ(q));
   $$("input", card).forEach(i => i.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); if (!$("#td-qact").hidden) checkQ(q); } }));
@@ -337,16 +339,45 @@ function showQuestion(){
   const f = $("input", card); if (f && q.type !== "mc") f.focus({ preventScroll:true });
   card.scrollIntoView({ block:"nearest", behavior:"smooth" });
 }
-function checkQ(q){
-  const g = TD.game(), card = $("#td-q"), rec = readAnswer(q, card, "g");
-  if (!rec) { const e = $("#td-qerr"); e.hidden = false; e.textContent = MISSING_MSG(q); return; }
-  rec.correct = grade(q, rec);
-  g.qAsked++; if (rec.correct) { g.qRight++; g.money += TD.QUESTION_BONUS; }
+/* Seconds to answer: depends on the kind of question, how much there is to read, and its level */
+const plain = h => String(h || "").replace(/<[^>]*>/g, " ").replace(/\\[a-z]+/gi, " ");
+function secondsFor(q){
+  let s = { mc:12, order:16, text:18, num:14, fields:20 }[q.type] || 18;
+  if (q.type === "order") s += 3 * Math.max(0, (q.items || []).length - 4);
+  if (q.type === "fields" && q.answer) s += 6 * Math.max(0, Object.keys(q.answer).length - 1);
+  const text = [q.promptHtml, q.prompt, q.exprHtml, q.tex].concat((q.options || []).map(o => o.html || o.text)).concat(q.type === "order" ? q.items : []).map(plain).join(" ");
+  s += Math.min(24, text.split(/\s+/).filter(Boolean).length * 0.3);   // reading time
+  s *= [1, 1, 1.3, 1.6][Math.min(3, q.lvlNum || 1)];
+  return Math.max(10, Math.min(60, Math.round(s / 5) * 5));
+}
+let qTimer = 0, qT0 = 0, qSecs = 0;
+function stopQTimer(){ if (qTimer) clearInterval(qTimer); qTimer = 0; }
+function qLeft(){ return qSecs - (performance.now() - qT0) / 1000; }
+function startQTimer(q){
+  stopQTimer(); qSecs = secondsFor(q); qT0 = performance.now();
+  const tick = () => {
+    const bar = $("#td-tbar"), num = $("#td-tnum"); if (!bar || !$("#td-q")) return stopQTimer();
+    const left = qLeft();
+    bar.style.width = Math.max(0, left / qSecs * 100) + "%"; bar.parentElement.classList.toggle("low", left <= 5);
+    num.textContent = Math.max(0, Math.ceil(left));
+    if (left <= 0) checkQ(q, true);
+  };
+  qTimer = setInterval(tick, 100); tick();
+}
+const bonusFor = left => Math.round(TD.BONUS_MIN + (TD.BONUS_MAX - TD.BONUS_MIN) * Math.max(0, Math.min(1, left / qSecs)));
+function checkQ(q, timedOut){
+  const g = TD.game(), card = $("#td-q"), rec = timedOut ? null : readAnswer(q, card, "g");
+  if (!rec && !timedOut) { const e = $("#td-qerr"); e.hidden = false; e.textContent = MISSING_MSG(q); return; }
+  const left = qLeft(), took = Math.max(1, Math.round(qSecs - left));
+  stopQTimer();
+  if (rec) rec.correct = grade(q, rec);
+  const bonus = rec && rec.correct ? bonusFor(left) : 0;
+  g.qAsked++; if (bonus) { g.qRight++; g.money += bonus; }
   lockAnswer(q, card, "g", rec);
   $("#td-qact").hidden = true; $("#td-qerr").hidden = true;
   const last = g.qStep >= g.qSet.length - 1;
   const fb = $("#td-qfb");
-  fb.innerHTML = feedbackHtml(q, rec, { headline: rec.correct ? "Correct! +$" + TD.QUESTION_BONUS : "Not quite · no bonus this time", lessonButton:false }) +
+  fb.innerHTML = feedbackHtml(q, rec, { headline: timedOut ? "Time's up · no bonus this time" : bonus ? "Correct in " + took + " s! +$" + bonus : "Not quite · no bonus this time", lessonButton:false }) +
     '<div class="btnrow"><button class="btn" type="button" id="td-next">' + (last ? "Back to the battlefield" : "Next question") + "</button></div>";
   typeset(fb);
   $("#td-next").addEventListener("click", () => {

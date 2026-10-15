@@ -6,7 +6,9 @@ const RULES = {
   BOOST_MS:10000, BOOST_CD:10000,        // boost lasts 10 s, then 10 s to recharge
   INVIS_MS:5000, INVIS_CD:30000,         // invisible for 5 s, once every 30 s
   ATTRACT_MS:3000, ATTRACT_CD:60000,     // IT only: pull every runner in for 3 s, once a minute
-  Q_EVERY:30000, Q_WARN:5000, DIZZY_MS:3000,
+  TRACK_MS:10000, TRACK_CD:30000,        // IT only: runners leave glowing footprints for 10 s, then 30 s to recharge
+  PRINT_LIFE:6000, TWO_ITS_FROM:8,       // footprints fade after 6 s; 8 or more players get 2 taggers
+  Q_EVERY:15000, Q_WARN:4000,
   COUNTDOWN:3000, START_FREEZE:3000, IT_FREEZE:2000, NO_TAGBACK:3000, TAG_DIST:0.95, PEEK_DIST:1.6
 };
 const COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#a855f7", "#ec4899", "#14b8a6", "#eab308", "#6366f1", "#f97316", "#64748b"];
@@ -69,25 +71,25 @@ function makeWorld(seed, season){
     return true;
   });
   // trees, mostly in groves: the trunk blocks, the canopy hides you
-  place(72, 3000, () => {
+  place(44, 3000, () => {
     let x, y;
     if (w.trees.length && r() < 0.6) { const o = w.trees[Math.floor(r() * w.trees.length)], a = r() * Math.PI * 2, d = 3.3 + r() * 1.2; x = o.x + Math.cos(a) * d; y = o.y + Math.sin(a) * d; }
     else { x = 2 + r() * (W - 4); y = 2 + r() * (H - 4); }
     if (!fits(x, y, 0.5, 1.5)) return false;
     const t = { x, y, cr:1.4 + r() * 0.45, cy:y - 1.7, tint:Math.floor(r() * 5), v:r() };
-    w.trees.push(t); w.solids.push({ x, y, r:0.35, trunk:true }); w.hides.push({ x, y:t.cy, r:t.cr * 0.85, tree:t });
+    w.trees.push(t); w.solids.push({ x, y, r:0.35, trunk:true }); w.hides.push({ x, y:t.cy, r:t.cr * 0.75, tree:t });
     placed.push({ x, y, r:1.15 });
     return true;
   });
   // bushes: walk into them to hide
-  place(58, 2500, () => {
+  place(22, 2500, () => {
     const x = 2 + r() * (W - 4), y = 2 + r() * (H - 4), br = 0.85 + r() * 0.35;
     if (!fits(x, y, br, 0.5)) return false;
     const b = { x, y, r:br, v:r() }; w.bushes.push(b); w.hides.push({ x, y, r:br * 0.95, bush:b }); placed.push({ x, y, r:br });
     return true;
   });
   // rocks block the way
-  place(24, 1500, () => {
+  place(34, 1500, () => {
     const x = 2 + r() * (W - 4), y = 2 + r() * (H - 4), rr = 0.45 + r() * 0.4;
     if (!fits(x, y, rr, 1.4)) return false;
     const o = { x, y, r:rr, v:r() }; w.rocks.push(o); w.solids.push(o); placed.push({ x, y, r:rr });
@@ -164,11 +166,12 @@ function steer(w, b, want){
 function wander(b){ if (!b.goal || Math.hypot(b.goal.x - b.x, b.goal.y - b.y) < 1.2) b.goal = { x:3 + Math.random() * (W - 6), y:3 + Math.random() * (H - 6) }; return norm(b.goal.x - b.x, b.goal.y - b.y); }
 function decide(w, b, S, L, t, isIt){
   if (isIt) {
+    const tracking = S.track && t < S.track.until, nb = S.ntb && S.ntb[b.id];
     let best = null, bd = 1e9;
     for (const p of S.people) {
-      if (p.id === b.id || (S.ntb && S.ntb.id === p.id && t < S.ntb.until)) continue;
+      if (p.id === b.id || S.its[p.id] || (nb && nb.id === p.id && t < nb.until)) continue;
       const d = Math.hypot(p.x - b.x, p.y - b.y);
-      if (p.inv || (p.hid && d > 2.2) || d > L.sight * 1.4) continue;
+      if (d > L.sight * 1.4 || (!tracking && (p.inv || (p.hid && d > 2.2)))) continue;   // footprints give hiders away
       if (d < bd) { bd = d; best = p; }
     }
     if (best) { b.seen = { x:best.x, y:best.y, t }; return norm(best.x - b.x, best.y - b.y); }
@@ -176,14 +179,12 @@ function decide(w, b, S, L, t, isIt){
     if (!b.goal || Math.random() < 0.02) { const h = w.hides[Math.floor(Math.random() * w.hides.length)]; b.goal = h ? { x:h.x, y:h.y } : null; }   // go and search a hiding spot
     return wander(b);
   }
-  const it = S.people.find(p => p.id === S.it);
-  if (it) {
-    const d = Math.hypot(it.x - b.x, it.y - b.y);
-    if (d < L.sight && !it.inv && !(it.hid && d > 2.2)) {
-      if (d < 4.5 && t >= b.bReady && t >= b.b) { b.b = t + RULES.BOOST_MS; b.bReady = t + RULES.BOOST_MS + RULES.BOOST_CD; }
-      if (L.invis && d < 2.4 && t >= b.vReady) { b.v = t + RULES.INVIS_MS; b.vReady = t + RULES.INVIS_CD; }
-      return norm(b.x - it.x, b.y - it.y);
-    }
+  let it = null, d = 1e9;
+  for (const p of S.people) { if (!S.its[p.id]) continue; const pd = Math.hypot(p.x - b.x, p.y - b.y); if (pd < L.sight && !p.inv && !(p.hid && pd > 2.2) && pd < d) { d = pd; it = p; } }
+  if (it) {   // the nearest IT we can see: run
+    if (d < 4.5 && t >= b.bReady && t >= b.b) { b.b = t + RULES.BOOST_MS; b.bReady = t + RULES.BOOST_MS + RULES.BOOST_CD; }
+    if (L.invis && d < 2.4 && t >= b.vReady) { b.v = t + RULES.INVIS_MS; b.vReady = t + RULES.INVIS_CD; }
+    return norm(b.x - it.x, b.y - it.y);
   }
   if (b.nextQ && b.nextQ - t < RULES.Q_WARN + 3000) {      // question coming: head for cover
     if (hideAt(w, b.x, b.y)) return [0, 0];
@@ -191,28 +192,30 @@ function decide(w, b, S, L, t, isIt){
   }
   return wander(b);
 }
-/* S: { it, freezeUntil, ntb, people:[{id,x,y,inv,hid}], lvl, startAt, charm:{by,until} } */
+/* S: { its:{id:since}, frz:{id:until}, ntb:{it:{id,until}}, people:[{id,x,y,inv,hid}], lvl, startAt, charm:{by,until}, track:{by,until},
+        cd:{ z:{id:readyAt}, x:{id:readyAt} }, use(kind, id) } */
 function stepBots(w, bots, S, dt, t){
   const L = BOT_LVL[S.lvl] || BOT_LVL.normal;
   for (const b of bots) {
-    const isIt = b.id === S.it;
+    const isIt = !!S.its[b.id];
     if (isIt) { b.b = 0; b.v = 0; b.a = 0; b.nextQ = 0; }
     else if (t >= S.startAt) {
       if (!b.nextQ) b.nextQ = Math.max(t, S.startAt) + RULES.Q_EVERY + Math.random() * 4000;
-      if (b.a && t >= b.aUntil) { b.a = 0; b.q++; if (Math.random() < L.right) { b.r++; b.bReady = Math.max(t, b.b); } else b.d = t + RULES.DIZZY_MS; b.nextQ = t + RULES.Q_EVERY; }
+      if (b.a && t >= b.aUntil) { b.a = 0; b.q++; if (Math.random() < L.right) { b.r++; b.bReady = Math.max(t, b.b); } b.nextQ = t + RULES.Q_EVERY; }
       if (!b.a && t >= b.nextQ) { b.a = 1; b.aUntil = t + L.ans[0] + Math.random() * (L.ans[1] - L.ans[0]); }
     }
-    const charmed = !isIt && S.charm && t < S.charm.until && S.charm.by === S.it;
+    const charmed = !isIt && S.charm && t < S.charm.until && S.its[S.charm.by];
     if (charmed) {
-      const it = S.people.find(p => p.id === S.it);
+      const it = S.people.find(p => p.id === S.charm.by);
       if (it) { const [dx, dy] = norm(it.x - b.x, it.y - b.y); b.dx = dx; b.dy = dy; move(w, b, dx * RULES.SPEED * dt, dy * RULES.SPEED * dt); b.mv = 1; }
       continue;
     }
-    if (b.a || t < b.d || t < S.startAt + (isIt ? RULES.START_FREEZE : 0) || (isIt && t < S.freezeUntil)) { b.mv = 0; continue; }
-    if (isIt && L.attract && S.canAttract && t >= (S.attractReady || 0)) {
-      const close = S.people.filter(p => p.id !== b.id && !p.inv && Math.hypot(p.x - b.x, p.y - b.y) < 9).length;
-      if (close >= 2 || (close >= 1 && Math.random() < dt * 0.15)) S.canAttract(b.id);
+    if (b.a || t < S.startAt + (isIt ? RULES.START_FREEZE : 0) || (isIt && t < (S.frz[b.id] || 0))) { b.mv = 0; continue; }
+    if (isIt && L.attract && t >= (S.cd.z[b.id] || 0)) {
+      const close = S.people.filter(p => p.id !== b.id && !S.its[p.id] && !p.inv && Math.hypot(p.x - b.x, p.y - b.y) < 9).length;
+      if (close >= 2 || (close >= 1 && Math.random() < dt * 0.15)) S.use("z", b.id);
     }
+    if (isIt && t >= (S.cd.x[b.id] || 0) && !(S.track && t < S.track.until) && (!b.seen || t - b.seen.t > 3000) && Math.random() < dt * 0.4) S.use("x", b.id);   // nobody in sight: follow the footprints
     b.think -= dt;
     if (b.think <= 0) { b.think = L.think + Math.random() * 0.2; b.want = decide(w, b, S, L, t, isIt); }
     const want = b.want || [0, 0];
@@ -428,6 +431,18 @@ function draw(c, V){
   const inView = (x, y, m) => x > x0 - m && x < x1 + m && y > y0 - m && y < y1 + m;
   w.decor.forEach(d => { if ((d.k === "flowers" || d.k === "tulips" || d.k === "leaves" || d.k === "drift" || d.k === "sprig") && inView(d.x, d.y, 1)) drawFlatDecor(c, w, d); });
   w.ponds.forEach(p => { if (inView(p.x, p.y, p.r + 1)) drawPond(c, w, p, time); });
+  if (V.prints) for (const f of V.prints) {   // glowing footprints (Footprints ability)
+    const age = (V.ms - f.t) / RULES.PRINT_LIFE; if (age >= 1 || age < 0 || !inView(f.x, f.y, 1)) continue;
+    const a = 1 - age, col = COLORS[f.c % COLORS.length];
+    c.save(); c.translate(f.x - Math.sin(f.a) * 0.11 * f.side, f.y + Math.cos(f.a) * 0.11 * f.side); c.rotate(f.a);
+    const glow = 0.8 + Math.sin(time * 6 + f.x) * 0.2;
+    c.globalAlpha = a * 0.22 * glow; c.fillStyle = col; c.beginPath(); c.ellipse(0, 0, 0.42, 0.28, 0, 0, Math.PI * 2); c.fill();
+    c.globalAlpha = a * 0.45 * glow; c.beginPath(); c.ellipse(0, 0, 0.28, 0.18, 0, 0, Math.PI * 2); c.fill();
+    c.globalAlpha = a; c.beginPath(); c.ellipse(0.05, 0, 0.15, 0.09, 0, 0, Math.PI * 2); c.fill(); circle(c, -0.13, 0, 0.07); c.fill();
+    c.fillStyle = "#ffffff"; c.globalAlpha = a * 0.85; c.beginPath(); c.ellipse(0.06, 0, 0.08, 0.04, 0, 0, Math.PI * 2); c.fill(); circle(c, -0.13, 0, 0.03); c.fill();
+    c.restore();
+  }
+  c.globalAlpha = 1;
   // things that stand up, sorted by their feet
   const items = [];
   w.trees.forEach(t => { if (inView(t.x, t.y, 3)) items.push([t.y, 0, t]); });

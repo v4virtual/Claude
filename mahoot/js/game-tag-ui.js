@@ -1,5 +1,6 @@
 /* ===== Tag screens: host a room, join with a code / link / QR, lobby, play (controls, HUD, questions), results =====
-   The host's browser is the referee: it picks IT, runs the bots and the clock, checks tags and Attraction.
+   The host's browser is the referee: it picks IT (two taggers from 8 players), runs the bots and the clock, checks tags and abilities.
+   meta.its = { id: time they became IT }, meta.frz = { id: frozen until }, meta.ntb = { IT: { id they can't tag back, until } }.
    Every player moves their own character and sends its position about 10 times a second. */
 (function(){
 const T = window.TagGame, RU = T.RULES;
@@ -11,11 +12,18 @@ let net = null;
 let active = false, consumed = false, prefill = "", screen = "";
 let role = null, code = null, unwatch = null, meta = null, players = {}, botsRec = {}, world = null, worldKey = "";
 const me = { n:"", c:Math.floor(Math.random() * 6) };
-let L = null, simBots = [], claimSeen = {}, attractSeen = {}, itGoneSince = 0, lastHost = 0, hb = 0, botSend = 0, rosterSig = "";
+let L = null, simBots = [], claimSeen = {}, attractSeen = {}, trackSeen = {}, itGone = {}, prints = [], lastPrint = {}, lastHost = 0, hb = 0, botSend = 0, rosterSig = "";
 let raf = 0, tick = 0, lastFrame = 0, cvs = null, ctx = null, view = null, joy = null, lastSent = 0, lastSig = "", hudAt = 0, rankAt = 0, toast = null, endArmed = false;
 const keys = {}, disp = {};
 let qPool = [], qPtr = 0, qid = 0;
 const now = () => net ? net.serverNow() : Date.now();
+const its = m => ((m || meta) && (m || meta).its) || {};
+const isIt = (id, m) => !!its(m)[id];
+const itIds = m => Object.keys(its(m));
+const amIt = () => isIt(net.uid);
+const frozenUntil = id => ((meta && meta.frz) || {})[id] || 0;
+const noTagBack = (by, who, t) => { const n = ((meta && meta.ntb) || {})[by]; return !!(n && n.id === who && t < n.until); };
+const listNames = ids => ids.map(nameOf).join(" and ");
 const fresh = (p, t) => p && t - (p.t || 0) < FRESH;
 const fmtTime = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
 const secs = ms => (Math.round(ms / 100) / 10).toFixed(1) + " s";
@@ -37,9 +45,9 @@ function renderSetup(msg){
     '<ul class="tgrules">' +
       "<li>One random player starts as <b class=\"itword\">IT</b> and chases everyone else. Touch someone to make them IT.</li>" +
       "<li><kbd>Space</kbd> <b>Boost</b>: 10% faster for 10 s, then 10 s to recharge. <kbd>Q</kbd> <b>Invisible</b> for 5 s, once every 30 s.</li>" +
-      "<li>IT is always 5% faster but can't boost or go invisible. Instead IT has <kbd>Z</kbd> <b>Attraction</b>: for 3 s every runner is pulled toward IT, with heart eyes. Once a minute.</li>" +
-      "<li>Runners answer a question every 30 s and can't move while answering, so hide in a bush or under a tree first. Right answer: boost recharged. Wrong answer: dizzy for 3 s.</li>" +
-      "<li>The player who spends the <b>least time as IT</b> wins. You need at least 2 players (bots count), and one of you hosts.</li></ul>" +
+      "<li>IT is always 5% faster but can't boost or go invisible. Instead IT has <kbd>Z</kbd> <b>Attraction</b>: for 3 s every runner is pulled toward IT, with heart eyes (once a minute), and <kbd>X</kbd> <b>Footprints</b>: for 10 s every runner leaves glowing footprints that IT can see, even when hiding or invisible (then 30 s to recharge).</li>" +
+      "<li>Runners answer a question every 15 s and can't move while answering, so hide in a bush or under a tree first. Hiding spots are rare, so be quick. A right answer recharges your boost.</li>" +
+      "<li>The player who spends the <b>least time as IT</b> wins. You need at least 2 players (bots count), and one of you hosts. With 8 or more players there are 2 taggers.</li></ul>" +
     (demo ? '<p class="banner"><b>Demo mode.</b> ' + esc(SHARED_NET.note || "Online games are not switched on for this site yet, so friends can only join from other tabs in this browser. You can still play against bots.") + "</p>" : "") +
     (msg ? '<p class="banner">' + esc(msg) + "</p>" : "") +
     '<div class="sheet"><h3>Your player</h3>' +
@@ -95,7 +103,7 @@ async function joinRoom(){
   await enter(c, "player");
 }
 async function enter(c, r){
-  role = r; code = c; players = {}; botsRec = {}; meta = null; L = null; simBots = []; claimSeen = {}; attractSeen = {}; screen = "";
+  role = r; code = c; players = {}; botsRec = {}; meta = null; L = null; simBots = []; claimSeen = {}; attractSeen = {}; trackSeen = {}; screen = "";
   BSS.set("tag", { code:c, role:r });
   try { await net.tagJoin(c, { n:me.n, c:me.c, x:0, y:0, t:now(), g:-1 }); }
   catch(e) { role = null; code = null; BSS.del("tag"); return renderSetup("Could not join (" + (e.code || e.message) + ")."); }
@@ -125,6 +133,8 @@ function onMeta(m){
       if ((m.tagN || 0) !== (prev.tagN || 0)) onTagged(prev, m);
       const ca = m.charm, pa = prev.charm;
       if (ca && (!pa || pa.until !== ca.until)) onAttract(ca);
+      const tr = m.track, pt = prev.track;
+      if (tr && (!pt || pt.until !== tr.until)) onTrack(tr);
     }
   }
   const sc = m.state === "play" ? "play" : m.state === "over" ? "over" : "lobby";
@@ -136,8 +146,9 @@ function onPlayer(id, p){
   else players[id] = p;
   if (role === "host" && p && meta && meta.state === "play") {
     const t = now();
-    if (p.kn && p.kn !== claimSeen[id]) { claimSeen[id] = p.kn; if (id === meta.it && t - (p.kt || 0) < 2000) hostClaim(id, p.k); }
-    if (p.zn && p.zn !== attractSeen[id]) { attractSeen[id] = p.zn; if (id === meta.it && t - (p.zt || 0) < 2000) hostAttract(id); }
+    if (p.kn && p.kn !== claimSeen[id]) { claimSeen[id] = p.kn; if (isIt(id) && t - (p.kt || 0) < 2000) hostClaim(id, p.k); }
+    if (p.zn && p.zn !== attractSeen[id]) { attractSeen[id] = p.zn; if (isIt(id) && t - (p.zt || 0) < 2000) hostAttract(id); }
+    if (p.xn && p.xn !== trackSeen[id]) { trackSeen[id] = p.xn; if (isIt(id) && t - (p.xt || 0) < 2000) hostTrack(id); }
   }
   if (screen === "lobby") fillLobby();
 }
@@ -148,9 +159,10 @@ function ensureWorld(){
 function initRound(){
   const m = meta, t = now();
   const sp = (m.spawn && m.spawn[net.uid]) || T.freeSpot(world, Math.random, null);
-  L = { round:m.round, x:sp[0], y:sp[1], dx:0, dy:1, mv:0, b:0, bReady:0, v:0, vReady:0, a:0, d:0, right:0, asked:0, kn:0, zn:0, lastClaim:0, q:null,
+  L = { round:m.round, x:sp[0], y:sp[1], dx:0, dy:1, mv:0, b:0, bReady:0, v:0, vReady:0, a:0, right:0, asked:0, kn:0, zn:0, xn:0, lastClaim:0, q:null,
         nextQ:Math.max(t, m.startAt) + RU.Q_EVERY + Math.random() * 4000 };
   Object.keys(disp).forEach(k => delete disp[k]);
+  prints = []; Object.keys(lastPrint).forEach(k => delete lastPrint[k]);
   qPool = []; qPtr = 0; lastSig = ""; lastSent = 0;
 }
 function nameOf(id){
@@ -160,18 +172,23 @@ function nameOf(id){
 }
 function say(text, col, ms){ toast = { text, col, until:Date.now() + (ms || 2600) }; }
 function onTagged(prev, m){
-  const mine = m.it === net.uid;
-  if (mine) {
+  const nowIt = isIt(net.uid, m), wasIt = isIt(net.uid, prev), last = m.last || {};
+  if (nowIt && !wasIt) {
     L.b = 0; L.v = 0; closeQuestion(true);
-    say(m.last && m.last.by ? nameOf(m.last.by) + " tagged you! You're IT: catch someone." : "You're IT now: catch someone.", "rgba(239,68,68,.92)", 3200);
-  } else if (prev.it === net.uid) {
+    say(last.by ? nameOf(last.by) + " tagged you! You're IT: catch someone." : "You're IT now: catch someone.", "rgba(239,68,68,.92)", 3200);
+  } else if (wasIt && !nowIt) {
     L.nextQ = now() + RU.Q_EVERY;
-    say("You tagged " + nameOf(m.it) + "! Run!", "rgba(22,163,74,.92)");
-  } else say(m.last && m.last.by ? nameOf(m.last.by) + " tagged " + nameOf(m.it) + ". " + nameOf(m.it) + " is IT!" : nameOf(m.it) + " is IT now.");
+    say("You tagged " + nameOf(last.who) + "! Run!", "rgba(22,163,74,.92)");
+  } else if (last.who) say(last.by ? nameOf(last.by) + " tagged " + nameOf(last.who) + ". " + nameOf(last.who) + " is IT!" : nameOf(last.who) + " is IT now.");
 }
 function onAttract(ca){
   if (ca.by === net.uid) say("Attraction! Everyone is pulled toward you for 3 s.", "rgba(219,39,119,.92)");
-  else if (meta.it !== net.uid) say(nameOf(ca.by) + " used Attraction! You can't resist...", "rgba(219,39,119,.92)");
+  else if (!amIt()) say(nameOf(ca.by) + " used Attraction! You can't resist...", "rgba(219,39,119,.92)");
+}
+function onTrack(tr){
+  if (tr.by === net.uid) say("Footprints! Every runner leaves glowing tracks for 10 s.", "rgba(234,88,12,.92)");
+  else if (amIt()) say(nameOf(tr.by) + " lit up the footprints for 10 s.", "rgba(234,88,12,.92)");
+  else say(nameOf(tr.by) + " can see your footprints for 10 s! Hiding won't help, keep moving.", "rgba(234,88,12,.92)", 3200);
 }
 
 /* ---------- host: referee, bots, clock ---------- */
@@ -192,16 +209,26 @@ function hostPatch(patch){
   onMeta(next);
   net.tagMeta(code, patch);
 }
+/* hand IT from one player to another (by = null when IT left the game) */
+function passIt(from, to, t, by){
+  const m = meta, I = Object.assign({}, its()), itTime = Object.assign({}, m.itTime || {}), frz = Object.assign({}, m.frz || {}), ntb = Object.assign({}, m.ntb || {});
+  itTime[from] = (itTime[from] || 0) + Math.max(0, t - Math.max(I[from] || t, m.startAt));
+  delete I[from]; delete frz[from]; delete ntb[from];
+  I[to] = t; frz[to] = t + RU.IT_FREEZE;
+  if (by) ntb[to] = { id:by, until:t + RU.NO_TAGBACK };
+  const patch = { its:I, frz, ntb, itTime, tagN:(m.tagN || 0) + 1, last:by ? { by, who:to } : { who:to } };
+  if (m.charm && m.charm.by === from) patch.charm = null;
+  if (m.track && m.track.by === from) patch.track = null;
+  return patch;
+}
 function applyTag(by, who){
   const m = meta, t = now();
-  if (!m || m.state !== "play" || m.it !== by || who === by || t < m.freezeUntil || t < m.startAt) return false;
-  if (m.ntb && m.ntb.id === who && t < m.ntb.until) return false;
-  const itTime = Object.assign({}, m.itTime || {}), tags = Object.assign({}, m.tags || {});
-  itTime[by] = (itTime[by] || 0) + Math.max(0, t - Math.max(m.itSince, m.startAt));
-  tags[by] = (tags[by] || 0) + 1;
+  if (!m || m.state !== "play" || !isIt(by) || isIt(who) || who === by || t < frozenUntil(by) || t < m.startAt || noTagBack(by, who, t)) return false;
+  const patch = passIt(by, who, t, by);
+  patch.tags = Object.assign({}, m.tags || {}, { [by]:((m.tags || {})[by] || 0) + 1 });
   const nb = simBots.find(b => b.id === who); if (nb) { nb.b = 0; nb.v = 0; nb.a = 0; }
   const ob = simBots.find(b => b.id === by); if (ob) ob.nextQ = t + RU.Q_EVERY;
-  hostPatch({ it:who, itSince:t, freezeUntil:t + RU.IT_FREEZE, ntb:{ id:by, until:t + RU.NO_TAGBACK }, itTime, tags, tagN:(m.tagN || 0) + 1, last:{ by, who }, charm:null });
+  hostPatch(patch);
   return true;
 }
 function hostClaim(by, target){
@@ -210,10 +237,18 @@ function hostClaim(by, target){
 }
 function hostAttract(by){
   const m = meta, t = now();
-  if (!m || m.state !== "play" || m.it !== by || t < m.startAt || t < m.freezeUntil) return false;
+  if (!m || m.state !== "play" || !isIt(by) || t < m.startAt || t < frozenUntil(by)) return false;
   if (m.charm && t < m.charm.until) return false;
   if (((m.zcd || {})[by] || 0) > t) return false;
   hostPatch({ charm:{ by, until:t + RU.ATTRACT_MS }, zcd:Object.assign({}, m.zcd || {}, { [by]:t + RU.ATTRACT_CD }) });
+  return true;
+}
+function hostTrack(by){
+  const m = meta, t = now();
+  if (!m || m.state !== "play" || !isIt(by) || t < m.startAt || t < frozenUntil(by)) return false;
+  if (m.track && t < m.track.until) return false;
+  if (((m.xcd || {})[by] || 0) > t) return false;
+  hostPatch({ track:{ by, until:t + RU.TRACK_MS }, xcd:Object.assign({}, m.xcd || {}, { [by]:t + RU.TRACK_MS + RU.TRACK_CD }) });
   return true;
 }
 function hostTick(t){
@@ -222,17 +257,16 @@ function hostTick(t){
   if (m.state !== "play" || !world) { lastHost = 0; return; }
   if (t >= m.endsAt) return finish(m.endsAt);
   const people = participants(t);
-  // IT left the game: pick someone else
-  if (!people.some(p => p.id === m.it)) {
-    if (!itGoneSince) itGoneSince = t;
-    else if (t - itGoneSince > 3000 && people.length) {
-      itGoneSince = 0;
-      const nw = people[Math.floor(Math.random() * people.length)].id, itTime = Object.assign({}, m.itTime || {});
-      itTime[m.it] = (itTime[m.it] || 0) + Math.max(0, t - Math.max(m.itSince, m.startAt));
-      hostPatch({ it:nw, itSince:t, freezeUntil:t + RU.IT_FREEZE, ntb:null, itTime, tagN:(m.tagN || 0) + 1, last:{ by:null, who:nw }, charm:null });
-      return;
+  // a tagger left the game: a random runner takes over
+  for (const id of itIds()) {
+    if (people.some(p => p.id === id)) { delete itGone[id]; continue; }
+    if (!itGone[id]) itGone[id] = t;
+    else if (t - itGone[id] > 3000) {
+      delete itGone[id];
+      const runners = people.filter(p => !isIt(p.id));
+      if (runners.length) { hostPatch(passIt(id, runners[Math.floor(Math.random() * runners.length)].id, t, null)); return; }
     }
-  } else itGoneSince = 0;
+  }
   // names of everyone who has played (for the results)
   const missing = people.filter(p => !(m.roster || {})[p.id]);
   if (missing.length) {
@@ -241,15 +275,15 @@ function hostTick(t){
   }
   const dt = lastHost ? Math.min(0.2, (t - lastHost) / 1000) : 0.05; lastHost = t;
   if (simBots.length) {
-    T.stepBots(world, simBots, { it:m.it, freezeUntil:m.freezeUntil, ntb:m.ntb, people, lvl:m.botLvl, startAt:m.startAt, charm:m.charm,
-      attractReady:((m.zcd || {})[m.it] || 0), canAttract:id => hostAttract(id) }, dt, t);
-    const itBot = simBots.find(b => b.id === m.it);
-    if (itBot && t >= m.freezeUntil && t >= m.startAt) {
-      for (const p of people) if (p.id !== itBot.id && Math.hypot(p.x - itBot.x, p.y - itBot.y) < RU.TAG_DIST && applyTag(itBot.id, p.id)) break;
+    T.stepBots(world, simBots, { its:its(), frz:m.frz || {}, ntb:m.ntb || {}, people, lvl:m.botLvl, startAt:m.startAt, charm:m.charm, track:m.track,
+      cd:{ z:m.zcd || {}, x:m.xcd || {} }, use:(kind, id) => kind === "z" ? hostAttract(id) : hostTrack(id) }, dt, t);
+    for (const itBot of simBots.filter(b => isIt(b.id))) {
+      if (t < frozenUntil(itBot.id) || t < m.startAt) continue;
+      for (const p of people) if (p.id !== itBot.id && !isIt(p.id) && Math.hypot(p.x - itBot.x, p.y - itBot.y) < RU.TAG_DIST && applyTag(itBot.id, p.id)) break;
     }
     if (t - botSend >= 100) {
       botSend = t; const out = {};
-      simBots.forEach(b => { out[b.id] = { n:b.n, c:b.c, x:Math.round(b.x * 100) / 100, y:Math.round(b.y * 100) / 100, h:Math.round(Math.atan2(b.dy, b.dx) * 10), m:b.mv, a:b.a, b:Math.round(b.b), v:Math.round(b.v), d:Math.round(b.d), r:b.r, q:b.q }; });
+      simBots.forEach(b => { out[b.id] = { n:b.n, c:b.c, x:Math.round(b.x * 100) / 100, y:Math.round(b.y * 100) / 100, h:Math.round(Math.atan2(b.dy, b.dx) * 10), m:b.mv, a:b.a, b:Math.round(b.b), v:Math.round(b.v), r:b.r, q:b.q }; });
       net.tagBots(code, out);
     }
   }
@@ -263,24 +297,27 @@ function startGame(){
   if (all.length < 2) return;
   const seed = String(newSeed()), ssn = m.season === "auto" ? seasonNow() : m.season;
   world = T.makeWorld(seed, ssn); worldKey = seed + "|" + ssn;
-  const it = all[Math.floor(Math.random() * all.length)], spawn = {};
-  spawn[it] = T.freeSpot(world, Math.random, null);
-  all.forEach(id => { if (id !== it) spawn[id] = T.freeSpot(world, Math.random, [[spawn[it][0], spawn[it][1], 12]].concat(Object.values(spawn).map(s => [s[0], s[1], 2.5]))); });
+  const nIts = all.length >= RU.TWO_ITS_FROM ? 2 : 1, pool = all.slice(), taggers = [], spawn = {};
+  while (taggers.length < nIts) taggers.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  taggers.forEach(id => { spawn[id] = T.freeSpot(world, Math.random, Object.values(spawn).map(s => [s[0], s[1], 20])); });
+  const away = () => taggers.map(id => [spawn[id][0], spawn[id][1], 11]).concat(Object.values(spawn).map(s => [s[0], s[1], 2.5]));
+  pool.forEach(id => { spawn[id] = T.freeSpot(world, Math.random, away()); });
   simBots.forEach(b => { [b.x, b.y] = spawn[b.id]; b.lx = b.x; b.ly = b.y; });
   const roster = {}; humans.forEach(h => { roster[h.id] = { n:h.n, c:h.c }; }); simBots.forEach(b => { roster[b.id] = { n:b.n, c:b.c }; });
   const startAt = t + RU.COUNTDOWN;
-  rosterSig = ""; itGoneSince = 0; lastHost = 0;
-  hostPatch({ state:"play", round:(m.round || 0) + 1, seed, ssn, startAt, endsAt:startAt + m.mins * 60000, it, itSince:startAt, freezeUntil:startAt + RU.START_FREEZE,
-    ntb:null, itTime:null, tags:null, tagN:0, last:null, spawn, roster, stats:null, charm:null, zcd:null });
+  rosterSig = ""; itGone = {}; lastHost = 0;
+  const I = {}, frz = {}; taggers.forEach(id => { I[id] = startAt; frz[id] = startAt + RU.START_FREEZE; });
+  hostPatch({ state:"play", round:(m.round || 0) + 1, seed, ssn, startAt, endsAt:startAt + m.mins * 60000, its:I, frz,
+    ntb:null, itTime:null, tags:null, tagN:0, last:null, spawn, roster, stats:null, charm:null, zcd:null, track:null, xcd:null });
 }
 function finish(at){
   const m = meta, t = at || now(), itTime = Object.assign({}, m.itTime || {});
-  itTime[m.it] = (itTime[m.it] || 0) + Math.max(0, Math.min(t, m.endsAt) - Math.max(m.itSince, m.startAt));
+  Object.entries(its()).forEach(([id, since]) => { itTime[id] = (itTime[id] || 0) + Math.max(0, Math.min(t, m.endsAt) - Math.max(since, m.startAt)); });
   const stats = {};
   Object.entries(players).forEach(([id, p]) => { if (p.g === m.round) stats[id] = { r:p.r || 0, q:p.q || 0 }; });
   if (L) stats[net.uid] = { r:L.right, q:L.asked };
   simBots.forEach(b => { stats[b.id] = { r:b.r, q:b.q }; });
-  hostPatch({ state:"over", itTime, stats, endedAt:t, charm:null });
+  hostPatch({ state:"over", itTime, stats, endedAt:t, charm:null, track:null });
 }
 
 /* ---------- every 50 ms: referee (host) and sending my position ---------- */
@@ -292,10 +329,10 @@ function onTick(){
   if (meta.state === "play" && L) {
     // a background tab has no animation frames: keep the pull and the question clock going
     if (document.hidden || $("#panel-games").hidden) stepMe(0.05, t, true);
-    const sig = [L.x.toFixed(2), L.y.toFixed(2), L.mv, L.a, L.b, L.v, L.d, L.right, L.asked, Math.round(Math.atan2(L.dy, L.dx) * 10)].join("|");
+    const sig = [L.x.toFixed(2), L.y.toFixed(2), L.mv, L.a, L.b, L.v, L.right, L.asked, Math.round(Math.atan2(L.dy, L.dx) * 10)].join("|");
     if ((sig !== lastSig && t - lastSent >= 100) || t - lastSent >= 1000) {
       lastSent = t; lastSig = sig;
-      net.tagMe(code, { x:Math.round(L.x * 100) / 100, y:Math.round(L.y * 100) / 100, h:Math.round(Math.atan2(L.dy, L.dx) * 10), m:L.mv, a:L.a, b:Math.round(L.b), v:Math.round(L.v), d:Math.round(L.d), r:L.right, q:L.asked, g:L.round, t });
+      net.tagMe(code, { x:Math.round(L.x * 100) / 100, y:Math.round(L.y * 100) / 100, h:Math.round(Math.atan2(L.dy, L.dx) * 10), m:L.mv, a:L.a, b:Math.round(L.b), v:Math.round(L.v), r:L.right, q:L.asked, g:L.round, t });
     }
   } else if (t - lastSent >= 2000) { lastSent = t; net.tagMe(code, { t }); }
   if (screen === "lobby" && t - rankAt > 2000) { rankAt = t; fillLobby(); }
@@ -351,7 +388,7 @@ function fillLobby(){
   el.innerHTML = ps.map(p => '<span class="pchip2' + (p.id === net.uid ? " me" : "") + '"><i class="pdot" style="background:' + T.COLORS[p.c % T.COLORS.length] + '"></i>' + esc(p.n) + (p.id === meta.host ? " (host)" : "") + "</span>").join("");
   $("#tg-count").textContent = ps.length;
   const need = $("#tg-need"), ok = ps.length >= 2;
-  need.textContent = ok ? "" : role === "host" ? "You need at least 2 players. Wait for a friend to join, or add a bot." : "Waiting for more players.";
+  need.textContent = ok ? (ps.length >= RU.TWO_ITS_FROM ? ps.length + " players: there will be 2 taggers." : "") : role === "host" ? "You need at least 2 players. Wait for a friend to join, or add a bot." : "Waiting for more players.";
   need.className = ok ? "small" : "small redtxt";
   const st = $("#tg-start"); if (st) st.disabled = !ok;
   const sum = $("#tg-sum");
@@ -369,7 +406,8 @@ function renderPlay(){
     '<div class="tgbtns">' +
       '<button class="abtn" type="button" id="tg-boost"><b>Boost</b><span class="k">Space</span><span class="st"></span><i></i></button>' +
       '<button class="abtn" type="button" id="tg-invis"><b>Invisible</b><span class="k">Q</span><span class="st"></span><i></i></button>' +
-      '<button class="abtn attract" type="button" id="tg-attract"><b>Attraction</b><span class="k">Z · IT only</span><span class="st"></span><i></i></button></div>' +
+      '<button class="abtn attract" type="button" id="tg-attract"><b>Attraction</b><span class="k">Z · IT only</span><span class="st"></span><i></i></button>' +
+      '<button class="abtn track" type="button" id="tg-track"><b>Footprints</b><span class="k">X · IT only</span><span class="st"></span><i></i></button></div>' +
     '<p class="small muted">Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or the arrow keys, or drag on the map with your finger. Hide in bushes and under trees: only players right next to you can spot you there.</p>' +
     '<div class="sheet"><h3>Least time as IT wins</h3><ol class="tgrank" id="tg-rank"></ol></div>';
   cvs = $("#tg-canvas"); ctx = cvs.getContext("2d");
@@ -380,6 +418,7 @@ function renderPlay(){
   $("#tg-boost").addEventListener("click", boost);
   $("#tg-invis").addEventListener("click", invis);
   $("#tg-attract").addEventListener("click", attract);
+  $("#tg-track").addEventListener("click", track);
   $("#tg-quit").addEventListener("click", () => {
     if (role !== "host") return leave();
     if (!endArmed) { endArmed = true; $("#tg-quit").textContent = "Click again to end the game"; return; }
@@ -392,7 +431,7 @@ function ranking(m, final){
   const t = now(), ids = new Set(Object.keys(m.roster || {}));
   return Array.from(ids).map(id => {
     let it = (m.itTime || {})[id] || 0;
-    if (!final && id === m.it && t > m.startAt) it += t - Math.max(m.itSince, m.startAt);
+    if (!final && isIt(id, m) && t > m.startAt) it += t - Math.max(its(m)[id], m.startAt);
     const st = (m.stats || {})[id] || {};
     return { id, n:(m.roster[id] || {}).n || "?", c:(m.roster[id] || {}).c || 0, it, tags:(m.tags || {})[id] || 0, r:st.r || 0, q:st.q || 0, bot:/^bot\d/.test(id) };
   }).sort((a, b) => a.it - b.it || b.r - a.r || a.n.localeCompare(b.n));
@@ -416,18 +455,23 @@ const ordinal = n => n + ((n % 100 >= 11 && n % 100 <= 13) ? "th" : (["th", "st"
 
 /* ---------- abilities ---------- */
 const playing = t => meta && meta.state === "play" && L && t >= meta.startAt;
-const charmedNow = t => !!(meta && meta.charm && t < meta.charm.until && meta.charm.by === meta.it && meta.it !== net.uid);
+const charmedNow = t => !!(meta && meta.charm && t < meta.charm.until && isIt(meta.charm.by) && !amIt());
+const trackingNow = t => !!(meta && meta.track && t < meta.track.until && isIt(meta.track.by));
 function boost(){
-  const t = now(); if (!playing(t) || meta.it === net.uid || charmedNow(t) || t < L.bReady || t < L.b) return;
+  const t = now(); if (!playing(t) || amIt() || charmedNow(t) || t < L.bReady || t < L.b) return;
   L.b = t + RU.BOOST_MS; L.bReady = t + RU.BOOST_MS + RU.BOOST_CD; lastSig = "";
 }
 function invis(){
-  const t = now(); if (!playing(t) || meta.it === net.uid || charmedNow(t) || t < L.vReady) return;
+  const t = now(); if (!playing(t) || amIt() || charmedNow(t) || t < L.vReady) return;
   L.v = t + RU.INVIS_MS; L.vReady = t + RU.INVIS_CD; lastSig = "";
 }
 function attract(){
-  const t = now(); if (!playing(t) || meta.it !== net.uid || t < meta.freezeUntil || ((meta.zcd || {})[net.uid] || 0) > t || (meta.charm && t < meta.charm.until)) return;
+  const t = now(); if (!playing(t) || !amIt() || t < frozenUntil(net.uid) || ((meta.zcd || {})[net.uid] || 0) > t || (meta.charm && t < meta.charm.until)) return;
   if (role === "host") hostAttract(net.uid); else net.tagMe(code, { zn:++L.zn, zt:t });
+}
+function track(){
+  const t = now(); if (!playing(t) || !amIt() || t < frozenUntil(net.uid) || ((meta.xcd || {})[net.uid] || 0) > t || trackingNow(t)) return;
+  if (role === "host") hostTrack(net.uid); else net.tagMe(code, { xn:++L.xn, xt:t });
 }
 const MOVE_KEYS = { ArrowUp:"u", KeyW:"u", ArrowDown:"d", KeyS:"d", ArrowLeft:"l", KeyA:"l", ArrowRight:"r", KeyD:"r" };
 const typing = e => { const tg = e.target; return tg && (tg.tagName === "INPUT" || tg.tagName === "TEXTAREA" || tg.tagName === "SELECT" || tg.isContentEditable); };
@@ -437,6 +481,7 @@ window.addEventListener("keydown", e => {
   else if (e.code === "Space") { e.preventDefault(); if (!e.repeat) boost(); }
   else if (e.code === "KeyQ") { if (!e.repeat) invis(); }
   else if (e.code === "KeyZ") { if (!e.repeat) attract(); }
+  else if (e.code === "KeyX") { if (!e.repeat) track(); }
 });
 window.addEventListener("keyup", e => { if (MOVE_KEYS[e.code]) keys[MOVE_KEYS[e.code]] = false; });
 window.addEventListener("blur", () => Object.keys(keys).forEach(k => { keys[k] = false; }));
@@ -449,7 +494,7 @@ function nextQuestion(){
     q = qPool[qPtr++];
   }
   if (!q) q = buildTopicQuiz("quick-math", newSeed(), 1, L.asked < 3 ? "1" : "2")[0];
-  return Object.assign(q, { id:"tq" + (++qid) });
+  return Object.assign(q, { id:++qid });
 }
 function openQuestion(){
   const q = nextQuestion(), box = $("#tg-q"); if (!box) return;
@@ -471,12 +516,12 @@ function checkQ(q){
   const t = now();
   rec.correct = grade(q, rec);
   L.asked++;
-  if (rec.correct) { L.right++; L.bReady = Math.max(t, L.b); } else L.d = t + RU.DIZZY_MS;
+  if (rec.correct) { L.right++; L.bReady = Math.max(t, L.b); }
   lastSig = "";
   lockAnswer(q, box, "tg", rec);
   $("#tg-qact").hidden = true; $("#tg-qerr").hidden = true;
   const fb = $("#tg-qfb");
-  fb.innerHTML = feedbackHtml(q, rec, { headline:rec.correct ? "Correct! Your boost is recharged." : "Not quite. You're dizzy for 3 seconds.", lessonButton:false }) +
+  fb.innerHTML = feedbackHtml(q, rec, { headline:rec.correct ? "Correct! Your boost is recharged." : "Not quite. Read how it works, then get back in the game.", lessonButton:false }) +
     '<div class="btnrow"><button class="btn" type="button" id="tg-qback">Back to the game</button></div>';
   typeset(fb);
   $("#tg-qback").addEventListener("click", () => closeQuestion(false));
@@ -493,34 +538,33 @@ function closeQuestion(tagged){
 }
 
 /* ---------- my movement, tagging ---------- */
-function itPos(t){
-  const id = meta.it;
+function posOf(id, t){
   if (id === net.uid) return L;
   const sb = role === "host" && simBots.find(b => b.id === id); if (sb) return sb;
   const p = players[id] || botsRec[id];
   return p && fresh(players[id] ? p : Object.assign({ t }, p), t) ? p : null;
 }
 function stepMe(dt, t, background){
-  const m = meta, isIt = m.it === net.uid;
-  if (!isIt && !L.a && t >= m.startAt && t >= L.nextQ && !charmedNow(t) && !background) openQuestion();
-  if (!isIt && t >= L.nextQ && background) L.nextQ = t + 2000;   // ask when the player is looking
+  const m = meta, meIt = amIt();
+  if (!meIt && !L.a && t >= m.startAt && t >= L.nextQ && !charmedNow(t) && !background) openQuestion();
+  if (!meIt && t >= L.nextQ && background) L.nextQ = t + 2000;   // ask when the player is looking
   if (charmedNow(t)) {   // Attraction: walk toward IT, no choice
-    const p = itPos(t);
+    const p = posOf(m.charm.by, t);
     if (p) { const [dx, dy] = T.norm(p.x - L.x, p.y - L.y); L.dx = dx; L.dy = dy; T.move(world, L, dx * RU.SPEED * dt, dy * RU.SPEED * dt); L.mv = 1; }
     return;
   }
   if (background) { L.mv = 0; return; }
   let ix = (keys.r ? 1 : 0) - (keys.l ? 1 : 0), iy = (keys.d ? 1 : 0) - (keys.u ? 1 : 0);
   if (joy) { const jx = joy.cx - joy.sx, jy = joy.cy - joy.sy; if (Math.hypot(jx, jy) > 10) { ix += jx; iy += jy; } }
-  const frozen = t < m.startAt || L.a || t < L.d || (isIt && t < m.freezeUntil);
+  const frozen = t < m.startAt || L.a || (meIt && t < frozenUntil(net.uid));
   const [nx, ny] = T.norm(ix, iy);
   if ((nx || ny) && !frozen) {
-    const sp = RU.SPEED * (isIt ? RU.IT_BONUS : 1) * (t < L.b ? RU.BOOST : 1);
+    const sp = RU.SPEED * (meIt ? RU.IT_BONUS : 1) * (t < L.b ? RU.BOOST : 1);
     T.move(world, L, nx * sp * dt, ny * sp * dt); L.dx = nx; L.dy = ny; L.mv = 1;
   } else L.mv = 0;
-  if (isIt && t >= m.freezeUntil && t >= m.startAt && t - L.lastClaim > 350) {
+  if (meIt && t >= frozenUntil(net.uid) && t >= m.startAt && t - L.lastClaim > 350) {
     for (const p of participants(t)) {
-      if (p.id === net.uid || (m.ntb && m.ntb.id === p.id && t < m.ntb.until)) continue;
+      if (p.id === net.uid || isIt(p.id) || noTagBack(net.uid, p.id, t)) continue;
       if (Math.hypot(p.x - L.x, p.y - L.y) < RU.TAG_DIST) {
         L.lastClaim = t;
         if (role === "host") applyTag(net.uid, p.id); else net.tagMe(code, { k:p.id, kn:++L.kn, kt:t });
@@ -552,58 +596,68 @@ function frame(ts){
   raf = requestAnimationFrame(frame);
 }
 function paint(dt, t){
-  const m = meta, list = [], meHide = T.hideAt(world, L.x, L.y), charm = m.charm && t < m.charm.until && m.charm.by === m.it ? m.charm : null;
-  const isIt = m.it === net.uid;
-  list.push({ id:net.uid, label:isIt ? "You · IT" : "You", c:me.c, x:L.x, y:L.y, dx:L.dx, dy:L.dy, mv:L.mv, it:isIt, boost:t < L.b, ans:L.a, dizzy:t < L.d,
-    charmed:!!charm && !isIt, attracting:!!charm && isIt, alpha:t < L.v ? 0.4 : meHide ? 0.85 : 1, me:true, draw:"full", ph:0 });
+  const m = meta, list = [], meHide = T.hideAt(world, L.x, L.y), charm = m.charm && t < m.charm.until && isIt(m.charm.by) ? m.charm : null;
+  const isItMe = amIt(), tracking = trackingNow(t);
+  list.push({ id:net.uid, label:isItMe ? "You · IT" : "You", c:me.c, x:L.x, y:L.y, dx:L.dx, dy:L.dy, mv:L.mv, it:isItMe, boost:t < L.b, ans:L.a,
+    charmed:!!charm && !isItMe, attracting:!!charm && charm.by === net.uid, alpha:t < L.v ? 0.4 : meHide ? 0.85 : 1, me:true, draw:"full", ph:0 });
   const others = [];
   Object.entries(players).forEach(([id, p]) => { if (id !== net.uid && fresh(p, t) && p.g === m.round) others.push([id, p]); });
-  if (role === "host") simBots.forEach(b => others.push([b.id, { n:b.n, c:b.c, x:b.x, y:b.y, h:Math.round(Math.atan2(b.dy, b.dx) * 10), m:b.mv, a:b.a, b:b.b, v:b.v, d:b.d }]));
+  if (role === "host") simBots.forEach(b => others.push([b.id, { n:b.n, c:b.c, x:b.x, y:b.y, h:Math.round(Math.atan2(b.dy, b.dx) * 10), m:b.mv, a:b.a, b:b.b, v:b.v }]));
   else Object.entries(botsRec).forEach(([id, b]) => others.push([id, b]));
-  let itMark = null;
+  let itMark = null, itD = 1e9;
   const k = 1 - Math.exp(-dt * 14);
   others.forEach(([id, p], i) => {
     const s = disp[id] || (disp[id] = { x:p.x, y:p.y });
     if (Math.hypot(p.x - s.x, p.y - s.y) > 4) { s.x = p.x; s.y = p.y; } else { s.x += (p.x - s.x) * k; s.y += (p.y - s.y) * k; }
-    const it = id === m.it, inv = t < (p.v || 0), hid = T.hideAt(world, s.x, s.y), d = Math.hypot(s.x - L.x, s.y - L.y);
+    const it = isIt(id), inv = t < (p.v || 0), hid = T.hideAt(world, s.x, s.y), d = Math.hypot(s.x - L.x, s.y - L.y);
+    // Footprints: taggers see a glowing print every half tile a runner moves, even a hidden or invisible one
+    if (tracking && isItMe && !it) {
+      const lp = lastPrint[id];
+      if (!lp || Math.hypot(s.x - lp.x, s.y - lp.y) > 0.5) { lastPrint[id] = { x:s.x, y:s.y, side:lp ? -lp.side : 1 }; if (lp) prints.push({ x:s.x, y:s.y, a:Math.atan2(s.y - lp.y, s.x - lp.x), side:lastPrint[id].side, c:p.c || 0, t }); }
+    }
     const look = inv ? null : hid ? (d < RU.PEEK_DIST ? "peek" : null) : "full";
-    if (it && look === "full") itMark = { x:s.x, y:s.y };
+    if (it && look === "full" && d < itD) { itD = d; itMark = { x:s.x, y:s.y }; }
     if (!look) return;
     const a = (p.h || 0) / 10;
-    list.push({ id, label:(it ? "IT · " : "") + (p.n || "?"), c:p.c || 0, x:s.x, y:s.y, dx:Math.cos(a), dy:Math.sin(a), mv:p.m, it, boost:t < (p.b || 0), ans:p.a, dizzy:t < (p.d || 0),
-      charmed:!!charm && !it, attracting:!!charm && it, alpha:1, draw:look, ph:i + 1 });
+    list.push({ id, label:(it ? "IT · " : "") + (p.n || "?"), c:p.c || 0, x:s.x, y:s.y, dx:Math.cos(a), dy:Math.sin(a), mv:p.m, it, boost:t < (p.b || 0), ans:p.a,
+      charmed:!!charm && !it, attracting:!!charm && charm.by === id, alpha:1, draw:look, ph:i + 1 });
   });
+  if (!tracking) Object.keys(lastPrint).forEach(id => delete lastPrint[id]);
+  if (prints.length && (t - prints[0].t > RU.PRINT_LIFE || prints.length > 900)) prints = prints.filter(f => t - f.t < RU.PRINT_LIFE).slice(-900);
   // keep the camera inside the park when the park is bigger than the screen
   const vw = view.cw / view.scale, vh = view.ch / view.scale;
   const camX = vw < T.W ? Math.max(vw / 2 - 0.6, Math.min(T.W - vw / 2 + 0.6, L.x)) : T.W / 2, camY = vh < T.H ? Math.max(vh / 2 - 0.6, Math.min(T.H - vh / 2 + 0.6, L.y)) : T.H / 2;
   let center = null, sub = null, banner = null;
-  if (t < m.startAt) { center = String(Math.ceil((m.startAt - t) / 1000)); sub = isIt ? "You're IT! Let the others scatter first." : nameOf(m.it) + " is IT. Get ready to run!"; }
-  else if (charm && !isIt) banner = { text:"You're attracted to " + nameOf(m.it) + "! " + Math.ceil((charm.until - t) / 1000) + " s", col:"rgba(219,39,119,.92)" };
-  else if (isIt && t < m.freezeUntil) banner = { text:"You're IT · you can move in " + Math.ceil((m.freezeUntil - t) / 1000) + " s", col:"rgba(239,68,68,.92)" };
-  else if (t < L.d) banner = { text:"Dizzy! " + Math.ceil((L.d - t) / 1000) + " s", col:"rgba(234,179,8,.95)", fg:"#1d2433" };
-  else if (!isIt && !L.a && L.nextQ - t < RU.Q_WARN) banner = { text:"Question in " + Math.max(1, Math.ceil((L.nextQ - t) / 1000)) + " s · hide in a bush or under a tree!", col:"rgba(234,179,8,.95)", fg:"#1d2433" };
+  const others2 = itIds().filter(id => id !== net.uid);
+  if (t < m.startAt) { center = String(Math.ceil((m.startAt - t) / 1000)); sub = isItMe ? (others2.length ? "You and " + listNames(others2) + " are IT! Let the others scatter first." : "You're IT! Let the others scatter first.") : listNames(itIds()) + (itIds().length > 1 ? " are IT." : " is IT.") + " Get ready to run!"; }
+  else if (charm && !isItMe) banner = { text:"You're attracted to " + nameOf(charm.by) + "! " + Math.ceil((charm.until - t) / 1000) + " s", col:"rgba(219,39,119,.92)" };
+  else if (isItMe && t < frozenUntil(net.uid)) banner = { text:"You're IT · you can move in " + Math.ceil((frozenUntil(net.uid) - t) / 1000) + " s", col:"rgba(239,68,68,.92)" };
+  else if (tracking && isItMe) banner = { text:"Footprints · " + Math.ceil((m.track.until - t) / 1000) + " s · follow the glowing tracks", col:"rgba(234,88,12,.92)" };
+  else if (tracking && !isItMe && !L.a) banner = { text:"IT can see your footprints · " + Math.ceil((m.track.until - t) / 1000) + " s", col:"rgba(234,88,12,.92)" };
+  else if (!isItMe && !L.a && L.nextQ - t < RU.Q_WARN) banner = { text:"Question in " + Math.max(1, Math.ceil((L.nextQ - t) / 1000)) + " s · hide in a bush or under a tree!", col:"rgba(234,179,8,.95)", fg:"#1d2433" };
   else if (t < L.v) banner = { text:"Invisible · " + Math.ceil((L.v - t) / 1000) + " s", col:"rgba(99,102,241,.9)" };
-  else if (meHide && !isIt) banner = { text:"Hidden · only players right next to you can see you", col:"rgba(22,101,52,.85)" };
+  else if (meHide && !isItMe) banner = { text:"Hidden · only players right next to you can see you", col:"rgba(22,101,52,.85)" };
   const tst = toast && Date.now() < toast.until ? toast : null;
-  T.draw(ctx, { w:world, camX, camY, scale:view.scale, cw:view.cw, ch:view.ch, dpr:view.dpr, time:t / 1000, dt, list, meHide, itMark:isIt ? null : itMark, joy, mini:true,
-    center, sub, banner, toast:tst, tagRange:isIt && t >= m.freezeUntil ? { x:L.x, y:L.y } : null, charmTint:charm && !isIt ? 0.1 + Math.abs(Math.sin(t / 150)) * 0.06 : 0 });
-  const qb = $("#tg-q"); if (qb) qb.classList.toggle("charmed", !!charm && !isIt);
+  T.draw(ctx, { w:world, camX, camY, scale:view.scale, cw:view.cw, ch:view.ch, dpr:view.dpr, time:t / 1000, ms:t, dt, list, meHide, itMark:isItMe ? null : itMark, joy, mini:true,
+    center, sub, banner, toast:tst, tagRange:isItMe && t >= frozenUntil(net.uid) ? { x:L.x, y:L.y } : null, charmTint:charm && !isItMe ? 0.1 + Math.abs(Math.sin(t / 150)) * 0.06 : 0,
+    prints:isItMe && prints.length ? prints : null });
+  const qb = $("#tg-q"); if (qb) qb.classList.toggle("charmed", !!charm && !isItMe);
 }
 function abtn(id, state, label, frac){
   const b = $(id); if (!b) return;
-  b.disabled = state === "off"; b.className = "abtn" + (id === "#tg-attract" ? " attract" : "") + " " + state;
+  b.disabled = state === "off"; b.className = "abtn" + (id === "#tg-attract" ? " attract" : id === "#tg-track" ? " track" : "") + " " + state;
   b.querySelector(".st").textContent = label; b.querySelector("i").style.width = Math.round(Math.max(0, Math.min(1, frac)) * 100) + "%";
 }
 function hud(t){
-  const m = meta, isIt = m.it === net.uid, el = $("#tg-hud"); if (!el) return;
-  const myIt = ((m.itTime || {})[net.uid] || 0) + (isIt && t > m.startAt ? t - Math.max(m.itSince, m.startAt) : 0);
+  const m = meta, meIt = amIt(), el = $("#tg-hud"); if (!el) return;
+  const myIt = ((m.itTime || {})[net.uid] || 0) + (meIt && t > m.startAt ? t - Math.max(its()[net.uid], m.startAt) : 0);
   const left = t < m.startAt ? m.endsAt - m.startAt : m.endsAt - t;
   el.innerHTML = '<div class="hchip"><span>Time left</span><b>' + fmtTime(left) + "</b></div>" +
-    '<div class="hchip' + (isIt ? " itchip" : "") + '"><span>You are</span><b>' + (isIt ? "IT" : "Runner") + "</b></div>" +
+    '<div class="hchip' + (meIt ? " itchip" : "") + '"><span>You are</span><b>' + (meIt ? "IT" : "Runner") + "</b></div>" +
     '<div class="hchip"><span>Your time as IT</span><b>' + secs(myIt) + "</b></div>" +
-    '<div class="hchip"><span>Next question</span><b>' + (isIt ? "—" : L.a ? "Now" : fmtTime(L.nextQ - t)) + "</b></div>";
+    '<div class="hchip"><span>Next question</span><b>' + (meIt ? "—" : L.a ? "Now" : fmtTime(L.nextQ - t)) + "</b></div>";
   const charmed = charmedNow(t), live = t >= m.startAt;
-  if (isIt || charmed || !live) { const why = isIt ? "Not for IT" : charmed ? "Attracted!" : "Get ready"; abtn("#tg-boost", "off", why, 0); abtn("#tg-invis", "off", why, 0); }
+  if (meIt || charmed || !live) { const why = meIt ? "Not for IT" : charmed ? "Attracted!" : "Get ready"; abtn("#tg-boost", "off", why, 0); abtn("#tg-invis", "off", why, 0); }
   else {
     if (t < L.b) abtn("#tg-boost", "on", "Active " + Math.ceil((L.b - t) / 1000) + " s", (L.b - t) / RU.BOOST_MS);
     else if (t < L.bReady) abtn("#tg-boost", "wait", "Ready in " + Math.ceil((L.bReady - t) / 1000) + " s", 1 - (L.bReady - t) / RU.BOOST_CD);
@@ -613,15 +667,22 @@ function hud(t){
     else abtn("#tg-invis", "ready", "Ready", 1);
   }
   const zr = (m.zcd || {})[net.uid] || 0, ch = m.charm && t < m.charm.until;
-  if (!isIt) abtn("#tg-attract", "off", "Only IT", 0);
-  else if (!live || t < m.freezeUntil) abtn("#tg-attract", "off", "Wait…", 0);
+  const xr = (m.xcd || {})[net.uid] || 0, tr = trackingNow(t), waitIt = !live || t < frozenUntil(net.uid);
+  if (!meIt) abtn("#tg-attract", "off", "Only IT", 0);
+  else if (waitIt) abtn("#tg-attract", "off", "Wait…", 0);
   else if (ch && m.charm.by === net.uid) abtn("#tg-attract", "on", "Pulling " + Math.ceil((m.charm.until - t) / 1000) + " s", (m.charm.until - t) / RU.ATTRACT_MS);
   else if (t < zr) abtn("#tg-attract", "wait", "Ready in " + Math.ceil((zr - t) / 1000) + " s", 1 - (zr - t) / RU.ATTRACT_CD);
+  else if (ch) abtn("#tg-attract", "off", "In use", 0);
   else abtn("#tg-attract", "ready", "Ready", 1);
+  if (!meIt) abtn("#tg-track", "off", "Only IT", 0);
+  else if (waitIt) abtn("#tg-track", "off", "Wait…", 0);
+  else if (tr) abtn("#tg-track", "on", (m.track.by === net.uid ? "Active " : "On (" + nameOf(m.track.by) + ") ") + Math.ceil((m.track.until - t) / 1000) + " s", (m.track.until - t) / RU.TRACK_MS);
+  else if (t < xr) abtn("#tg-track", "wait", "Ready in " + Math.ceil((xr - t) / 1000) + " s", 1 - (xr - t) / RU.TRACK_CD);
+  else abtn("#tg-track", "ready", "Ready", 1);
 }
 function fillRank(){
   const el = $("#tg-rank"); if (!el || !meta) return;
-  el.innerHTML = ranking(meta, false).map(r => '<li class="' + (r.id === net.uid ? "me" : "") + (r.id === meta.it ? " it" : "") + '"><i class="pdot" style="background:' + T.COLORS[r.c % T.COLORS.length] + '"></i><span>' + esc(r.n) + (r.id === meta.it ? ' <b class="itword">IT</b>' : "") + "</span><b>" + secs(r.it) + "</b></li>").join("");
+  el.innerHTML = ranking(meta, false).map(r => '<li class="' + (r.id === net.uid ? "me" : "") + (isIt(r.id) ? " it" : "") + '"><i class="pdot" style="background:' + T.COLORS[r.c % T.COLORS.length] + '"></i><span>' + esc(r.n) + (isIt(r.id) ? ' <b class="itword">IT</b>' : "") + "</span><b>" + secs(r.it) + "</b></li>").join("");
 }
 
 /* ---------- entry points (called by the Games tab) ---------- */
@@ -652,7 +713,7 @@ window.TagUI = {
     else if (screen === "setup" && !code) renderSetup();
   },
   onHide(){ Object.keys(keys).forEach(k => { keys[k] = false; }); joy = null; },
-  _test:{ state:() => ({ meta, L, role, simBots }), patch:p => hostPatch(p), attract }
+  _test:{ state:() => ({ meta, L, role, simBots, prints }), patch:p => hostPatch(p), attract, track }
 };
 if (!$("#panel-games").hidden && wants()) window.TagUI.onShow();
 })();

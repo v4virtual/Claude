@@ -114,6 +114,12 @@
             "k": {
               ".validate": "newData.isString() && newData.val().length <= 40"
             },
+            "xn": {
+              ".validate": "newData.isNumber()"
+            },
+            "xt": {
+              ".validate": "newData.isNumber()"
+            },
             "$other": {
               ".validate": false
             }

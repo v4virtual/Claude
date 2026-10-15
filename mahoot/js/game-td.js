@@ -1,12 +1,13 @@
 /* ===== Games: Tower Defense =====
    Blocks follow a fixed path. The player buys turrets with money; turrets attack blocks.
    A block that reaches the end costs health equal to its strength. After every round the player
-   answers questions from the selected topic (1 after each of rounds 1-10, then 3; correct answers earn bonus money)
+   answers questions from the selected topic (1 after each of rounds 1-10, then 3). Each question has a timer; a correct answer
+   earns $10-$40, more the faster it comes
    before the next round.
    Turret kinds: "shot" (bullet), "water" (lobbed splash that soaks and slows), "frost" (slowing pulse),
    "laser" (beam that ramps up on one target), "tesla" (lightning that chains between blocks). */
 (function(){
-const COLS = 16, ROWS = 10, START_HEALTH = 20, START_MONEY = 150, QUESTIONS_PER_BREAK = 3, QUESTION_BONUS = 25, EASY_ROUNDS = 10;
+const COLS = 16, ROWS = 10, START_HEALTH = 20, START_MONEY = 150, QUESTIONS_PER_BREAK = 3, BONUS_MIN = 10, BONUS_MAX = 40, EASY_ROUNDS = 10;
 /* Rounds 1-10 are short and easy: 1 question after each. From round 11 on: 3 questions. */
 const questionsAfter = round => round <= EASY_ROUNDS ? 1 : QUESTIONS_PER_BREAK;
 const MAPS = {
@@ -192,7 +193,7 @@ function tap(x, y){
 function upgrade(){ const t = G && G.picked; if (!t || t.level >= 3 || G.money < upgradeCost(t)) return; G.money -= upgradeCost(t); t.spent += upgradeCost(t); t.level++; G.fx.push({ kind:"build", x:t.x + 0.5, y:t.y + 0.5, t:0.4, life:0.4 }); TD.refresh(); }
 function sell(){ const t = G && G.picked; if (!t) return; G.money += sellValue(t); G.turrets = G.turrets.filter(x => x !== t); G.picked = null; TD.refresh(); }
 
-window.TD = { COLS, ROWS, MAPS, TURRETS, TIERS, START_HEALTH, QUESTIONS_PER_BREAK, QUESTION_BONUS, EASY_ROUNDS, questionsAfter,
+window.TD = { COLS, ROWS, MAPS, TURRETS, TIERS, START_HEALTH, QUESTIONS_PER_BREAK, BONUS_MIN, BONUS_MAX, EASY_ROUNDS, questionsAfter,
   newGame, buildPath, startRound, step, tap, upgrade, sell, canPlace, posAt, stat, upgradeCost, sellValue, hpFor,
   game: () => G, flashT: () => flashT, decayFlash: dt => { flashT = Math.max(0, flashT - dt); },
   onOver(){}, onRoundEnd(){}, refresh(){}, say(){} };
