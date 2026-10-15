@@ -43,6 +43,18 @@ The **Games** tab plays with the selected topic's questions (difficulty comes fr
 
   Each round sends more blocks (strength 1–5, about 10% tougher every round). A block that reaches the end costs health equal to its strength; at 0 health the game is over. After each of rounds 1–10 the player answers 1 question, and 3 questions after every later round; each correct answer adds $25 and every answer shows its explanation. Questions are either **Quick math** (ordering numbers, comparing, adding and subtracting, times tables, rounding; harder after rounds 10 and 20) or the **easiest on-the-spot questions from the selected topic**. The best round per topic is saved in the browser.
 
+- **Tag** (2 or more players, played online like a battle): everyone runs around a big park that matches the season (autumn leaves, winter snow and pine trees, spring blossom, summer green). One random player starts as **IT**; touching a runner makes them IT. The player with the **least total time as IT** wins.
+
+  | Who | Key | Ability |
+  | --- | --- | --- |
+  | Runners | <kbd>Space</kbd> | **Boost**: 10% faster for 10 s, then 10 s to recharge |
+  | Runners | <kbd>Q</kbd> | **Invisible** for 5 s, once every 30 s |
+  | IT | <kbd>Z</kbd> | **Attraction**: for 3 s every runner is pulled toward IT with heart eyes and can't do anything else. Once a minute |
+
+  IT is always 5% faster but cannot boost or go invisible. A new IT is frozen for 2 s and can't tag back the player who tagged them for 3 s. Every 30 s each runner must answer a question (Quick math or easy questions from the selected topic, with a 5 s warning) and can't move until they answer, so they hide first: inside a bush or under a tree canopy only players right next to you can see you (they see your eyes peeking out). A right answer recharges your boost; a wrong one makes you dizzy for 3 s. Move with WASD or the arrow keys, or drag on the map on phones and tablets.
+
+  One player hosts (Games → Tag → Create room) and shares the room code, link (`#tag-CODE`) or QR code. Before starting, the host chooses the length (2, 3, 5 or 8 minutes), 0–6 bots and their level (Easy, Normal, Hard), the questions and the season (Auto follows the calendar). At least 2 players are needed, and bots count, so you can play the host against bots. The host's browser acts as the referee: it runs the bots and the clock, picks IT and checks every tag, so the host should keep the game open until the end. Tag rooms are stored under `tag/` in the Realtime Database and need the rules from `database.rules.json`.
+
 More game modes can be added as new files next to `js/game-td.js` and a card in `js/games.js`.
 
 ### Adding a topic
@@ -63,7 +75,7 @@ Lessons and practice work straight away. Battles need step 2.
 1. Go to <https://console.firebase.google.com> and click **Create a project**. Google Analytics is not needed.
 2. **Build → Authentication → Get started → Sign-in method → Anonymous → Enable → Save.** Players do not need accounts. Each browser gets an anonymous ID.
 3. **Build → Realtime Database → Create database.** Pick a location close to the school (for example `europe-west1`) and start in **locked mode**.
-4. In Realtime Database, open the **Rules** tab, replace everything with the contents of `database.rules.json`, then click **Publish**.
+4. In Realtime Database, open the **Rules** tab, replace everything with the contents of `database.rules.json`, then click **Publish**. Do this again whenever `database.rules.json` changes (Tag added a `tag` section; without it, creating a Tag room fails with PERMISSION_DENIED).
 5. Open **Project settings** (gear icon) → **General** → *Your apps* → click the **web** icon `</>`. Register an app (you do not need Firebase Hosting) and copy the `firebaseConfig` object.
 6. Open `js/firebase-config.js` and replace `window.FIREBASE_CONFIG = null;` with your config, for example:
 
@@ -85,7 +97,8 @@ Notes:
 
 - The Firebase web config is not a password. It only identifies your project. Who can read and write is controlled by the rules from step 4.
 - The free Spark plan allows 100 simultaneous connections, which is enough for a class.
-- A room is deleted when the host clicks **Close room**. Rooms left open can be deleted by hand in the Realtime Database *Data* tab.
+- A room is deleted when the host clicks **Close room**. Rooms left open can be deleted by hand in the Realtime Database *Data* tab (battles under `rooms`, Tag games under `tag`).
+- In Tag each player sends their position about 10 times a second while moving, which is fine for a class on the free plan.
 
 ## 3. Running a battle
 
@@ -99,7 +112,7 @@ After each question the host screen shows the answer, how many got it right, the
 ## 4. Privacy
 
 - Practice answers never leave the student's browser.
-- In a battle the room stores only the nicknames, scores and submitted answers of the players in that room, and they are deleted when the host closes the room. No email addresses or accounts are used.
+- In a battle the room stores only the nicknames, scores and submitted answers of the players in that room, and they are deleted when the host closes the room. A Tag room stores nicknames, colors, positions and question counts in the same way. No email addresses or accounts are used.
 - Ask students to use a nickname or first name, not their full name.
 
 ## 5. Test it on your computer
@@ -124,12 +137,13 @@ Then open <http://localhost:8000>. To try a battle without Firebase, open the si
 | `js/topic-kit.js` | Helpers for writing topics (multiple choice, typed answers, ordering, boxes, seeded quiz builder). |
 | `js/topics/*.js` | One file per topic added since: stoichiometry, polynomials, genetics, business, heros-journey, scifi, spanish-present, spanish-adolescence. |
 | `js/game-td.js`, `js/games.js` | Tower Defense game logic, and the Games tab (drawing, shop, question breaks). |
+| `js/game-tag.js`, `js/game-tag-ui.js` | Tag: the seasonal park, movement, bots and drawing; and the Tag screens (lobby, controls, questions, referee, results). |
 | `js/topics/quick-math.js` | Quick mental-math questions used by games (hidden from the topic picker). |
 | `TOPIC_GUIDE.md` | How to write a new topic. |
 | `tools/validate-topics.js` | Checks every topic: `node tools/validate-topics.js`. Not loaded by the site. |
 | `js/quizui.js` | Shows a question, checks the answer and writes the feedback. Shared by every topic, practice and battle. |
 | `js/app.js` | Topic picker, tabs, lessons, practice quizzes with optional timer, results. |
-| `js/battle-net.js` | Battle networking: Firebase, or the local demo. |
+| `js/battle-net.js` | Networking for battles and Tag: Firebase, or the local demo. |
 | `js/battle-ui.js` | Battle screens for the host and the players. |
 | `js/firebase-config.js` | Your Firebase config (step 2). |
 | `database.rules.json` | Security rules to paste into Firebase (step 2.4). |

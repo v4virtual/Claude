@@ -13,18 +13,109 @@
         "players": {
           "$uid": {
             ".write": "auth != null && auth.uid === $uid && root.child('rooms').child($room).child('meta').exists()",
-            "name":   { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16" },
-            "score":  { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
-            "streak": { ".validate": "newData.isNumber()" },
-            "online": { ".validate": "newData.isBoolean()" },
-            "round":  { ".validate": "newData.isNumber()" },
-            "$other": { ".validate": false }
+            "name": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"
+            },
+            "score": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"
+            },
+            "streak": {
+              ".validate": "newData.isNumber()"
+            },
+            "online": {
+              ".validate": "newData.isBoolean()"
+            },
+            "round": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
           }
         },
         "answers": {
           "$key": {
             "$uid": {
               ".write": "auth != null && auth.uid === $uid && !data.exists() && root.child('rooms').child($room).child('meta').exists()"
+            }
+          }
+        }
+      }
+    },
+    "tag": {
+      "$room": {
+        ".read": "auth != null",
+        ".write": "auth != null && data.child('meta/host').val() === auth.uid && !newData.exists()",
+        "meta": {
+          ".write": "auth != null && (!data.exists() || data.child('host').val() === auth.uid)",
+          ".validate": "newData.hasChildren(['host', 'state']) && newData.child('host').val() === auth.uid"
+        },
+        "bots": {
+          ".write": "auth != null && root.child('tag').child($room).child('meta/host').val() === auth.uid"
+        },
+        "players": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && root.child('tag').child($room).child('meta').exists()",
+            ".validate": "newData.hasChildren(['n', 't'])",
+            "c": {
+              ".validate": "newData.isNumber()"
+            },
+            "x": {
+              ".validate": "newData.isNumber()"
+            },
+            "y": {
+              ".validate": "newData.isNumber()"
+            },
+            "h": {
+              ".validate": "newData.isNumber()"
+            },
+            "m": {
+              ".validate": "newData.isNumber()"
+            },
+            "a": {
+              ".validate": "newData.isNumber()"
+            },
+            "b": {
+              ".validate": "newData.isNumber()"
+            },
+            "v": {
+              ".validate": "newData.isNumber()"
+            },
+            "d": {
+              ".validate": "newData.isNumber()"
+            },
+            "t": {
+              ".validate": "newData.isNumber()"
+            },
+            "r": {
+              ".validate": "newData.isNumber()"
+            },
+            "q": {
+              ".validate": "newData.isNumber()"
+            },
+            "g": {
+              ".validate": "newData.isNumber()"
+            },
+            "kn": {
+              ".validate": "newData.isNumber()"
+            },
+            "kt": {
+              ".validate": "newData.isNumber()"
+            },
+            "zn": {
+              ".validate": "newData.isNumber()"
+            },
+            "zt": {
+              ".validate": "newData.isNumber()"
+            },
+            "n": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"
+            },
+            "k": {
+              ".validate": "newData.isString() && newData.val().length <= 40"
+            },
+            "$other": {
+              ".validate": false
             }
           }
         }

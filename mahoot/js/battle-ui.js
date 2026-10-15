@@ -16,13 +16,7 @@ let role = null, code = null, room = null, unwatch = null, Qb = [], qbKey = "", 
 const recs = {};
 
 function getNet(){
-  if (!netPromise) netPromise = (async () => {
-    if (window.FIREBASE_CONFIG) {
-      try { net = await makeFirebaseNet(window.FIREBASE_CONFIG); }
-      catch(e) { net = makeLocalNet(); netNote = "Could not connect to Firebase (" + ((e && (e.code || e.message)) || e) + "). Battles fall back to demo mode on this device."; }
-    } else net = makeLocalNet();
-    return net;
-  })();
+  if (!netPromise) netPromise = getSharedNet().then(n => { net = n; netNote = SHARED_NET.note; return n; });
   return netPromise;
 }
 const box = () => $("#battle-root");

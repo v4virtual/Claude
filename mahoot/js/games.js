@@ -23,7 +23,10 @@ function renderHome(){
       '<div class="field"><span>Map</span><div class="seg" id="td-maps">' + Object.entries(TD.MAPS).map(([id, m]) => '<label><input type="radio" name="td-map" value="' + id + '"' + (id === mapId ? " checked" : "") + ">" + m.name + "</label>").join("") + "</div></div>" +
       '<div class="tdthumb"><canvas id="td-thumb" aria-hidden="true"></canvas></div>' +
       '<div class="btnrow"><button class="btn" type="button" id="td-play">Play Tower Defense</button></div></div>' +
-    '<p class="small muted">More game modes are on the way.</p>';
+    '<div class="sheet gamecard"><div class="gamehead"><div><span class="eyebrow">Game mode · 2 or more players</span><h3>Tag</h3></div><span class="tag">Play with friends or bots</span></div>' +
+      '<p>Run around a big park that changes with the seasons. One player is <b>IT</b> and chases everyone else. Boost with <kbd>Space</kbd>, turn invisible with <kbd>Q</kbd>, and hide in bushes and under trees, because every 30 seconds you have to stop and answer a question. IT can pull everyone in with <kbd>Z</kbd> Attraction. Least time as IT wins.</p>' +
+      '<div class="tdthumb tgthumb"><canvas id="tg-thumb" aria-hidden="true"></canvas></div>' +
+      '<div class="btnrow"><button class="btn" type="button" id="tg-open">Play Tag</button></div></div>';
   const srcDesc = () => { $("#td-src-desc").textContent = qSource === "quick"
       ? "Short questions you can do in your head: put numbers in order, compare, add, times tables. They get a little harder after round 10 and round 20."
       : "The easiest questions from " + topicLabel(t) + " that you can answer on the spot."; };
@@ -31,7 +34,9 @@ function renderHome(){
   srcDesc();
   $$('input[name="td-map"]').forEach(r => r.addEventListener("change", () => { mapId = r.value; drawThumb(); }));
   $("#td-play").addEventListener("click", () => startGame());
+  $("#tg-open").addEventListener("click", () => { if (window.TagUI) window.TagUI.open(); });
   drawThumb();
+  try { if (window.TagGame) TagGame.drawThumb($("#tg-thumb"), TagGame.seasonFor(new Date())); } catch(e) {}
 }
 function drawThumb(){
   const c = $("#td-thumb"); if (!c) return;
@@ -364,10 +369,16 @@ TD.onOver = () => {
   $("#td-home").addEventListener("click", renderHome);
 };
 
+const tagBusy = () => window.TagUI && (window.TagUI.active() || window.TagUI.wants());
 window.Games = {
-  onHide(){ setPlaying(false); },
-  onShow(){ if (cvs && document.body.contains(cvs)) setPlaying(true); if (TD.game() && cvs && document.body.contains(cvs) && TD.game().phase !== "over") { sizeCanvas(); startLoop(); } else if (!cvs || !document.body.contains(cvs)) renderHome(); },
-  topicChanged(){ if (!$("#panel-games").hidden && (!cvs || !document.body.contains(cvs))) renderHome(); }
+  home: renderHome, setPlaying, quickPool,
+  onHide(){ setPlaying(false); if (window.TagUI) window.TagUI.onHide(); },
+  onShow(){
+    if (tagBusy()) { window.TagUI.onShow(); return; }
+    if (cvs && document.body.contains(cvs)) setPlaying(true);
+    if (TD.game() && cvs && document.body.contains(cvs) && TD.game().phase !== "over") { sizeCanvas(); startLoop(); } else if (!cvs || !document.body.contains(cvs)) renderHome();
+  },
+  topicChanged(){ if (!$("#panel-games").hidden && !(window.TagUI && window.TagUI.active()) && (!cvs || !document.body.contains(cvs))) renderHome(); }
 };
 if (!$("#panel-games").hidden) window.Games.onShow();
 })();

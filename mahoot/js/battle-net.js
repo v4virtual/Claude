@@ -16,7 +16,8 @@ async function makeFirebaseNet(cfg){
   if (auth.authStateReady) await auth.authStateReady();
   if (!auth.currentUser) await Au.signInAnonymously(auth);
   const db = D.getDatabase(app), uid = auth.currentUser.uid, r = p => D.ref(db, p);
-  let offset = 0, presence = null;
+  let offset = 0, presence = null, tagPres = null;
+  const tp = (c, sub) => r("tag/" + c + (sub ? "/" + sub : ""));
   D.onValue(r(".info/serverTimeOffset"), s => { offset = s.val() || 0; });
   return {
     uid, mode:"firebase",
@@ -34,7 +35,27 @@ async function makeFirebaseNet(cfg){
     setPlayer(code, patch){ return D.update(r("rooms/" + code + "/players/" + uid), patch); },
     submitAnswer(code, key, data){ return D.set(r("rooms/" + code + "/answers/" + key + "/" + uid), data).catch(() => {}); },
     removeRoom(code){ return D.remove(r("rooms/" + code)); },
-    leave(code){ return D.update(r("rooms/" + code + "/players/" + uid), { online:false }).catch(() => {}); }
+    leave(code){ return D.update(r("rooms/" + code + "/players/" + uid), { online:false }).catch(() => {}); },
+    // Tag rooms: tag/CODE/{meta (host only), bots (host only), players/{uid} (each player writes their own)}
+    async tagCreate(c, meta){ const res = await D.runTransaction(tp(c, "meta"), cur => cur === null ? meta : undefined); return res.committed; },
+    tagPeek(c){ return D.get(tp(c, "meta")).then(s => s.val(), () => null); },
+    watchTag(c, h){
+      const p = tp(c, "players"), us = [
+        D.onValue(tp(c, "meta"), s => h.meta(s.val()), () => h.meta(null)),
+        D.onValue(tp(c, "bots"), s => h.bots(s.val() || {}), () => {}),
+        D.onChildAdded(p, s => h.player(s.key, s.val())), D.onChildChanged(p, s => h.player(s.key, s.val())), D.onChildRemoved(p, s => h.player(s.key, null))];
+      return () => us.forEach(u => u());
+    },
+    tagMeta(c, patch){ return D.update(tp(c, "meta"), patch).catch(() => {}); },
+    async tagJoin(c, data){
+      const pr = tp(c, "players/" + uid); await D.set(pr, data);
+      if (tagPres) tagPres.cancel().catch(() => {});
+      tagPres = D.onDisconnect(pr); tagPres.remove();
+    },
+    tagMe(c, patch){ return D.update(tp(c, "players/" + uid), patch).catch(() => {}); },
+    tagBots(c, bots){ return D.set(tp(c, "bots"), bots).catch(() => {}); },
+    tagLeave(c){ if (tagPres) { tagPres.cancel().catch(() => {}); tagPres = null; } return D.remove(tp(c, "players/" + uid)).catch(() => {}); },
+    tagRemove(c){ return D.remove(tp(c)).catch(() => {}); }
   };
 }
 
@@ -50,6 +71,16 @@ function makeLocalNet(){
     notify(c);
   };
   window.addEventListener("storage", e => { if (e.key && e.key.indexOf("explab-room-") === 0) notify(e.key.slice(12)); });
+  // Tag rooms use one key per writer (meta, bots, each player), so tabs never overwrite each other
+  const TK = (c, s) => "mahoot-tag-" + c + "-" + s, tagW = {};
+  const tread = k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } };
+  const tagDispatch = (k, v) => {
+    const m = k.match(/^mahoot-tag-([A-Z0-9]{5})-(m|b|p-(.+))$/); if (!m) return;
+    (tagW[m[1]] || new Set()).forEach(h => { if (m[2] === "m") h.meta(v); else if (m[2] === "b") h.bots(v || {}); else h.player(m[3], v); });
+  };
+  const twrite = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} tagDispatch(k, v); };
+  const tagKeys = pre => { const out = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.indexOf(pre) === 0) out.push(k); } return out; };
+  window.addEventListener("storage", e => { if (e.key && e.key.indexOf("mahoot-tag-") === 0) { let v = null; try { v = JSON.parse(e.newValue); } catch(x) {} tagDispatch(e.key, v); } });
   return {
     uid, mode:"local",
     serverNow: () => Date.now(),
@@ -66,6 +97,36 @@ function makeLocalNet(){
       if (!cur.answers[key][uid]) cur.answers[key][uid] = data; return cur; }); },
     async removeRoom(code){ write(code, () => null); },
     cancelPresence(){},
-    async leave(code){ write(code, cur => { if (cur && cur.players && cur.players[uid]) cur.players[uid].online = false; return cur; }); }
+    async leave(code){ write(code, cur => { if (cur && cur.players && cur.players[uid]) cur.players[uid].online = false; return cur; }); },
+    async tagCreate(c, meta){
+      if (tread(TK(c, "m"))) return false;
+      tagKeys("mahoot-tag-").filter(k => /-m$/.test(k)).forEach(k => { const m = tread(k); if (!m || Date.now() - (m.created || 0) > 6 * 3600e3) tagKeys(k.slice(0, -1)).forEach(x => localStorage.removeItem(x)); });
+      twrite(TK(c, "m"), meta); return true;
+    },
+    async tagPeek(c){ return tread(TK(c, "m")); },
+    watchTag(c, h){
+      (tagW[c] = tagW[c] || new Set()).add(h);
+      setTimeout(() => { if (!tagW[c].has(h)) return; h.meta(tread(TK(c, "m"))); h.bots(tread(TK(c, "b")) || {}); const pre = TK(c, "p-"); tagKeys(pre).forEach(k => h.player(k.slice(pre.length), tread(k))); }, 0);
+      return () => tagW[c].delete(h);
+    },
+    async tagMeta(c, patch){ const m = tread(TK(c, "m")); if (m) { Object.keys(patch).forEach(k => { if (patch[k] === null) delete m[k]; else m[k] = patch[k]; }); twrite(TK(c, "m"), m); } },
+    async tagJoin(c, data){ twrite(TK(c, "p-" + uid), data); },
+    async tagMe(c, patch){ const k = TK(c, "p-" + uid), cur = tread(k); if (cur) twrite(k, Object.assign(cur, patch)); },
+    async tagBots(c, bots){ twrite(TK(c, "b"), bots); },
+    async tagLeave(c){ twrite(TK(c, "p-" + uid), null); },
+    async tagRemove(c){ tagKeys("mahoot-tag-" + c + "-").forEach(k => twrite(k, null)); }
   };
+}
+
+/* One shared connection for battles and tag (Firebase allows one default app per page) */
+const SHARED_NET = { note:"", promise:null };
+function getSharedNet(){
+  if (!SHARED_NET.promise) SHARED_NET.promise = (async () => {
+    if (window.FIREBASE_CONFIG) {
+      try { return await makeFirebaseNet(window.FIREBASE_CONFIG); }
+      catch(e) { SHARED_NET.note = "Could not connect to Firebase (" + ((e && (e.code || e.message)) || e) + "). Games fall back to demo mode on this device."; }
+    }
+    return makeLocalNet();
+  })();
+  return SHARED_NET.promise;
 }

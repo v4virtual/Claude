@@ -335,6 +335,7 @@ try {
   else if (/^topic-/i.test(h) && TOPICS[h.slice(6).toLowerCase()]) { setTopic(h.slice(6).toLowerCase()); start = "start"; }
   else if (PANELS.includes(h)) start = h;
   if (/^join-/i.test(h) || new URLSearchParams(location.search).get("join")) start = "battle";
+  if (/^tag-[A-Za-z0-9]{5}$/.test(h)) start = "games";
 } catch(e) {}
 showTab(start, { noScroll:true });
 })();
