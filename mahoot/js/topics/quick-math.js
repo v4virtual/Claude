@@ -77,7 +77,7 @@
       return Kit.order({ promptHtml:"Put these numbers in order from <b>smallest to largest</b>.", inOrder:sorted.map(fmt), axis:["smallest", "largest"], missingMsg:"Place all the numbers first.",
         workHtml:"<p>Negative numbers are smaller than positive ones, and the further below zero, the smaller: " + sorted.map(fmt).join(" &lt; ") + ".</p>", key:"On a number line, smaller is further left.", hint:"Picture a number line." }); } },
     { id:"cmp-expr", skill:"compare", level:3, make(){
-      const a = ri(3, 9), b = ri(3, 9), c = ri(3, 9), d = ri(3, 9);
+      let a, b, c, d; do { a = ri(3, 9); b = ri(3, 9); c = ri(3, 9); d = ri(3, 9); } while (a === c && b === d);   // never two identical sides
       return compareQ(a * b, c * d, a + " × " + b, c + " × " + d, a + " × " + b + " = " + (a * b) + " and " + c + " × " + d + " = " + (c * d) + "."); } },
     { id:"percent", skill:"round", level:3, make(){
       const p = pick([10, 25, 50]), n = p === 25 ? ri(2, 30) * 4 : ri(2, 40) * 10, v = n * p / 100;
