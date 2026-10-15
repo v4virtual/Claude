@@ -5,7 +5,8 @@ const PANELS = ["start","learn","practice","games","battle"];
 const TIMER_OPTS = [[0,"Off"],[30,"30 s"],[60,"60 s"],[90,"90 s"],[120,"120 s"]];
 let state = { tab:"start", topic:"exponents", lessons:{}, settings:{}, quiz:null, idx:0, answers:{}, view:"setup" };
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && typeof s === "object") state = Object.assign(state, s); } catch(e) {}
-if (!TOPICS[state.topic]) state.topic = TOPIC_LIST[0].id;
+const PICKABLE = () => TOPIC_LIST.filter(t => !t.hidden);
+if (!TOPICS[state.topic] || TOPICS[state.topic].hidden) state.topic = PICKABLE()[0].id;
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {} }
 const topic = () => TOPICS[state.topic];
 function settings(t){
@@ -33,6 +34,7 @@ function showTab(name, opts){
   if (name === "practice") renderPractice();
   if (name === "battle" && window.Battle) window.Battle.onShow();
   if (name === "games" && window.Games) window.Games.onShow();
+  if (name !== "games" && window.Games && window.Games.onHide) window.Games.onHide();
   if (!(opts && opts.noScroll)) scrollToTabs();
 }
 $$(".tab").forEach(b => b.addEventListener("click", () => showTab(b.dataset.panel)));
@@ -63,15 +65,15 @@ mountTopicContent();
 /* ---------- topic picker ---------- */
 function renderPicker(){
   const t = topic();
-  const years = [...new Set(TOPIC_LIST.map(x => x.year))].sort((a, b) => a - b);
+  const years = [...new Set(PICKABLE().map(x => x.year))].sort((a, b) => a - b);
   seg($("#pk-year"), "pk-year", years.map(y => [y, "Year " + y]), t.year, v => {
-    const first = TOPIC_LIST.find(x => x.year === Number(v)); if (first) setTopic(first.id);
+    const first = PICKABLE().find(x => x.year === Number(v)); if (first) setTopic(first.id);
   });
-  const subjects = [...new Set(TOPIC_LIST.filter(x => x.year === t.year).map(x => x.subject))];
+  const subjects = [...new Set(PICKABLE().filter(x => x.year === t.year).map(x => x.subject))];
   seg($("#pk-subject"), "pk-subject", subjects.map(s => [s, s]), t.subject, v => {
-    const first = TOPIC_LIST.find(x => x.year === t.year && x.subject === v); if (first) setTopic(first.id);
+    const first = PICKABLE().find(x => x.year === t.year && x.subject === v); if (first) setTopic(first.id);
   });
-  const list = TOPIC_LIST.filter(x => x.year === t.year && x.subject === t.subject);
+  const list = PICKABLE().filter(x => x.year === t.year && x.subject === t.subject);
   $("#pk-topic").innerHTML = list.map(x => '<button type="button" class="tcard" role="radio" aria-checked="' + (x.id === t.id) + '" data-topic-id="' + x.id + '"><b>' + esc(x.name) + "</b><span>" + esc(x.blurb) + "</span></button>").join("");
   $$("#pk-topic .tcard").forEach(b => b.addEventListener("click", () => setTopic(b.dataset.topicId)));
   const s = settings(t);

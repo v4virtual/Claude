@@ -86,7 +86,7 @@ function renderHome(msg){
         '<p class="small redtxt" id="bj-err" role="alert" hidden></p>' +
         '<div class="btnrow"><button class="btn" type="button" id="bj-go">Join</button></div></div>' +
       '<div class="sheet"><h3>Host a battle</h3>' +
-        '<label class="field"><span>Topic</span><select id="bh-topic" class="select">' + TOPIC_LIST.map(t => '<option value="' + t.id + '"' + (t.id === tid ? " selected" : "") + ">" + esc(topicLabel(t)) + "</option>").join("") + "</select></label>" +
+        '<label class="field"><span>Topic</span><select id="bh-topic" class="select">' + TOPIC_LIST.filter(t => !t.hidden).map(t => '<option value="' + t.id + '"' + (t.id === tid ? " selected" : "") + ">" + esc(topicLabel(t)) + "</option>").join("") + "</select></label>" +
         '<div class="field"><span>Difficulty</span>' + seg("bh-lvl", T.levels.map(l => [l.id, l.name]), hs.lvl) + "</div>" +
         '<div class="field"><span>Questions</span>' + seg("bh-len", T.lengths.map(n => [n, String(n)]), hs.len) + "</div>" +
         '<div class="field"><span>Seconds per question</span>' + seg("bh-secs", SECS_OPTS.map(n => [n, String(n)]), hs.secs) + "</div>" +

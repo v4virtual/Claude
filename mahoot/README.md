@@ -29,7 +29,19 @@ Science, Math and Spanish verb questions are generated with random numbers or wo
 
 The **Games** tab plays with the selected topic's questions (difficulty comes from the topic's practice settings).
 
-- **Tower Defense**: colored blocks follow a fixed path (three maps: Zigzag, Snake, Spiral). Start with $150 and buy turrets: Blaster ($50, all-rounder), Rapid ($80, very fast weak shots) and Cannon ($120, slow, hits a group). Tap a turret to upgrade it (up to level 3) or sell it. Each round sends more and tougher blocks (strength 1–5, about 10% tougher every round). A block that reaches the end costs health equal to its strength; at 0 health the game is over. After every round the player must answer 3 questions; each correct answer adds $25, and every answer shows its explanation. The best round per topic is saved in the browser.
+- **Tower Defense**: colorful blocks with faces follow a sandy path across a grassy map (three maps: Zigzag, Snake, Spiral). Start with $150 and 20 health and buy turrets, then tap one to upgrade it (up to level 3) or sell it:
+
+  | Turret | Cost | What it does |
+  | --- | --- | --- |
+  | Blaster | $50 | All-rounder |
+  | Rapid | $80 | Very fast, weak shots |
+  | Frost Tower | $90 | Icy pulse slows every block nearby |
+  | Water Cannon | $100 | Lobs water that splashes an area and soaks blocks so they slow down |
+  | Cannon | $120 | Slow, hits a whole group |
+  | Tesla Coil | $140 | Lightning that jumps between up to 4 blocks |
+  | Laser | $150 | Beam that gets stronger the longer it locks on |
+
+  Each round sends more blocks (strength 1–5, about 10% tougher every round). A block that reaches the end costs health equal to its strength; at 0 health the game is over. After each of rounds 1–10 the player answers 1 question, and 3 questions after every later round; each correct answer adds $25 and every answer shows its explanation. Questions are either **Quick math** (ordering numbers, comparing, adding and subtracting, times tables, rounding; harder after rounds 10 and 20) or the **easiest on-the-spot questions from the selected topic**. The best round per topic is saved in the browser.
 
 More game modes can be added as new files next to `js/game-td.js` and a card in `js/games.js`.
 
@@ -112,6 +124,7 @@ Then open <http://localhost:8000>. To try a battle without Firebase, open the si
 | `js/topic-kit.js` | Helpers for writing topics (multiple choice, typed answers, ordering, boxes, seeded quiz builder). |
 | `js/topics/*.js` | One file per topic added since: stoichiometry, polynomials, genetics, business, heros-journey, scifi, spanish-present, spanish-adolescence. |
 | `js/game-td.js`, `js/games.js` | Tower Defense game logic, and the Games tab (drawing, shop, question breaks). |
+| `js/topics/quick-math.js` | Quick mental-math questions used by games (hidden from the topic picker). |
 | `TOPIC_GUIDE.md` | How to write a new topic. |
 | `tools/validate-topics.js` | Checks every topic: `node tools/validate-topics.js`. Not loaded by the site. |
 | `js/quizui.js` | Shows a question, checks the answer and writes the feedback. Shared by every topic, practice and battle. |
